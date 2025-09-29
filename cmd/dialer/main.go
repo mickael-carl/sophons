@@ -1,0 +1,101 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"github.com/goccy/go-yaml"
+
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
+
+	"github.com/mickael-carl/gosible/pkg/dialer"
+	"github.com/mickael-carl/gosible/pkg/inventory"
+)
+
+var (
+	username      = flag.String("u", "", "username to connect to hosts")
+	keyPath       = flag.String("k", "", "path to the SSH key to use")
+	inventoryPath = flag.String("i", "", "path to inventory file")
+	binDir        = flag.String("b", "", "dir containing executer binaries")
+)
+
+func sshConfig(u, k string) (*ssh.ClientConfig, error) {
+	key, err := os.ReadFile(k)
+	if err != nil {
+		return &ssh.ClientConfig{}, fmt.Errorf("failed reading private key %q: %v", k, err)
+	}
+
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		return &ssh.ClientConfig{}, fmt.Errorf("failed parsing private key: %v", err)
+	}
+
+	// TODO: better way to do that?
+	knownHostsPath := os.ExpandEnv("$HOME/.ssh/known_hosts")
+	hostKeyCallback, err := knownhosts.New(knownHostsPath)
+	if err != nil {
+		return &ssh.ClientConfig{}, fmt.Errorf("could not create hostkey callback from %s: %v", knownHostsPath, err)
+	}
+
+	return &ssh.ClientConfig{
+		User: u,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: hostKeyCallback,
+		Timeout:         10 * time.Second,
+	}, nil
+
+}
+
+func main() {
+	flag.Parse()
+
+	if len(flag.Args()) != 1 {
+		log.Fatal("missing playbook path. Usage: dialer -b binary-directory -i inventory.yaml playbook.yaml")
+	}
+
+	if *binDir == "" {
+		log.Fatal("`-b` flag is required")
+	}
+
+	if *inventoryPath == "" {
+		log.Fatal("`-i` flag is required")
+	}
+
+	inventoryData, err := os.ReadFile(*inventoryPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var inventory inventory.Inventory
+	if err := yaml.Unmarshal(inventoryData, &inventory); err != nil {
+		log.Fatal(err)
+	}
+	hosts := inventory.All()
+
+	config, err := sshConfig(*username, *keyPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for host := range hosts {
+		dialer, err := dialer.NewDialer(host, config)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		out, err := dialer.Execute(host, *binDir, *inventoryPath, flag.Args()[0])
+		// Output regardless of error: stderr is in `out` as well. Also close
+		// everything before crashing if needed.
+		fmt.Println(string(out))
+		dialer.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
