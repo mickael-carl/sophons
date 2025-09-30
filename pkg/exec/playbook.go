@@ -44,6 +44,12 @@ func playUnmarshalYAML(p *Play, b []byte) error {
 					return err
 				}
 				tasksOut = append(tasksOut, &f)
+			case "command", "ansible.builtin.command":
+				var c Command
+				if err := yaml.NodeToValue(node, &c); err != nil {
+					return err
+				}
+				tasksOut = append(tasksOut, &c)
 			default:
 				return errors.New("unsupported task type")
 			}
