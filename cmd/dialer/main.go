@@ -20,7 +20,12 @@ var (
 	username      = flag.String("u", "", "username to connect to hosts")
 	keyPath       = flag.String("k", "", "path to the SSH key to use")
 	inventoryPath = flag.String("i", "", "path to inventory file")
-	binDir        = flag.String("b", "", "dir containing executer binaries")
+	sshPort       = flag.String("p", "22", "port to use for SSH")
+	// TODO: we can use //go:embed here to embed all necessary binaries? That
+	// might make the dialer extremely large though: each executer binary is
+	// about 4.5MB right now, meaning a ~30MB binary total. It's not horrible
+	// but it's worth keeping in mind as binary size increases.
+	binDir = flag.String("b", "", "dir containing executer binaries")
 )
 
 func sshConfig(u, k string) (*ssh.ClientConfig, error) {
@@ -84,7 +89,7 @@ func main() {
 	}
 
 	for host := range hosts {
-		dialer, err := dialer.NewDialer(host, config)
+		dialer, err := dialer.NewDialer(host, *sshPort, config)
 		if err != nil {
 			log.Fatal(err)
 		}

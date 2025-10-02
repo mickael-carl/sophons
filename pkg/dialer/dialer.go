@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"os"
 	"path"
@@ -24,8 +23,8 @@ type dialer struct {
 	sftpClient *sftp.Client
 }
 
-func NewDialer(host string, config *ssh.ClientConfig) (*dialer, error) {
-	client, err := ssh.Dial("tcp", host+":22", config)
+func NewDialer(host, port string, config *ssh.ClientConfig) (*dialer, error) {
+	client, err := ssh.Dial("tcp", host+":"+port, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial %s: %v", host, err)
 	}
@@ -133,25 +132,25 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 	dirPath := path.Join("/tmp", tempDirName())
 	if err := d.sftpClient.Mkdir(dirPath); err != nil {
 		// TODO: don't crash mid-run, throw a warning.
-		log.Fatal(fmt.Errorf("failed to create temporary directory on target host: %w", err))
+		return "", fmt.Errorf("failed to create temporary directory on target host: %w", err)
 	}
 	defer d.sftpClient.RemoveAll(dirPath)
 
 	if err := d.copyExecuterBinary(binDir, dirPath); err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	if err := d.copyFile(inventory, path.Join(dirPath, "inventory.yaml"), false); err != nil {
-		log.Fatal(fmt.Errorf("failed to copy inventory to target host: %w", err))
+		return "", fmt.Errorf("failed to copy inventory to target host: %w", err)
 	}
 
 	if err := d.copyFile(playbook, path.Join(dirPath, "playbook.yaml"), false); err != nil {
-		log.Fatal(fmt.Errorf("failed to copy playbook to target host: %w"))
+		return "", fmt.Errorf("failed to copy playbook to target host: %w", err)
 	}
 
 	session, err := d.sshClient.NewSession()
 	if err != nil {
-		log.Fatalf("failed to create session: %v", err)
+		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 	defer session.Close()
 
