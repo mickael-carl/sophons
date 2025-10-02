@@ -8,7 +8,7 @@ BINS = \
 
 SRCS := $(shell find cmd pkg -name '*.go')
 
-.PHONY: clean
+.PHONY: clean docker-testing
 
 all: $(BINS)
 
@@ -32,4 +32,7 @@ bin/tardiff: $(SRCS)
 
 clean:
 	-rm -f $(BINS)
+
+docker-testing: Dockerfile.testing
+	docker build . -f Dockerfile.testing -t sophons-testing:latest
 

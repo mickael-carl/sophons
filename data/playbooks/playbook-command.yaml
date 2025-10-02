@@ -1,0 +1,29 @@
+- hosts: all
+  tasks:
+    - ansible.builtin.command:
+        cmd: "/usr/bin/touch /tmp/foo"
+        creates: "/tmp/foo"
+    - ansible.builtin.command:
+        cmd: "/usr/bin/touch /tmp/bar"
+        # Intentional, to validate that `creates` is working.
+        creates: "/tmp/foo"
+    - ansible.builtin.command:
+        argv:
+          - "rm"
+          - "/tmp/foo"
+        removes: "/tmp/foo"
+    - ansible.builtin.command:
+        cmd: "touch $HOME/foo"
+        expand_argument_vars: true
+    # Intentionally omit using FQCN to validate that that works too.
+    - command:
+        argv:
+          - "cp"
+          - "$HOME/foo"
+          - "bar"
+        chdir: "/"
+        expand_argument_vars: true
+    - ansible.builtin.command:
+        cmd: "dd of=/tmp/hello"
+        stdin: "hello world!"
+        stdin_add_newline: true

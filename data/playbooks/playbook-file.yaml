@@ -1,0 +1,16 @@
+- hosts: all
+  tasks:
+    - file:
+        path: /tmp/ansible/foo/bar
+        state: directory
+        recurse: true
+    - file:
+        path: /tmp/ansible/test
+        state: touch
+        mode: 0666
+    - file:
+        path: /tmp/ansible/foo/bar/baz
+        state: touch
+    - ansible.builtin.file:
+        path: /tmp/ansible/foo/bar/baz
+        state: absent
