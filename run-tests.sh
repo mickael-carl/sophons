@@ -14,7 +14,7 @@ for playbook in data/playbooks/*; do
     docker exec "${sha}" chown root:root /root/.ssh/authorized_keys
     ./bin/dialer -p 2222 -b bin/ -i data/inventory-testing.yaml -k "${dir}/testing" -u root "${playbook}" > /dev/null
     docker stop "${sha}" > /dev/null
-    docker export -o data/sophons.tar "${sha}"
+    docker export -o "${dir}/sophons.tar" "${sha}"
     docker rm "${sha}" > /dev/null
 
     sha=$(docker run -d -p 127.0.0.1:2222:22 sophons-testing:latest)
@@ -22,11 +22,10 @@ for playbook in data/playbooks/*; do
     docker exec "${sha}" chown root:root /root/.ssh/authorized_keys
     ansible-playbook --key-file "${dir}/testing" -u root -i data/inventory-testing.yaml --ssh-common-args="-p 2222" "${playbook}" &> /dev/null
     docker stop "${sha}" > /dev/null
-    docker export -o data/ansible.tar "${sha}"
+    docker export -o "${dir}/ansible.tar" "${sha}"
     docker rm "${sha}" > /dev/null
 
-    ./bin/tardiff data/ansible.tar data/sophons.tar
-    rm data/{ansible,sophons}.tar
+    ./bin/tardiff "${dir}/ansible.tar" "${dir}/sophons.tar"
 
 done
 

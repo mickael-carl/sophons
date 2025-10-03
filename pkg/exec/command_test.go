@@ -20,7 +20,7 @@ func TestCommandValidateMissingCommand(t *testing.T) {
 func TestCommandValidateConflictingParameters(t *testing.T) {
 	c := Command{
 		Cmd: "ls -l",
-		Argv: []string{
+		Argv: []jinjaString{
 			"ls",
 			"-l",
 		},

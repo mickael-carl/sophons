@@ -10,14 +10,14 @@ import (
 )
 
 type Command struct {
-	Cmd  string
-	Argv []string
+	Cmd  jinjaString
+	Argv []jinjaString
 	// TODO: support glob patterns.
-	Creates            string
-	Removes            string
-	Chdir              string
+	Creates            jinjaString
+	Removes            jinjaString
+	Chdir              jinjaString
 	ExpandArgumentVars bool `yaml:"expand_argument_vars"`
-	Stdin              string
+	Stdin              jinjaString
 	StdinAddNewline    bool `yaml:"stdin_add_newline"`
 }
 
@@ -38,8 +38,8 @@ func (c *Command) Validate() error {
 }
 
 func (c *Command) shouldApply() (bool, error) {
-	if c.Creates != "" {
-		_, err := os.Stat(c.Creates)
+	if string(c.Creates) != "" {
+		_, err := os.Stat(string(c.Creates))
 		if err == nil {
 			return false, nil
 		} else {
@@ -51,8 +51,8 @@ func (c *Command) shouldApply() (bool, error) {
 		}
 	}
 
-	if c.Removes != "" {
-		_, err := os.Stat(c.Removes)
+	if string(c.Removes) != "" {
+		_, err := os.Stat(string(c.Removes))
 		if err == nil {
 			return true, nil
 		} else {
@@ -79,12 +79,12 @@ func (c *Command) Apply() error {
 
 	var cmd *exec.Cmd
 
-	if c.Cmd != "" {
+	if string(c.Cmd) != "" {
 		var splitCmd []string
 		if c.ExpandArgumentVars {
-			splitCmd = strings.Split(os.ExpandEnv(c.Cmd), " ")
+			splitCmd = strings.Split(os.ExpandEnv(string(c.Cmd)), " ")
 		} else {
-			splitCmd = strings.Split(c.Cmd, " ")
+			splitCmd = strings.Split(string(c.Cmd), " ")
 		}
 		var args []string
 		if len(splitCmd) > 1 {
@@ -95,10 +95,12 @@ func (c *Command) Apply() error {
 		var argv []string
 		if c.ExpandArgumentVars {
 			for _, arg := range c.Argv {
-				argv = append(argv, os.ExpandEnv(arg))
+				argv = append(argv, os.ExpandEnv(string(arg)))
 			}
 		} else {
-			argv = c.Argv
+			for _, arg := range c.Argv {
+				argv = append(argv, string(arg))
+			}
 		}
 
 		if len(argv) > 1 {
@@ -111,11 +113,11 @@ func (c *Command) Apply() error {
 	}
 
 	if c.Chdir != "" {
-		cmd.Dir = c.Chdir
+		cmd.Dir = string(c.Chdir)
 	}
 
 	if c.Stdin != "" {
-		stdin := c.Stdin
+		stdin := string(c.Stdin)
 		if c.StdinAddNewline {
 			stdin += "\n"
 		}

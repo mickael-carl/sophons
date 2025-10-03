@@ -275,3 +275,167 @@ func TestGroupAllNested(t *testing.T) {
 		t.Errorf("expected %#v but got %#v", expected, got)
 	}
 }
+
+func TestGroupNodeVars(t *testing.T) {
+	g := Group{
+		Hosts: map[string]Variables{
+			"foo": Variables{
+				"hello":  "world!",
+				"answer": 42,
+			},
+		},
+		Vars: Variables{
+			"ansible_port": 2222,
+		},
+	}
+
+	hostVars, groupVars := g.NodeVars("foo")
+	expectedHostVars := Variables{
+		"hello":  "world!",
+		"answer": 42,
+	}
+	expectedGroupVars := Variables{
+		"ansible_port": 2222,
+	}
+
+	if !cmp.Equal(hostVars, expectedHostVars) {
+		t.Errorf("expected %#v but got %#v", expectedHostVars, hostVars)
+	}
+
+	if !cmp.Equal(groupVars, expectedGroupVars) {
+		t.Errorf("expected %#v but got %#v", expectedGroupVars, groupVars)
+	}
+}
+
+func TestGroupNodeVarsNested(t *testing.T) {
+	g := Group{
+		Hosts: map[string]Variables{
+			"foo": Variables{},
+		},
+		Vars: Variables{
+			"hello": "world!",
+		},
+		Children: map[string]Group{
+			"someChild": Group{
+				Hosts: map[string]Variables{
+					"bar": Variables{
+						"fruit": "banana",
+					},
+				},
+				Vars: Variables{
+					"answer": 42,
+				},
+				Children: map[string]Group{
+					"nestedChild": Group{
+						Vars: Variables{
+							"pineapple": "notonpizza",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	hostVars, groupVars := g.NodeVars("bar")
+	expectedHostVars := Variables{
+		"fruit": "banana",
+	}
+	expectedGroupVars := Variables{
+		"hello":  "world!",
+		"answer": 42,
+	}
+
+	if !cmp.Equal(hostVars, expectedHostVars) {
+		t.Errorf("expected %#v but got %#v", expectedHostVars, hostVars)
+	}
+
+	if !cmp.Equal(groupVars, expectedGroupVars) {
+		t.Errorf("expected %#v but got %#v", expectedGroupVars, groupVars)
+	}
+}
+
+func TestGroupNodeVarsOverride(t *testing.T) {
+	g := Group{
+		Vars: Variables{
+			"answer": 43,
+			"hello":  "country!",
+		},
+		Children: map[string]Group{
+			"moreCorrect": Group{
+				Hosts: map[string]Variables{
+					"foo": Variables{
+						"hello": "world!",
+					},
+				},
+				Vars: Variables{
+					"answer": 42,
+				},
+			},
+			"ignored": Group{
+				Vars: Variables{
+					"hello": "someone!",
+				},
+			},
+		},
+	}
+
+	hostVars, groupVars := g.NodeVars("foo")
+	expectedHostVars := Variables{
+		"hello": "world!",
+	}
+	expectedGroupVars := Variables{
+		"answer": 42,
+		"hello":  "country!",
+	}
+
+	if !cmp.Equal(hostVars, expectedHostVars) {
+		t.Errorf("expected %#v but got %#v", expectedHostVars, hostVars)
+	}
+
+	if !cmp.Equal(groupVars, expectedGroupVars) {
+		t.Errorf("expected %#v but got %#v", expectedGroupVars, groupVars)
+	}
+}
+
+func TestInventoryNodeVars(t *testing.T) {
+	i := Inventory{
+		Groups: map[string]Group{
+			"top": Group{
+				Vars: Variables{
+					"answer": 43,
+					"hello":  "country!",
+				},
+				Children: map[string]Group{
+					"moreCorrect": Group{
+						Hosts: map[string]Variables{
+							"foo": Variables{
+								"hello":     "world!",
+								"pineapple": "not on pizza",
+							},
+						},
+						Vars: Variables{
+							"answer":    42,
+							"pineapple": "on pizza",
+						},
+					},
+					"ignored": Group{
+						Vars: Variables{
+							"hello": "someone!",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := i.NodeVars("foo")
+	expected := Variables{
+		"hello":     "world!",
+		"answer":    42,
+		"pineapple": "not on pizza",
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("expected %#v but got %#v", expected, got)
+	}
+}

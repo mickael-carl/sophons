@@ -14,3 +14,6 @@
     - ansible.builtin.file:
         path: /tmp/ansible/foo/bar/baz
         state: absent
+    - ansible.builtin.file:
+        path: "{{ filepath }}"
+        state: touch

@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"testing"
 
 	"github.com/goccy/go-yaml"
@@ -27,9 +28,24 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
          state: directory
          recurse: true
          mode: 0600
+ - hosts: jinja-test
+   tasks:
+     - ansible.builtin.file:
+         path: "{{ filepath }}"
+         state: touch
+     - ansible.builtin.command:
+         cmd: "dd of=/tmp/hello"
+         stdin: "{{ hello }}"
+         stdin_add_newline: true
 `)
+	vars := map[string]any{
+		"filepath": "/banana",
+		"hello":    "hello world!",
+	}
+	ctx := context.WithValue(context.Background(), "vars", vars)
+
 	var got Playbook
-	err := yaml.Unmarshal(a, &got)
+	err := yaml.UnmarshalContext(ctx, a, &got)
 	if err != nil {
 		t.Error(err)
 	}
@@ -60,6 +76,20 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 					State:   FileDirectory,
 					Recurse: true,
 					Mode:    0600,
+				},
+			},
+		},
+		Play{
+			Hosts: "jinja-test",
+			Tasks: []Task{
+				&File{
+					Path:  "/banana",
+					State: FileTouch,
+				},
+				&Command{
+					Cmd:             "dd of=/tmp/hello",
+					Stdin:           "hello world!",
+					StdinAddNewline: true,
 				},
 			},
 		},

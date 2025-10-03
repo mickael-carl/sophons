@@ -1,6 +1,8 @@
 package inventory
 
-import "maps"
+import (
+	"maps"
+)
 
 type Inventory struct {
 	Groups map[string]Group `yaml:",inline"`
@@ -30,6 +32,20 @@ func (i Inventory) All() map[string]struct{} {
 		maps.Copy(all, g.All())
 	}
 	return all
+}
+
+// TODO: this may need special handling for `all`
+func (i Inventory) NodeVars(node string) Variables {
+	hostVars := Variables{}
+	groupVars := Variables{}
+	for _, group := range i.Groups {
+		h, g := group.NodeVars(node)
+		maps.Copy(hostVars, h)
+		maps.Copy(groupVars, g)
+	}
+	maps.Copy(groupVars, hostVars)
+
+	return groupVars
 }
 
 func (g Group) Find(groupName, node string) map[string]struct{} {
@@ -65,4 +81,32 @@ func (g Group) All() map[string]struct{} {
 	}
 
 	return all
+}
+
+// NodeVars returns host an group variables associated with a node. It does
+// return both sets independently because of Ansible's variables merge order:
+// host variables have the highest precedence, which means they need to bubble
+// all the way up in the inventory.
+func (g Group) NodeVars(node string) (Variables, Variables) {
+	groupVars := Variables{}
+	hostVars := Variables{}
+	childrenVars := Variables{}
+
+	if v, ok := g.Hosts[node]; ok {
+		maps.Copy(hostVars, v)
+		maps.Copy(groupVars, g.Vars)
+	}
+
+	for _, child := range g.Children {
+		hostInChildVars, childVars := child.NodeVars(node)
+		maps.Copy(hostVars, hostInChildVars)
+		maps.Copy(childrenVars, childVars)
+	}
+
+	if len(childrenVars) > 0 {
+		maps.Copy(groupVars, g.Vars)
+		maps.Copy(groupVars, childrenVars)
+	}
+
+	return hostVars, groupVars
 }

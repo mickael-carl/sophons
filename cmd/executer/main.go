@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
@@ -23,6 +24,7 @@ func main() {
 	}
 
 	groups := map[string]struct{}{"all": struct{}{}}
+	variables := inventory.Variables{}
 
 	if *inventoryPath != "" {
 		inventoryData, err := os.ReadFile(*inventoryPath)
@@ -36,7 +38,10 @@ func main() {
 		}
 
 		groups = inventory.Find(*node)
+		variables = inventory.NodeVars(*node)
 	}
+
+	ctx := context.WithValue(context.Background(), "vars", variables)
 
 	playbookData, err := os.ReadFile(flag.Args()[0])
 	if err != nil {
@@ -44,13 +49,15 @@ func main() {
 	}
 
 	var playbook exec.Playbook
-	if err := yaml.Unmarshal(playbookData, &playbook); err != nil {
+	if err := yaml.UnmarshalContext(ctx, playbookData, &playbook); err != nil {
 		log.Fatal(err)
 	}
 
 	for _, play := range playbook {
 		if _, ok := groups[play.Hosts]; ok || play.Hosts == *node {
 			for _, task := range play.Tasks {
+				log.Printf("%+v", task)
+
 				if err := task.Validate(); err != nil {
 					log.Fatal(err)
 				}
@@ -58,8 +65,6 @@ func main() {
 				if err := task.Apply(); err != nil {
 					log.Fatal(err)
 				}
-
-				log.Printf("%+v", task)
 			}
 		}
 	}

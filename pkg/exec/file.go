@@ -21,14 +21,14 @@ const (
 )
 
 type File struct {
-	Path   string
+	Path   jinjaString
 	Follow *bool
-	Group  string
+	Group  jinjaString
 	// TODO: Mode should support string syntax, e.g. "u+rw,o=r".
 	Mode    uint32
-	Owner   string
+	Owner   jinjaString
 	Recurse bool
-	Src     string
+	Src     jinjaString
 	State   FileState
 }
 
@@ -110,7 +110,7 @@ func (f *File) Validate() error {
 		return errors.New("invalid state")
 	}
 
-	if f.Path == "" {
+	if string(f.Path) == "" {
 		return errors.New("path is required")
 	}
 
@@ -119,7 +119,7 @@ func (f *File) Validate() error {
 	}
 
 	// TODO: not exactly true: ansible will use the previous state of the link.
-	if (f.State == FileLink || f.State == FileHard) && f.Src == "" {
+	if (f.State == FileLink || f.State == FileHard) && string(f.Src) == "" {
 		return errors.New("src option is required when state is 'link' or 'hard'")
 	}
 
@@ -138,7 +138,7 @@ func (f *File) Apply() error {
 	actualState := f.State
 
 	exists := false
-	_, err := os.Lstat(f.Path)
+	_, err := os.Lstat(string(string(f.Path)))
 	if err == nil {
 		exists = true
 	} else {
@@ -157,19 +157,19 @@ func (f *File) Apply() error {
 		}
 	}
 
-	uid, err := getUid(f.Owner)
+	uid, err := getUid(string(f.Owner))
 	if err != nil {
 		return err
 	}
 
-	gid, err := getGid(f.Owner)
+	gid, err := getGid(string(f.Owner))
 	if err != nil {
 		return err
 	}
 
 	switch actualState {
 	case FileAbsent:
-		return os.RemoveAll(f.Path)
+		return os.RemoveAll(string(f.Path))
 
 	case FileDirectory:
 		// If f.Mode is 0, i.e. we don't specify a mode, Ansible says it'll use
@@ -180,12 +180,12 @@ func (f *File) Apply() error {
 		if mode == 0 {
 			mode = 0755
 		}
-		if err := os.MkdirAll(f.Path, os.FileMode(mode)); err != nil {
+		if err := os.MkdirAll(string(f.Path), os.FileMode(mode)); err != nil {
 			return err
 		}
 
 		if f.Recurse {
-			if err := filepath.WalkDir(f.Path, func(path string, d fs.DirEntry, err error) error {
+			if err := filepath.WalkDir(string(f.Path), func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
 				}
@@ -213,7 +213,7 @@ func (f *File) Apply() error {
 				return err
 			}
 		} else {
-			if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+			if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
 				return err
 			}
 		}
@@ -224,11 +224,11 @@ func (f *File) Apply() error {
 		}
 
 		// Per Ansible docs: if no property are set, state=file does nothing.
-		if f.Mode == 0 && f.Owner == "" && f.Group == "" {
+		if f.Mode == 0 && string(f.Owner) == "" && f.Group == "" {
 			return nil
 		}
 
-		if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+		if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
 			return err
 		}
 
@@ -237,35 +237,35 @@ func (f *File) Apply() error {
 
 	case FileLink:
 		if !exists {
-			if err := os.Symlink(f.Src, f.Path); err != nil {
+			if err := os.Symlink(string(f.Src), string(f.Path)); err != nil {
 				return err
 			}
 		} else {
-			existingSrc, err := os.Readlink(f.Path)
+			existingSrc, err := os.Readlink(string(f.Path))
 			if err != nil {
 				return err
 			}
 
-			if existingSrc != f.Src {
-				if err := os.Remove(f.Path); err != nil {
+			if existingSrc != string(f.Src) {
+				if err := os.Remove(string(f.Path)); err != nil {
 					return err
 				}
 
-				if err := os.Symlink(f.Src, f.Path); err != nil {
+				if err := os.Symlink(string(f.Src), string(f.Path)); err != nil {
 					return err
 				}
 			}
 		}
 
 		if follow {
-			if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+			if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
 				return err
 			}
 		}
 
 	case FileTouch:
 		if !exists {
-			if _, err := os.Create(f.Path); err != nil {
+			if _, err := os.Create(string(f.Path)); err != nil {
 				return err
 			}
 		}
@@ -273,7 +273,7 @@ func (f *File) Apply() error {
 		// The Ansible docs say that if the file exists, atime and mtime will
 		// be updated but not more. That proves to not be accurate:
 		// permissions, uid and gid will be updated too.
-		if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+		if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
 			return err
 		}
 

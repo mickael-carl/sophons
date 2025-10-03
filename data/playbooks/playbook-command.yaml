@@ -25,5 +25,5 @@
         expand_argument_vars: true
     - ansible.builtin.command:
         cmd: "dd of=/tmp/hello"
-        stdin: "hello world!"
+        stdin: "{{ hello }}"
         stdin_add_newline: true
