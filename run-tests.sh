@@ -7,7 +7,7 @@ set -uo pipefail
 dir=$(mktemp -d)
 ssh-keygen -f "${dir}/testing" -N "" > /dev/null
 
-for playbook in data/playbooks/*; do
+for playbook in data/playbooks/*.yaml; do
 
     sha=$(docker run -d -p 127.0.0.1:2222:22 sophons-testing:latest)
     docker cp "${dir}/testing.pub" "${sha}:/root/.ssh/authorized_keys" > /dev/null
