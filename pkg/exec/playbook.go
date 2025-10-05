@@ -10,7 +10,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2"
 	"github.com/nikolalohinski/gonja/v2/exec"
 
-	"github.com/mickael-carl/gosible/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/inventory"
 )
 
 type Playbook []Play

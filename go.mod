@@ -1,4 +1,4 @@
-module github.com/mickael-carl/gosible
+module github.com/mickael-carl/sophons
 
 go 1.25.1
 

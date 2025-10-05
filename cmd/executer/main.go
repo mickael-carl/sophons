@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/goccy/go-yaml"
-	"github.com/mickael-carl/gosible/pkg/exec"
-	"github.com/mickael-carl/gosible/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/exec"
+	"github.com/mickael-carl/sophons/pkg/inventory"
 )
 
 var (

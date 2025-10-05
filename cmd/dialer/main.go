@@ -12,8 +12,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 
-	"github.com/mickael-carl/gosible/pkg/dialer"
-	"github.com/mickael-carl/gosible/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/dialer"
+	"github.com/mickael-carl/sophons/pkg/inventory"
 )
 
 var (
