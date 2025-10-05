@@ -6,6 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
+	"github.com/mickael-carl/sophons/pkg/inventory"
 )
 
 func TestPlaybookUnmarshalYAML(t *testing.T) {
@@ -38,7 +39,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
          stdin: "{{ hello }}"
          stdin_add_newline: true
 `)
-	vars := map[string]any{
+	vars := inventory.Variables{
 		"filepath": "/banana",
 		"hello":    "hello world!",
 	}

@@ -26,23 +26,18 @@ type Task interface {
 }
 
 func init() {
-	yaml.RegisterCustomUnmarshalerContext[Play](playUnmarshalYAML)
+	yaml.RegisterCustomUnmarshalerContext[[]Task](tasksUnmarshalYAML)
 	yaml.RegisterCustomUnmarshalerContext[jinjaString](jinjaStringUnmarshalYAML)
 }
 
-func playUnmarshalYAML(ctx context.Context, p *Play, b []byte) error {
-	var raw struct {
-		Hosts string
-		Tasks []map[string]ast.Node
-	}
+func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
+	var raw []map[string]ast.Node
 	if err := yaml.Unmarshal(b, &raw); err != nil {
 		return err
 	}
 
-	p.Hosts = raw.Hosts
-
 	var tasksOut []Task
-	for _, task := range raw.Tasks {
+	for _, task := range raw {
 		for taskType, node := range task {
 			switch taskType {
 			case "file", "ansible.builtin.file":
@@ -65,7 +60,7 @@ func playUnmarshalYAML(ctx context.Context, p *Play, b []byte) error {
 		}
 	}
 
-	p.Tasks = tasksOut
+	*t = tasksOut
 	return nil
 }
 
