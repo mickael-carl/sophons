@@ -33,6 +33,10 @@ func filterOut(name string) bool {
 		return true
 	}
 
+	if strings.HasPrefix(name, "tmp/sophons") {
+		return true
+	}
+
 	return false
 }
 

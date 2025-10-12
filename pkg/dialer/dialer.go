@@ -7,11 +7,15 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/sftp"
+
 	"golang.org/x/crypto/ssh"
+
+	"github.com/mickael-carl/sophons/pkg/util"
 )
 
 func tempDirName() string {
@@ -146,6 +150,24 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 
 	if err := d.copyFile(playbook, path.Join(dirPath, "playbook.yaml"), false); err != nil {
 		return "", fmt.Errorf("failed to copy playbook to target host: %w", err)
+	}
+
+	// TODO: ansible looks in other places for roles.
+	rolesPath := filepath.Join(filepath.Dir(playbook), "roles")
+	_, err := os.Stat(rolesPath)
+	if err != nil && err != os.ErrNotExist {
+		return "", err
+	}
+	if err == nil {
+		rolesArchive, err := util.TarRoles(rolesPath)
+		if err != nil {
+			return "", err
+		}
+		defer os.Remove(rolesArchive)
+
+		if err := d.copyFile(rolesArchive, path.Join(dirPath, "roles.tar.gz"), false); err != nil {
+			return "", fmt.Errorf("failed to copy roles archive to target host: %w", err)
+		}
 	}
 
 	session, err := d.sshClient.NewSession()

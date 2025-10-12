@@ -1,0 +1,3 @@
+- ansible.builtin.file:
+    path: /banana
+    state: touch
