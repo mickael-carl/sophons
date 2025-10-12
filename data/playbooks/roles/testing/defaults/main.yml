@@ -1,1 +1,3 @@
-hello: "main.yml"
+var: "defaults"
+somevar: "defaults"
+someothervar: "defaults"

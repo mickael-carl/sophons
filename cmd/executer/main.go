@@ -101,7 +101,6 @@ func main() {
 					log.Fatalf("no such role: %s", roleName)
 				}
 
-				// TODO: variables & defaults.
 				for _, task := range role.Tasks {
 					// TODO: remove the duplication with the play level tasks
 					// execution.

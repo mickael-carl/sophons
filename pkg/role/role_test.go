@@ -71,6 +71,81 @@ fruit: "banana"
 	}
 }
 
+func TestMaybeRoleVariables(t *testing.T) {
+	vars := []byte(`
+hello: "world!"
+answer: 42
+`)
+
+	defaults := []byte(`
+answer: 41
+fruit: "banana"
+`)
+
+	tasks := []byte(`
+- ansible.builtin.file:
+    path: "/hello/{{ hello }}"
+    state: touch
+- ansible.builtin.file:
+    path: "/answer/{{ answer }}"
+    state: touch
+- ansible.builtin.file:
+    path: "/fruit/{{ fruit }}"
+    state: touch
+`)
+
+	fsys := fstest.MapFS{
+		"somerole/vars/main.yml": &fstest.MapFile{
+			Data: vars,
+		},
+		"somerole/defaults/main/main.yml": &fstest.MapFile{
+			Data: defaults,
+		},
+		"somerole/tasks/main": &fstest.MapFile{
+			Data: tasks,
+		},
+	}
+
+	got, ok, err := maybeRole(context.Background(), fsys, "somerole")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !ok {
+		t.Fatal("expected to find a role but didn't")
+	}
+
+	expected := Role{
+		Defaults: inventory.Variables{
+			"fruit":  "banana",
+			"answer": uint64(41),
+		},
+		Variables: inventory.Variables{
+			"hello":  "world!",
+			"answer": uint64(42),
+		},
+		Tasks: []exec.Task{
+			&exec.File{
+				Path:  "/hello/world!",
+				State: exec.FileTouch,
+			},
+			&exec.File{
+				Path:  "/answer/42",
+				State: exec.FileTouch,
+			},
+			&exec.File{
+				Path:  "/fruit/banana",
+				State: exec.FileTouch,
+			},
+		},
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+
+}
+
 func TestDiscoverRoleNotOK(t *testing.T) {
 	randomFile := []byte(`
 # Definitely not a role
