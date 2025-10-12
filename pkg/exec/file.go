@@ -21,6 +21,8 @@ const (
 )
 
 type File struct {
+	CommonTask
+
 	Path   jinjaString
 	Follow *bool
 	Group  jinjaString

@@ -3,7 +3,7 @@ package exec
 import (
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
@@ -17,7 +17,12 @@ type Playbook []Play
 
 type Play struct {
 	Hosts string `yaml:"hosts"`
+	Roles []string
 	Tasks []Task
+}
+
+type CommonTask struct {
+	Name jinjaString
 }
 
 type Task interface {
@@ -55,7 +60,7 @@ func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
 				}
 				tasksOut = append(tasksOut, &c)
 			default:
-				return errors.New("unsupported task type")
+				return fmt.Errorf("unsupported task type %s", taskType)
 			}
 		}
 	}
