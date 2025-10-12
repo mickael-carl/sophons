@@ -72,7 +72,7 @@ func (g Group) Find(groupName, node string) map[string]struct{} {
 // All returns all the nodes in this group.
 func (g Group) All() map[string]struct{} {
 	all := map[string]struct{}{}
-	for n, _ := range g.Hosts {
+	for n := range g.Hosts {
 		all[n] = struct{}{}
 	}
 

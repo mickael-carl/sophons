@@ -109,9 +109,8 @@ func main() {
 		}
 	}
 
-	for k, _ := range right {
-		_, ok := left[k]
-		if ok {
+	for k := range right {
+		if _, ok := left[k]; ok {
 			continue
 		}
 

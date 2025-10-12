@@ -1,0 +1,8 @@
+version: "2"
+linters:
+  exclusions:
+    presets:
+      # A lot of calls to `Close()` will be deferred without error checking.
+      #This throws off errcheck which is a bit too pedantic in this case. Let's
+      #just exclude those checks.
+      - std-error-handling
