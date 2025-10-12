@@ -4,3 +4,4 @@ all:
          "hello": "hello world!"
    vars:
       "filepath": "/banana"
+      "someothervar": "inventory"

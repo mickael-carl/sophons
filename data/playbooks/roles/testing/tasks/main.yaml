@@ -1,3 +1,12 @@
 - ansible.builtin.file:
     path: /banana
     state: touch
+- ansible.builtin.file:
+    path: "/defaults-{{ var }}"
+    state: touch
+- ansible.builtin.file:
+    path: "/vars-{{ somevar }}"
+    state: touch
+- ansible.builtin.command:
+    cmd: "dd of=/hello"
+    stdin: "{{ someothervar }}"
