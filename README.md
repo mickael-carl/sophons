@@ -11,8 +11,7 @@ basic support.
 The following still need implementation (in order of priority, not an exhaustive
 list):
   * all Ansible builtins
-  * variables in inventory
-  * roles
+  * better roles support (files, templates, handlers, etc)
   * secure execution
   * better SSH support (password auth, reading SSH config, etc)
   * collections
