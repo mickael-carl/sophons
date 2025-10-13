@@ -27,3 +27,6 @@
         cmd: "dd of=/tmp/hello"
         stdin: "{{ hello }}"
         stdin_add_newline: true
+    - ansible.builtin.command:
+        cmd: "dd of=/tmp/hello2"
+        stdin: "{{ hello }}"

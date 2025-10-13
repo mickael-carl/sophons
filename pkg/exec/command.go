@@ -18,7 +18,7 @@ type Command struct {
 	Chdir              jinjaString
 	ExpandArgumentVars bool `yaml:"expand_argument_vars"`
 	Stdin              jinjaString
-	StdinAddNewline    bool `yaml:"stdin_add_newline"`
+	StdinAddNewline    *bool `yaml:"stdin_add_newline"`
 }
 
 func (c *Command) Validate() error {
@@ -30,7 +30,7 @@ func (c *Command) Validate() error {
 		return errors.New("either cmd or argv need to be specified")
 	}
 
-	if c.Stdin == "" && c.StdinAddNewline {
+	if c.Stdin == "" && c.StdinAddNewline != nil && *c.StdinAddNewline {
 		return errors.New("stdin_add_newline can't be set if stdin is unset")
 	}
 
@@ -118,7 +118,8 @@ func (c *Command) Apply() error {
 
 	if c.Stdin != "" {
 		stdin := string(c.Stdin)
-		if c.StdinAddNewline {
+
+		if c.StdinAddNewline == nil || c.StdinAddNewline != nil && *c.StdinAddNewline {
 			stdin += "\n"
 		}
 		cmd.Stdin = strings.NewReader(stdin)

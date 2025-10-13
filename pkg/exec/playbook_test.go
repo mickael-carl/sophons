@@ -51,6 +51,8 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		t.Error(err)
 	}
 
+	pTrue := true
+
 	expected := Playbook{
 		Play{
 			Hosts: "all",
@@ -90,7 +92,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 				&Command{
 					Cmd:             "dd of=/tmp/hello",
 					Stdin:           "hello world!",
-					StdinAddNewline: true,
+					StdinAddNewline: &pTrue,
 				},
 			},
 		},

@@ -48,9 +48,10 @@ func TestCommandValidate(t *testing.T) {
 }
 
 func TestCommandValidateStdinMissing(t *testing.T) {
+	pTrue := true
 	c := Command{
 		Cmd:             "cat",
-		StdinAddNewline: true,
+		StdinAddNewline: &pTrue,
 	}
 
 	err := c.Validate()
