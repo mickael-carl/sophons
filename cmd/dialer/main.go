@@ -74,24 +74,24 @@ func main() {
 
 	inventoryData, err := os.ReadFile(*inventoryPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to read inventory from %s: %v", *inventoryPath, err)
 	}
 
 	var inventory inventory.Inventory
 	if err := yaml.Unmarshal(inventoryData, &inventory); err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to unmarshal inventory from %s: %v", *inventoryPath, err)
 	}
 	hosts := inventory.All()
 
 	config, err := sshConfig(*username, *keyPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to create SSH config with username %s and key from %s: %v", *username, *keyPath, err)
 	}
 
 	for host := range hosts {
 		dialer, err := dialer.NewDialer(host, *sshPort, config)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to create dialer for %s:%s: %v", host, *sshPort, err)
 		}
 
 		out, err := dialer.Execute(host, *binDir, *inventoryPath, flag.Args()[0])
@@ -100,7 +100,10 @@ func main() {
 		fmt.Println(string(out))
 		dialer.Close()
 		if err != nil {
-			log.Fatal(err)
+			// No need to print the error here. It'll basically be `Process
+			// exited with status 1` which won't add more information than the
+			// command output already showing an error.
+			os.Exit(1)
 		}
 	}
 }

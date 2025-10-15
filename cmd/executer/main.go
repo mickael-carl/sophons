@@ -34,12 +34,12 @@ func main() {
 	if *inventoryPath != "" {
 		inventoryData, err := os.ReadFile(*inventoryPath)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to read inventory from %s: %v", *inventoryPath, err)
 		}
 
 		var inventory inventory.Inventory
 		if err := yaml.Unmarshal(inventoryData, &inventory); err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to unmarshal inventory from %s: %v", *inventoryPath, err)
 		}
 
 		groups = inventory.Find(*node)
@@ -78,14 +78,15 @@ func main() {
 		log.Fatalf("failed to discover roles: %v", err)
 	}
 
-	playbookData, err := os.ReadFile(flag.Args()[0])
+	playbookPath := flag.Args()[0]
+	playbookData, err := os.ReadFile(playbookPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to read playbook from %s: %v", playbookPath, err)
 	}
 
 	var playbook exec.Playbook
 	if err := yaml.UnmarshalContext(ctx, playbookData, &playbook); err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to unmarshal playbook from %s: %v", playbookPath, err)
 	}
 
 	for _, play := range playbook {
@@ -109,11 +110,11 @@ func main() {
 					log.Printf("%+v", task)
 
 					if err := task.Validate(); err != nil {
-						log.Fatal(err)
+						log.Fatalf("validation failed: %v", err)
 					}
 
 					if err := task.Apply(); err != nil {
-						log.Fatal(err)
+						log.Fatalf("failed to apply task: %v", err)
 					}
 				}
 			}
@@ -122,11 +123,11 @@ func main() {
 				log.Printf("%+v", task)
 
 				if err := task.Validate(); err != nil {
-					log.Fatal(err)
+					log.Fatalf("validation failed: %v", err)
 				}
 
 				if err := task.Apply(); err != nil {
-					log.Fatal(err)
+					log.Fatalf("failed to apply task: %v", err)
 				}
 			}
 		}
