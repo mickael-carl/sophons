@@ -66,7 +66,7 @@ type jinjaString string
 
 func jinjaStringUnmarshalYAML(ctx context.Context, j *jinjaString, b []byte) error {
 	var vars variables.Variables
-	vars, ok := ctx.Value("vars").(variables.Variables)
+	vars, ok := variables.FromContext(ctx)
 	if !ok {
 		vars = variables.Variables{}
 	}

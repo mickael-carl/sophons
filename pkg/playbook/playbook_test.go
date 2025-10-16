@@ -41,11 +41,10 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
          stdin: "{{ hello }}"
          stdin_add_newline: true
 `)
-	vars := variables.Variables{
+	ctx := variables.NewContext(context.Background(), variables.Variables{
 		"filepath": "/banana",
 		"hello":    "hello world!",
-	}
-	ctx := context.WithValue(context.Background(), "vars", vars)
+	})
 
 	var got Playbook
 	err := yaml.UnmarshalContext(ctx, a, &got)

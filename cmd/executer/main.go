@@ -30,7 +30,7 @@ func main() {
 	}
 
 	groups := map[string]struct{}{"all": struct{}{}}
-	variables := variables.Variables{}
+	vars := variables.Variables{}
 
 	if *inventoryPath != "" {
 		inventoryData, err := os.ReadFile(*inventoryPath)
@@ -44,10 +44,10 @@ func main() {
 		}
 
 		groups = inventory.Find(*node)
-		variables = inventory.NodeVars(*node)
+		vars = inventory.NodeVars(*node)
 	}
 
-	ctx := context.WithValue(context.Background(), "vars", variables)
+	ctx := variables.NewContext(context.Background(), vars)
 
 	playbookDir := filepath.Dir(flag.Args()[0])
 

@@ -91,7 +91,7 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 	roleVars := variables.Variables{}
 	maps.Copy(roleVars, role.Defaults)
 
-	additionalVars, ok := ctx.Value("vars").(variables.Variables)
+	additionalVars, ok := variables.FromContext(ctx)
 	if !ok {
 		additionalVars = variables.Variables{}
 	}
@@ -99,7 +99,7 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 
 	maps.Copy(roleVars, role.Variables)
 
-	roleCtx := context.WithValue(ctx, "vars", roleVars)
+	roleCtx := variables.NewContext(ctx, roleVars)
 
 	// Then process the rest of the directory (order doesn't really matter anymore).
 	entries, err := fs.ReadDir(fsys, name)
