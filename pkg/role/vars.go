@@ -8,47 +8,46 @@ import (
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
-
-	"github.com/mickael-carl/sophons/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 // processVars processes variables/defaults for a particular directory. It does
 // so in the "correct" load order, as defined by Ansible: first look for a
 // main.yml, if not found look for a main.yaml, and if again not found look for
 // a `main/` and load everything underneath.
-func processVars(fsys fs.FS, root string) (inventory.Variables, error) {
-	vars := inventory.Variables{}
+func processVars(fsys fs.FS, root string) (variables.Variables, error) {
+	vars := variables.Variables{}
 
 	data, err := fs.ReadFile(fsys, filepath.Join(root, "main.yml"))
 	// Careful here: we look for no error first on purpose as it makes the code
 	// much more readable.
 	if err == nil {
 		if err = yaml.Unmarshal(data, &vars); err != nil {
-			return inventory.Variables{}, err
+			return variables.Variables{}, err
 		}
 		return vars, nil
 	}
 	if !errors.Is(err, fs.ErrNotExist) {
-		return inventory.Variables{}, err
+		return variables.Variables{}, err
 	}
 
 	data, err = fs.ReadFile(fsys, filepath.Join(root, "main.yaml"))
 	if err == nil {
 		if err = yaml.Unmarshal(data, &vars); err != nil {
-			return inventory.Variables{}, err
+			return variables.Variables{}, err
 		}
 		return vars, nil
 	}
 	if !errors.Is(err, fs.ErrNotExist) {
-		return inventory.Variables{}, err
+		return variables.Variables{}, err
 	}
 
 	f, err := fs.Stat(fsys, filepath.Join(root, "main"))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return inventory.Variables{}, nil
+			return variables.Variables{}, nil
 		}
-		return inventory.Variables{}, err
+		return variables.Variables{}, err
 	}
 
 	// `main` can just also be a file, which Ansible also considers valid and
@@ -56,11 +55,11 @@ func processVars(fsys fs.FS, root string) (inventory.Variables, error) {
 	if !f.IsDir() {
 		data, err := fs.ReadFile(fsys, filepath.Join(root, "main"))
 		if err != nil {
-			return inventory.Variables{}, err
+			return variables.Variables{}, err
 		}
 
 		if err = yaml.Unmarshal(data, &vars); err != nil {
-			return inventory.Variables{}, err
+			return variables.Variables{}, err
 		}
 
 		return vars, nil
@@ -81,7 +80,7 @@ func processVars(fsys fs.FS, root string) (inventory.Variables, error) {
 			return err
 		}
 
-		var fileVars inventory.Variables
+		var fileVars variables.Variables
 		if err := yaml.Unmarshal(f, &fileVars); err != nil {
 			return err
 		}
@@ -93,7 +92,7 @@ func processVars(fsys fs.FS, root string) (inventory.Variables, error) {
 
 		return nil
 	}); err != nil {
-		return inventory.Variables{}, err
+		return variables.Variables{}, err
 	}
 
 	return vars, nil

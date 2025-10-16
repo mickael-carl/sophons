@@ -5,8 +5,7 @@ import (
 	"testing/fstest"
 
 	"github.com/google/go-cmp/cmp"
-
-	"github.com/mickael-carl/sophons/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 func TestProcessVars(t *testing.T) {
@@ -34,7 +33,7 @@ hello: "world!"
 		t.Fatal(err)
 	}
 
-	expected := inventory.Variables{
+	expected := variables.Variables{
 		"hello": "world!",
 		"true":  true,
 	}
@@ -61,7 +60,7 @@ main: "is a valid variables file too"
 		t.Fatal(err)
 	}
 
-	expected := inventory.Variables{
+	expected := variables.Variables{
 		"hello": "world!",
 		"main":  "is a valid variables file too",
 	}
@@ -96,7 +95,7 @@ bar: "bar"
 		t.Fatal(err)
 	}
 
-	expected := inventory.Variables{
+	expected := variables.Variables{
 		"foo":   "foo",
 		"fruit": "banana",
 		"bar":   "bar",
@@ -133,7 +132,7 @@ func TestProcessVarsOverride(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := inventory.Variables{
+	expected := variables.Variables{
 		"hello":  "region!",
 		"answer": uint64(42),
 		"false":  false,

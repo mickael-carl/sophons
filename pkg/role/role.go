@@ -10,13 +10,13 @@ import (
 	"path"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
-	"github.com/mickael-carl/sophons/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 type Role struct {
 	// TODO: add files and templates.
-	Defaults  inventory.Variables
-	Variables inventory.Variables
+	Defaults  variables.Variables
+	Variables variables.Variables
 	Tasks     []exec.Task
 }
 
@@ -88,12 +88,12 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 	// Per https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence:
 	// defaults have lowest precedence. Over that are inventory vars, then
 	// playbook vars, then role vars.
-	roleVars := inventory.Variables{}
+	roleVars := variables.Variables{}
 	maps.Copy(roleVars, role.Defaults)
 
-	additionalVars, ok := ctx.Value("vars").(inventory.Variables)
+	additionalVars, ok := ctx.Value("vars").(variables.Variables)
 	if !ok {
-		additionalVars = inventory.Variables{}
+		additionalVars = variables.Variables{}
 	}
 	maps.Copy(roleVars, additionalVars)
 

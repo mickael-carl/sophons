@@ -14,6 +14,7 @@ import (
 	"github.com/mickael-carl/sophons/pkg/inventory"
 	"github.com/mickael-carl/sophons/pkg/role"
 	"github.com/mickael-carl/sophons/pkg/util"
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 var (
@@ -29,7 +30,7 @@ func main() {
 	}
 
 	groups := map[string]struct{}{"all": struct{}{}}
-	variables := inventory.Variables{}
+	variables := variables.Variables{}
 
 	if *inventoryPath != "" {
 		inventoryData, err := os.ReadFile(*inventoryPath)
@@ -104,7 +105,7 @@ func main() {
 
 				for _, task := range role.Tasks {
 					// TODO: remove the duplication with the play level tasks
-					// execution.
+					// execution: add a Apply() to Play and Role and call that.
 
 					// TODO: better formatting or maybe make that a new method.
 					log.Printf("%+v", task)

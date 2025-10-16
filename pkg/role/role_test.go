@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
-	"github.com/mickael-carl/sophons/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 func TestMaybeRole(t *testing.T) {
@@ -50,11 +50,11 @@ fruit: "banana"
 	}
 
 	expected := Role{
-		Defaults: inventory.Variables{
+		Defaults: variables.Variables{
 			"fruit": "banana",
 			"true":  true,
 		},
-		Variables: inventory.Variables{
+		Variables: variables.Variables{
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
@@ -116,11 +116,11 @@ fruit: "banana"
 	}
 
 	expected := Role{
-		Defaults: inventory.Variables{
+		Defaults: variables.Variables{
 			"fruit":  "banana",
 			"answer": uint64(41),
 		},
-		Variables: inventory.Variables{
+		Variables: variables.Variables{
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
@@ -190,8 +190,8 @@ This is a very minimal role.
 	}
 
 	expected := Role{
-		Defaults:  inventory.Variables(nil),
-		Variables: inventory.Variables(nil),
+		Defaults:  variables.Variables(nil),
+		Variables: variables.Variables(nil),
 		Tasks:     []exec.Task{},
 	}
 

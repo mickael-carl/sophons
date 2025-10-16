@@ -2,6 +2,8 @@ package inventory
 
 import (
 	"maps"
+
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 type Inventory struct {
@@ -9,12 +11,10 @@ type Inventory struct {
 }
 
 type Group struct {
-	Hosts    map[string]Variables
-	Vars     Variables
+	Hosts    map[string]variables.Variables
+	Vars     variables.Variables
 	Children map[string]Group
 }
-
-type Variables map[string]any
 
 func (i Inventory) Find(node string) map[string]struct{} {
 	// All nodes are part of the `all` group inconditionally.
@@ -35,9 +35,9 @@ func (i Inventory) All() map[string]struct{} {
 }
 
 // TODO: this may need special handling for `all`
-func (i Inventory) NodeVars(node string) Variables {
-	hostVars := Variables{}
-	groupVars := Variables{}
+func (i Inventory) NodeVars(node string) variables.Variables {
+	hostVars := variables.Variables{}
+	groupVars := variables.Variables{}
 	for _, group := range i.Groups {
 		h, g := group.NodeVars(node)
 		maps.Copy(hostVars, h)
@@ -87,10 +87,10 @@ func (g Group) All() map[string]struct{} {
 // return both sets independently because of Ansible's variables merge order:
 // host variables have the highest precedence, which means they need to bubble
 // all the way up in the inventory.
-func (g Group) NodeVars(node string) (Variables, Variables) {
-	groupVars := Variables{}
-	hostVars := Variables{}
-	childrenVars := Variables{}
+func (g Group) NodeVars(node string) (variables.Variables, variables.Variables) {
+	groupVars := variables.Variables{}
+	hostVars := variables.Variables{}
+	childrenVars := variables.Variables{}
 
 	if v, ok := g.Hosts[node]; ok {
 		maps.Copy(hostVars, v)

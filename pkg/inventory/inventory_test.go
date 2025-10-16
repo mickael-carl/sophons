@@ -6,6 +6,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 func TestUnmarshalYAML(t *testing.T) {
@@ -25,13 +26,13 @@ func TestUnmarshalYAML(t *testing.T) {
 						},
 						Children: map[string]Group{
 							"atlanta": Group{
-								Hosts: map[string]Variables{
+								Hosts: map[string]variables.Variables{
 									"host1": nil,
 									"host2": nil,
 								},
 							},
 							"raleigh": Group{
-								Hosts: map[string]Variables{
+								Hosts: map[string]variables.Variables{
 									"host2": nil,
 									"host3": nil,
 								},
@@ -78,10 +79,10 @@ usa:
 
 func TestGroupFindSimple(t *testing.T) {
 	a := Group{
-		Hosts: map[string]Variables{
-			"foo": Variables{},
-			"bar": Variables{},
-			"baz": Variables{},
+		Hosts: map[string]variables.Variables{
+			"foo": variables.Variables{},
+			"bar": variables.Variables{},
+			"baz": variables.Variables{},
 		},
 	}
 
@@ -94,18 +95,18 @@ func TestGroupFindSimple(t *testing.T) {
 
 func TestGroupFindNested(t *testing.T) {
 	a := Group{
-		Hosts: map[string]Variables{
-			"foo": Variables{},
+		Hosts: map[string]variables.Variables{
+			"foo": variables.Variables{},
 		},
 		Children: map[string]Group{
 			"fruit": Group{
-				Hosts: map[string]Variables{
-					"myBanana": Variables{},
+				Hosts: map[string]variables.Variables{
+					"myBanana": variables.Variables{},
 				},
 				Children: map[string]Group{
 					"apple": Group{
-						Hosts: map[string]Variables{
-							"myGala": Variables{},
+						Hosts: map[string]variables.Variables{
+							"myGala": variables.Variables{},
 						},
 					},
 				},
@@ -128,25 +129,25 @@ func TestGroupFindNested(t *testing.T) {
 
 func TestGroupFindInMultipleSets(t *testing.T) {
 	a := Group{
-		Hosts: map[string]Variables{
-			"foo": Variables{},
+		Hosts: map[string]variables.Variables{
+			"foo": variables.Variables{},
 		},
 		Children: map[string]Group{
 			"fruit": Group{
-				Hosts: map[string]Variables{
-					"myBanana": Variables{},
+				Hosts: map[string]variables.Variables{
+					"myBanana": variables.Variables{},
 				},
 				Children: map[string]Group{
 					"apple": Group{
-						Hosts: map[string]Variables{
-							"myGala": Variables{},
+						Hosts: map[string]variables.Variables{
+							"myGala": variables.Variables{},
 						},
 					},
 				},
 			},
 			"party": Group{
-				Hosts: map[string]Variables{
-					"myGala": Variables{},
+				Hosts: map[string]variables.Variables{
+					"myGala": variables.Variables{},
 				},
 			},
 		},
@@ -163,10 +164,10 @@ func TestInventoryFindSimple(t *testing.T) {
 	a := Inventory{
 		Groups: map[string]Group{
 			"all": Group{
-				Hosts: map[string]Variables{
-					"foo": Variables{},
-					"bar": Variables{},
-					"baz": Variables{},
+				Hosts: map[string]variables.Variables{
+					"foo": variables.Variables{},
+					"bar": variables.Variables{},
+					"baz": variables.Variables{},
 				},
 			},
 		},
@@ -183,25 +184,25 @@ func TestInventoryFindInMultipleSets(t *testing.T) {
 	a := Inventory{
 		Groups: map[string]Group{
 			"myGroup": Group{
-				Hosts: map[string]Variables{
-					"foo": Variables{},
+				Hosts: map[string]variables.Variables{
+					"foo": variables.Variables{},
 				},
 				Children: map[string]Group{
 					"fruit": Group{
-						Hosts: map[string]Variables{
-							"myBanana": Variables{},
+						Hosts: map[string]variables.Variables{
+							"myBanana": variables.Variables{},
 						},
 						Children: map[string]Group{
 							"apple": Group{
-								Hosts: map[string]Variables{
-									"myGala": Variables{},
+								Hosts: map[string]variables.Variables{
+									"myGala": variables.Variables{},
 								},
 							},
 						},
 					},
 					"party": Group{
-						Hosts: map[string]Variables{
-							"myGala": Variables{},
+						Hosts: map[string]variables.Variables{
+							"myGala": variables.Variables{},
 						},
 					},
 				},
@@ -219,10 +220,10 @@ func TestInventoryFindInMultipleSets(t *testing.T) {
 
 func TestGroupAllSimple(t *testing.T) {
 	a := Group{
-		Hosts: map[string]Variables{
-			"foo": Variables{},
-			"bar": Variables{},
-			"baz": Variables{},
+		Hosts: map[string]variables.Variables{
+			"foo": variables.Variables{},
+			"bar": variables.Variables{},
+			"baz": variables.Variables{},
 		},
 	}
 
@@ -240,25 +241,25 @@ func TestGroupAllSimple(t *testing.T) {
 
 func TestGroupAllNested(t *testing.T) {
 	a := Group{
-		Hosts: map[string]Variables{
-			"foo": Variables{},
+		Hosts: map[string]variables.Variables{
+			"foo": variables.Variables{},
 		},
 		Children: map[string]Group{
 			"fruit": Group{
-				Hosts: map[string]Variables{
-					"myBanana": Variables{},
+				Hosts: map[string]variables.Variables{
+					"myBanana": variables.Variables{},
 				},
 				Children: map[string]Group{
 					"apple": Group{
-						Hosts: map[string]Variables{
-							"myGala": Variables{},
+						Hosts: map[string]variables.Variables{
+							"myGala": variables.Variables{},
 						},
 					},
 				},
 			},
 			"party": Group{
-				Hosts: map[string]Variables{
-					"myGala": Variables{},
+				Hosts: map[string]variables.Variables{
+					"myGala": variables.Variables{},
 				},
 			},
 		},
@@ -278,23 +279,23 @@ func TestGroupAllNested(t *testing.T) {
 
 func TestGroupNodeVars(t *testing.T) {
 	g := Group{
-		Hosts: map[string]Variables{
-			"foo": Variables{
+		Hosts: map[string]variables.Variables{
+			"foo": variables.Variables{
 				"hello":  "world!",
 				"answer": 42,
 			},
 		},
-		Vars: Variables{
+		Vars: variables.Variables{
 			"ansible_port": 2222,
 		},
 	}
 
 	hostVars, groupVars := g.NodeVars("foo")
-	expectedHostVars := Variables{
+	expectedHostVars := variables.Variables{
 		"hello":  "world!",
 		"answer": 42,
 	}
-	expectedGroupVars := Variables{
+	expectedGroupVars := variables.Variables{
 		"ansible_port": 2222,
 	}
 
@@ -309,25 +310,25 @@ func TestGroupNodeVars(t *testing.T) {
 
 func TestGroupNodeVarsNested(t *testing.T) {
 	g := Group{
-		Hosts: map[string]Variables{
-			"foo": Variables{},
+		Hosts: map[string]variables.Variables{
+			"foo": variables.Variables{},
 		},
-		Vars: Variables{
+		Vars: variables.Variables{
 			"hello": "world!",
 		},
 		Children: map[string]Group{
 			"someChild": Group{
-				Hosts: map[string]Variables{
-					"bar": Variables{
+				Hosts: map[string]variables.Variables{
+					"bar": variables.Variables{
 						"fruit": "banana",
 					},
 				},
-				Vars: Variables{
+				Vars: variables.Variables{
 					"answer": 42,
 				},
 				Children: map[string]Group{
 					"nestedChild": Group{
-						Vars: Variables{
+						Vars: variables.Variables{
 							"pineapple": "notonpizza",
 						},
 					},
@@ -337,10 +338,10 @@ func TestGroupNodeVarsNested(t *testing.T) {
 	}
 
 	hostVars, groupVars := g.NodeVars("bar")
-	expectedHostVars := Variables{
+	expectedHostVars := variables.Variables{
 		"fruit": "banana",
 	}
-	expectedGroupVars := Variables{
+	expectedGroupVars := variables.Variables{
 		"hello":  "world!",
 		"answer": 42,
 	}
@@ -356,23 +357,23 @@ func TestGroupNodeVarsNested(t *testing.T) {
 
 func TestGroupNodeVarsOverride(t *testing.T) {
 	g := Group{
-		Vars: Variables{
+		Vars: variables.Variables{
 			"answer": 43,
 			"hello":  "country!",
 		},
 		Children: map[string]Group{
 			"moreCorrect": Group{
-				Hosts: map[string]Variables{
-					"foo": Variables{
+				Hosts: map[string]variables.Variables{
+					"foo": variables.Variables{
 						"hello": "world!",
 					},
 				},
-				Vars: Variables{
+				Vars: variables.Variables{
 					"answer": 42,
 				},
 			},
 			"ignored": Group{
-				Vars: Variables{
+				Vars: variables.Variables{
 					"hello": "someone!",
 				},
 			},
@@ -380,10 +381,10 @@ func TestGroupNodeVarsOverride(t *testing.T) {
 	}
 
 	hostVars, groupVars := g.NodeVars("foo")
-	expectedHostVars := Variables{
+	expectedHostVars := variables.Variables{
 		"hello": "world!",
 	}
-	expectedGroupVars := Variables{
+	expectedGroupVars := variables.Variables{
 		"answer": 42,
 		"hello":  "country!",
 	}
@@ -401,25 +402,25 @@ func TestInventoryNodeVars(t *testing.T) {
 	i := Inventory{
 		Groups: map[string]Group{
 			"top": Group{
-				Vars: Variables{
+				Vars: variables.Variables{
 					"answer": 43,
 					"hello":  "country!",
 				},
 				Children: map[string]Group{
 					"moreCorrect": Group{
-						Hosts: map[string]Variables{
-							"foo": Variables{
+						Hosts: map[string]variables.Variables{
+							"foo": variables.Variables{
 								"hello":     "world!",
 								"pineapple": "not on pizza",
 							},
 						},
-						Vars: Variables{
+						Vars: variables.Variables{
 							"answer":    42,
 							"pineapple": "on pizza",
 						},
 					},
 					"ignored": Group{
-						Vars: Variables{
+						Vars: variables.Variables{
 							"hello": "someone!",
 						},
 					},
@@ -429,7 +430,7 @@ func TestInventoryNodeVars(t *testing.T) {
 	}
 
 	got := i.NodeVars("foo")
-	expected := Variables{
+	expected := variables.Variables{
 		"hello":     "world!",
 		"answer":    42,
 		"pineapple": "not on pizza",

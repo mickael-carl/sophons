@@ -7,10 +7,9 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
+	"github.com/mickael-carl/sophons/pkg/variables"
 	"github.com/nikolalohinski/gonja/v2"
 	"github.com/nikolalohinski/gonja/v2/exec"
-
-	"github.com/mickael-carl/sophons/pkg/inventory"
 )
 
 type Playbook []Play
@@ -73,10 +72,10 @@ func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
 type jinjaString string
 
 func jinjaStringUnmarshalYAML(ctx context.Context, j *jinjaString, b []byte) error {
-	var vars inventory.Variables
-	vars, ok := ctx.Value("vars").(inventory.Variables)
+	var vars variables.Variables
+	vars, ok := ctx.Value("vars").(variables.Variables)
 	if !ok {
-		vars = inventory.Variables{}
+		vars = variables.Variables{}
 	}
 
 	varsCtx := exec.NewContext(vars)
