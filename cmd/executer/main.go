@@ -10,8 +10,8 @@ import (
 
 	"github.com/goccy/go-yaml"
 
-	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/inventory"
+	"github.com/mickael-carl/sophons/pkg/playbook"
 	"github.com/mickael-carl/sophons/pkg/role"
 	"github.com/mickael-carl/sophons/pkg/util"
 	"github.com/mickael-carl/sophons/pkg/variables"
@@ -85,7 +85,7 @@ func main() {
 		log.Fatalf("failed to read playbook from %s: %v", playbookPath, err)
 	}
 
-	var playbook exec.Playbook
+	var playbook playbook.Playbook
 	if err := yaml.UnmarshalContext(ctx, playbookData, &playbook); err != nil {
 		log.Fatalf("failed to unmarshal playbook from %s: %v", playbookPath, err)
 	}

@@ -1,4 +1,4 @@
-package exec
+package playbook
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -56,27 +58,27 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 	expected := Playbook{
 		Play{
 			Hosts: "all",
-			Tasks: []Task{
-				&File{
+			Tasks: []exec.Task{
+				&exec.File{
 					Path:  "/foo",
-					State: FileDirectory,
+					State: exec.FileDirectory,
 				},
-				&File{
+				&exec.File{
 					Path:  "/foo/bar",
-					State: FileFile,
+					State: exec.FileFile,
 				},
 			},
 		},
 		Play{
 			Hosts: "some-group",
-			Tasks: []Task{
-				&File{
+			Tasks: []exec.Task{
+				&exec.File{
 					Path:  "/foo/bar/baz",
-					State: FileTouch,
+					State: exec.FileTouch,
 				},
-				&File{
+				&exec.File{
 					Path:    "/foo/bar",
-					State:   FileDirectory,
+					State:   exec.FileDirectory,
 					Recurse: true,
 					Mode:    0600,
 				},
@@ -84,12 +86,12 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		},
 		Play{
 			Hosts: "jinja-test",
-			Tasks: []Task{
-				&File{
+			Tasks: []exec.Task{
+				&exec.File{
 					Path:  "/banana",
-					State: FileTouch,
+					State: exec.FileTouch,
 				},
-				&Command{
+				&exec.Command{
 					Cmd:             "dd of=/tmp/hello",
 					Stdin:           "hello world!",
 					StdinAddNewline: &pTrue,

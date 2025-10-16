@@ -7,18 +7,11 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
-	"github.com/mickael-carl/sophons/pkg/variables"
 	"github.com/nikolalohinski/gonja/v2"
 	"github.com/nikolalohinski/gonja/v2/exec"
+
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
-
-type Playbook []Play
-
-type Play struct {
-	Hosts string `yaml:"hosts"`
-	Roles []string
-	Tasks []Task
-}
 
 type CommonTask struct {
 	Name jinjaString
