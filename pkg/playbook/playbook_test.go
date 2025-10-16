@@ -47,8 +47,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 	})
 
 	var got Playbook
-	err := yaml.UnmarshalContext(ctx, a, &got)
-	if err != nil {
+	if err := yaml.UnmarshalContext(ctx, a, &got); err != nil {
 		t.Error(err)
 	}
 
