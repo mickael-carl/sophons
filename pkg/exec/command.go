@@ -21,6 +21,11 @@ type Command struct {
 	StdinAddNewline    *bool `yaml:"stdin_add_newline"`
 }
 
+func init() {
+	RegisterTaskType("command", func() Task { return &Command{} })
+	RegisterTaskType("ansible.builtin.command", func() Task { return &Command{} })
+}
+
 func (c *Command) Validate() error {
 	if c.Cmd != "" && len(c.Argv) != 0 {
 		return errors.New("cmd and argv can't be both specified at the same time")

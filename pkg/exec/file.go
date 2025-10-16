@@ -34,6 +34,11 @@ type File struct {
 	State   FileState
 }
 
+func init() {
+	RegisterTaskType("file", func() Task { return &File{} })
+	RegisterTaskType("ansible.builtin.file", func() Task { return &File{} })
+}
+
 func getUid(uidOrUserName string) (int, error) {
 	// -1 is the value for not changing owner in calls to Chown/Lchown.
 	uid := int(-1)

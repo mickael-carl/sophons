@@ -22,6 +22,12 @@ type Task interface {
 	Apply() error
 }
 
+var taskRegistry = map[string]func() Task{}
+
+func RegisterTaskType(name string, factory func() Task) {
+	taskRegistry[name] = factory
+}
+
 func init() {
 	yaml.RegisterCustomUnmarshalerContext[[]Task](tasksUnmarshalYAML)
 	yaml.RegisterCustomUnmarshalerContext[jinjaString](jinjaStringUnmarshalYAML)
@@ -36,24 +42,18 @@ func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
 	var tasksOut []Task
 	for _, task := range raw {
 		for taskType, node := range task {
-			switch taskType {
-			case "file", "ansible.builtin.file":
-				var f File
-				var buf bytes.Buffer
-				if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, node, &f); err != nil {
-					return err
-				}
-				tasksOut = append(tasksOut, &f)
-			case "command", "ansible.builtin.command":
-				var c Command
-				var buf bytes.Buffer
-				if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, node, &c); err != nil {
-					return err
-				}
-				tasksOut = append(tasksOut, &c)
-			default:
-				return fmt.Errorf("unsupported task type %s", taskType)
+			factory, ok := taskRegistry[taskType]
+			if !ok {
+				return fmt.Errorf("unsupported task type: %s", taskType)
 			}
+
+			t := factory()
+
+			var buf bytes.Buffer
+			if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, node, t); err != nil {
+				return err
+			}
+			tasksOut = append(tasksOut, t)
 		}
 	}
 
