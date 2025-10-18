@@ -72,7 +72,7 @@ func (c *Command) shouldApply() (bool, error) {
 	return true, nil
 }
 
-func (c *Command) Apply() error {
+func (c *Command) Apply(_ string) error {
 	ok, err := c.shouldApply()
 	if err != nil {
 		return err

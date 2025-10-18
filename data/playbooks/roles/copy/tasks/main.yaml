@@ -1,0 +1,12 @@
+- ansible.builtin.copy:
+    src: banana
+    dest: /banana
+- copy:
+    src: foo
+    dest: /foo
+- ansible.builtin.copy:
+    src: somefile
+    dest: "/{{ path }}"
+- ansible.builtin.copy:
+    src: "{{ someotherpath }}"
+    dest: /apple

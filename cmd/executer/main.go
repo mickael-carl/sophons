@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,6 +22,23 @@ var (
 	inventoryPath = flag.String("i", "", "path to inventory file")
 	node          = flag.String("n", "localhost", "name of the node to run the playbook against")
 )
+
+func untarIfExists(playbookDir, name string) error {
+	archivePath := filepath.Join(playbookDir, fmt.Sprintf("%s.tar.gz", name))
+
+	_, err := os.Stat(archivePath)
+	if err == nil {
+		if err := util.UntarRoles(archivePath, playbookDir); err != nil {
+			return fmt.Errorf("failed to unpack %s.tar.gz: %w", name, err)
+		}
+	} else {
+		if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("failed to stat %s.tar.gz: %w", name, err)
+		}
+	}
+
+	return nil
+}
 
 func main() {
 	flag.Parse()
@@ -51,28 +69,13 @@ func main() {
 
 	playbookDir := filepath.Dir(flag.Args()[0])
 
-	rolesArchivePath := filepath.Join(playbookDir, "roles.tar.gz")
-	rolesDir := filepath.Join(playbookDir, "roles")
-
-	_, err := os.Stat(rolesArchivePath)
-	if err == nil {
-		tmpDir, err := os.MkdirTemp("", "sophons-roles")
-		if err != nil {
-			log.Fatalf("failed to create temp dir for roles: %v", err)
-		}
-		// TODO: not going to work because log.Fatal.
-		//defer os.RemoveAll(tmpDir)
-
-		if err := util.UntarRoles(rolesArchivePath, tmpDir); err != nil {
-			log.Fatalf("failed to unpack roles archive: %v", err)
-		}
-
-		rolesDir = filepath.Join(tmpDir, "roles")
-	} else {
-		if !errors.Is(err, os.ErrNotExist) {
-			log.Fatalf("failed to stat roles archive file: %v", err)
+	for _, dir := range []string{"roles", "files", "templates"} {
+		if err := untarIfExists(playbookDir, dir); err != nil {
+			log.Fatalf("failed to untar archive for %s: %v", dir, err)
 		}
 	}
+
+	rolesDir := filepath.Join(playbookDir, "roles")
 
 	roles, err := role.DiscoverRoles(ctx, rolesDir)
 	if err != nil {
@@ -114,7 +117,7 @@ func main() {
 						log.Fatalf("validation failed: %v", err)
 					}
 
-					if err := task.Apply(); err != nil {
+					if err := task.Apply(filepath.Join(rolesDir, roleName)); err != nil {
 						log.Fatalf("failed to apply task: %v", err)
 					}
 				}
@@ -127,7 +130,7 @@ func main() {
 					log.Fatalf("validation failed: %v", err)
 				}
 
-				if err := task.Apply(); err != nil {
+				if err := task.Apply(playbookDir); err != nil {
 					log.Fatalf("failed to apply task: %v", err)
 				}
 			}
