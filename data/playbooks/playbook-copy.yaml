@@ -1,0 +1,43 @@
+- hosts: all
+  roles: [copy]
+- hosts: all
+  tasks:
+    # src is a file, dest has a trailing / and exists.
+    - ansible.builtin.copy:
+        src: somefile
+        dest: /tmp/
+    # src is a file, dest has a trailing / and doesn't exist.
+    - ansible.builtin.copy:
+        src: somefile
+        dest: /playbook-test-1/
+    # src is a file, dest has no trailing /, exists and is a file.
+    - ansible.builtin.file:
+        path: /tmp/playbook-test-2
+        state: touch
+    - ansible.builtin.copy:
+        src: somefile
+        dest: /tmp/playbook-test-2
+    # src is a file, dest has no trailing /, exists and is a dir.
+    - ansible.builtin.copy:
+        src: somefile
+        dest: /var
+    # src is a file, dest has no trailing / and doesn't exist.
+    - ansible.builtin.copy:
+        src: somefile
+        dest: /playbook-test-3
+    # src is a dir, dest has a trailing / and exists.
+    - ansible.builtin.copy:
+        src: somedir
+        dest: /tmp/
+    # src is a dir, dest has a trailing / and doesn't exist.
+    - ansible.builtin.copy:
+        src: somedir
+        dest: /playbook-test-4/
+    # src is a dir, dest has no trailing / and exists
+    - ansible.builtin.copy:
+        src: somedir
+        dest: /root
+    # src is a dir, dest has no trailing / and doesn't exist.
+    - ansible.builtin.copy:
+        src: somedir
+        dest: /playbook-test-5

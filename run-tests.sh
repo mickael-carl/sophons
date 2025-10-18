@@ -2,12 +2,13 @@
 
 # TODO: this should be a Go program that leverages coverage measurements.
 
-set -uo pipefail
+set -euo pipefail
 
 dir=$(mktemp -d)
 ssh-keygen -f "${dir}/testing" -N "" > /dev/null
 
 for playbook in data/playbooks/*.yaml; do
+    echo "running ${playbook}"
 
     sha=$(docker run -d -p 127.0.0.1:2222:22 sophons-testing:latest)
     docker cp "${dir}/testing.pub" "${sha}:/root/.ssh/authorized_keys" > /dev/null
