@@ -132,6 +132,27 @@ func (d *dialer) copyExecuterBinary(localDir, remoteDir string) error {
 	return d.copyFile(path.Join(localDir, binName), path.Join(remoteDir, "executer"), true)
 }
 
+func (d *dialer) tarAndCopyIfExists(name, srcDir, dstDir string) error {
+	dir := filepath.Join(srcDir, name)
+	_, err := os.Stat(dir)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err == nil {
+		archive, err := util.TarRoles(dir)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(archive)
+
+		if err := d.copyFile(archive, path.Join(dstDir, fmt.Sprintf("%s.tar.gz", name)), false); err != nil {
+			return fmt.Errorf("failed to copy roles archive to target host: %w", err)
+		}
+		return nil
+	}
+	return nil
+}
+
 func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, error) {
 	dirPath := path.Join("/tmp", tempDirName())
 	if err := d.sftpClient.Mkdir(dirPath); err != nil {
@@ -153,20 +174,9 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 	}
 
 	// TODO: ansible looks in other places for roles.
-	rolesPath := filepath.Join(filepath.Dir(playbook), "roles")
-	_, err := os.Stat(rolesPath)
-	if err != nil && err != os.ErrNotExist {
-		return "", err
-	}
-	if err == nil {
-		rolesArchive, err := util.TarRoles(rolesPath)
-		if err != nil {
-			return "", err
-		}
-		defer os.Remove(rolesArchive)
-
-		if err := d.copyFile(rolesArchive, path.Join(dirPath, "roles.tar.gz"), false); err != nil {
-			return "", fmt.Errorf("failed to copy roles archive to target host: %w", err)
+	for _, dir := range []string{"roles", "files", "templates"} {
+		if err := d.tarAndCopyIfExists(dir, filepath.Dir(playbook), dirPath); err != nil {
+			return "", fmt.Errorf("failed to archive and copy %s to target host: %w", dir, err)
 		}
 	}
 

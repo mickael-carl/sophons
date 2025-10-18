@@ -1,0 +1,16 @@
+- hosts: all
+  roles: [copy]
+- hosts: all
+  tasks:
+    - ansible.builtin.copy:
+        src: foo
+        dest: /tmp/playbook-files/foo
+    - ansible.builtin.copy:
+        content: "hello world!"
+        dest: /hello
+    - ansible.builtin.copy:
+        src: bar
+        dest: /playbook-bar
+    - ansible.builtin.copy:
+        src: baz/
+        dest: /playbook-baz
