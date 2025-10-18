@@ -10,7 +10,7 @@ basic support.
 
 The following still need implementation (in order of priority, not an exhaustive
 list):
-  * all Ansible builtins
+  * all Ansible builtins (see [docs/builtin.md](docs/builtin.md))
   * better roles support (files, templates, handlers, etc)
   * secure execution
   * better SSH support (password auth, reading SSH config, etc)
