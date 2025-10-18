@@ -19,7 +19,7 @@ type CommonTask struct {
 
 type Task interface {
 	Validate() error
-	Apply() error
+	Apply(string) error
 }
 
 var taskRegistry = map[string]func() Task{}

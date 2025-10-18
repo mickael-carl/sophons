@@ -133,7 +133,7 @@ func (f *File) Validate() error {
 	return nil
 }
 
-func (f *File) Apply() error {
+func (f *File) Apply(_ string) error {
 	var follow bool
 	// The default for `follow` is true.
 	if f.Follow == nil {
@@ -145,7 +145,7 @@ func (f *File) Apply() error {
 	actualState := f.State
 
 	exists := false
-	_, err := os.Lstat(string(string(f.Path)))
+	_, err := os.Lstat(string(f.Path))
 	if err == nil {
 		exists = true
 	} else {
