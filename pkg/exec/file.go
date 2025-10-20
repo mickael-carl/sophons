@@ -2,11 +2,14 @@ package exec
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
+
+	"github.com/mickael-carl/sophons/pkg/util"
 )
 
 type FileState State
@@ -23,11 +26,10 @@ const (
 type File struct {
 	CommonTask
 
-	Path   jinjaString
-	Follow *bool
-	Group  jinjaString
-	// TODO: Mode should support string syntax, e.g. "u+rw,o=r".
-	Mode    uint32
+	Path    jinjaString
+	Follow  *bool
+	Group   jinjaString
+	Mode    jinjaString
 	Owner   jinjaString
 	Recurse bool
 	Src     jinjaString
@@ -89,18 +91,21 @@ func getGid(gidOrGroupName string) (int, error) {
 	return gid, nil
 }
 
-func applyModeAndIDs(path string, mode uint32, uid, gid int) error {
-	if mode != 0 {
-		if err := os.Chmod(path, os.FileMode(mode)); err != nil {
+func applyModeAndIDs(path string, mode string, uid, gid int) error {
+	if mode != "" {
+		// First try to parse mode as octal. If that fails we'll assume it's a
+		// string-based mode spec.
+		numMode, err := strconv.ParseUint(mode, 10, 32)
+		if err == nil {
+			return os.Chmod(path, os.FileMode(numMode))
+		}
+
+		if err := util.ChmodFromString(path, mode); err != nil {
 			return err
 		}
 	}
 
-	if err := os.Chown(path, uid, gid); err != nil {
-		return err
-	}
-
-	return nil
+	return os.Chown(path, uid, gid)
 }
 
 func (f *File) Validate() error {
@@ -179,15 +184,11 @@ func (f *File) Apply(_ string) error {
 		return os.RemoveAll(string(f.Path))
 
 	case FileDirectory:
-		// If f.Mode is 0, i.e. we don't specify a mode, Ansible says it'll use
-		// the default umask. To emulate that, but not do anything on existing
-		// files/directories, we call MkdirAll, which won't alter existing
-		// things as expected.
-		mode := f.Mode
-		if mode == 0 {
-			mode = 0755
-		}
-		if err := os.MkdirAll(string(f.Path), os.FileMode(mode)); err != nil {
+		// If f.Mode is not specified, i.e. we don't specify a mode, Ansible
+		// says it'll use the default umask. To emulate that, but not do
+		// anything on existing files/directories, we call MkdirAll, which
+		// won't alter existing things as expected.
+		if err := os.MkdirAll(string(f.Path), os.FileMode(0755)); err != nil {
 			return err
 		}
 
@@ -199,19 +200,19 @@ func (f *File) Apply(_ string) error {
 
 				// In the case where the dir exists, we don't want to change
 				// permissions if the mode is unset.
-				if f.Mode != 0 {
-					if err := os.Chmod(path, os.FileMode(f.Mode)); err != nil {
-						return err
-					}
-				}
 
 				if d.Type()&os.ModeSymlink != 0 {
 					if err := os.Lchown(path, uid, gid); err != nil {
 						return err
 					}
+					if f.Mode != "" {
+						if err := util.ChmodFromString(path, string(f.Mode)); err != nil {
+							return err
+						}
+					}
 				} else {
-					if err := os.Chown(path, uid, gid); err != nil {
-						return err
+					if err := applyModeAndIDs(path, string(f.Mode), uid, gid); err != nil {
+						return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 					}
 				}
 
@@ -220,8 +221,8 @@ func (f *File) Apply(_ string) error {
 				return err
 			}
 		} else {
-			if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
-				return err
+			if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
 
@@ -231,12 +232,12 @@ func (f *File) Apply(_ string) error {
 		}
 
 		// Per Ansible docs: if no property are set, state=file does nothing.
-		if f.Mode == 0 && string(f.Owner) == "" && f.Group == "" {
+		if f.Mode == "" && f.Owner == "" && f.Group == "" {
 			return nil
 		}
 
-		if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
-			return err
+		if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 
 	case FileHard:
@@ -265,23 +266,23 @@ func (f *File) Apply(_ string) error {
 		}
 
 		if follow {
-			if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
-				return err
+			if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
 
 	case FileTouch:
 		if !exists {
 			if _, err := os.Create(string(f.Path)); err != nil {
-				return err
+				return fmt.Errorf("failed to create %s: %w", f.Path, err)
 			}
 		}
 
 		// The Ansible docs say that if the file exists, atime and mtime will
 		// be updated but not more. That proves to not be accurate:
 		// permissions, uid and gid will be updated too.
-		if err := applyModeAndIDs(string(f.Path), f.Mode, uid, gid); err != nil {
-			return err
+		if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 
 	default:

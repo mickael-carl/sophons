@@ -17,3 +17,7 @@
     - ansible.builtin.file:
         path: "{{ filepath }}"
         state: touch
+    - ansible.builtin.file:
+        path: /tmp/ansible/test-mode
+        state: touch
+        mode: "u=rwx,g+w,o-rwx"

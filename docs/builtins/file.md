@@ -32,5 +32,4 @@
 
 ## Deviations
 
-* `mode` doesn't support string syntax, e.g. `u+rw,o=r".
 * `state=hard` is not implemented.
