@@ -4,14 +4,13 @@ A fast, Ansible-compatible, configuration management tool.
 
 ## Status
 
-This is **extremely alpha state**. At time of writing only file operations are
-supported to some extent (some attributes are not implemented) with the most
-basic support.
+This is **extremely alpha state**. At time of writing only some operations are
+supported with the most basic support.
 
 The following still need implementation (in order of priority, not an exhaustive
 list):
-  * all Ansible builtins (see [docs/builtin.md](docs/builtin.md))
-  * better roles support (files, templates, handlers, etc)
+  * most Ansible builtins (see [docs/builtin.md](docs/builtin.md))
+  * better roles support (handlers, etc)
   * secure execution
   * better SSH support (password auth, reading SSH config, etc)
   * collections
@@ -32,9 +31,10 @@ Sophons can be much much faster than Ansible.
 ### Security
 
 At time of writing, the execution model means every host gets the full playbook
-including potentially sensitive information. This is very obviously problematic
-as an attacker could leverage that to retrieve e.g. credentials by simply adding
-a node to the inventory. This will get addressed in time.
+roles and files, including potentially sensitive information. This is very
+obviously problematic as an attacker could leverage that to retrieve e.g.
+credentials by simply adding a node to the inventory. This will get addressed in
+time.
 
 Do note that this project has not seen any review by a security professional and
 thus **should not be used in production**.
@@ -82,11 +82,10 @@ The main idea behind making Sophons fast is realising that Ansible's own
 execution model is flawed: it copies a Python script to the controlled host for
 every task and executes it. Instead Sophons is decomposed in two small
 components:
-* a dialer, that connects to controlled nodes, copies the inventory and playbook
-  as well as the executer to them in a temporary directory, and then runs said
-  executer for local execution,
 * an executer, tasked with running the actual operations against the host
-  without the network overhead for each task.
+  without the network overhead for each task,
+* a dialer, that connects to controlled nodes, copies all the necessary data and
+  the executer and then runs it for local execution.
 
 ## Why
 
