@@ -42,11 +42,11 @@ fruit: "banana"
 
 	got, ok, err := maybeRole(context.Background(), fsys, "somerole")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	if !ok {
-		t.Fatal("expected to find a role but didn't")
+		t.Error("expected to find a role but didn't")
 	}
 
 	expected := Role{
@@ -108,11 +108,11 @@ fruit: "banana"
 
 	got, ok, err := maybeRole(context.Background(), fsys, "somerole")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	if !ok {
-		t.Fatal("expected to find a role but didn't")
+		t.Error("expected to find a role but didn't")
 	}
 
 	expected := Role{
@@ -161,11 +161,11 @@ This is just some test content.
 
 	_, ok, err := maybeRole(context.Background(), fsys, "somerole")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	if ok {
-		t.Fatal("got a role but expected none")
+		t.Error("got a role but expected none")
 	}
 }
 
@@ -182,11 +182,11 @@ This is a very minimal role.
 
 	got, ok, err := maybeRole(context.Background(), fsys, "somerole")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	if !ok {
-		t.Fatal("expected a role but didn't find one")
+		t.Error("expected a role but didn't find one")
 	}
 
 	expected := Role{

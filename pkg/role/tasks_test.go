@@ -24,7 +24,7 @@ func TestProcessTasks(t *testing.T) {
 
 	got, err := processTasks(context.Background(), fsys, "somerole/tasks")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	expected := []exec.Task{

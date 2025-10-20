@@ -30,7 +30,7 @@ hello: "world!"
 
 	got, err := processVars(fsys, "somerole/defaults")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	expected := variables.Variables{
@@ -57,7 +57,7 @@ main: "is a valid variables file too"
 
 	got, err := processVars(fsys, "somerole/variables")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	expected := variables.Variables{
@@ -92,7 +92,7 @@ bar: "bar"
 
 	got, err := processVars(fsys, "somerole/defaults")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	expected := variables.Variables{
@@ -129,7 +129,7 @@ func TestProcessVarsOverride(t *testing.T) {
 
 	got, err := processVars(fsys, "somerole/variables")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	expected := variables.Variables{
