@@ -78,7 +78,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 					Path:    "/foo/bar",
 					State:   exec.FileDirectory,
 					Recurse: true,
-					Mode:    0600,
+					Mode:    "384", // 0600
 				},
 			},
 		},
@@ -99,6 +99,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 	}
 
 	if !cmp.Equal(got, expected) {
+		t.Log(cmp.Diff(got, expected))
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }

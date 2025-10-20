@@ -6,13 +6,13 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
 type Command struct {
-	Cmd  jinjaString
-	Argv []jinjaString
-	// TODO: support glob patterns.
+	Cmd                jinjaString
+	Argv               []jinjaString
 	Creates            jinjaString
 	Removes            jinjaString
 	Chdir              jinjaString
@@ -44,29 +44,19 @@ func (c *Command) Validate() error {
 
 func (c *Command) shouldApply() (bool, error) {
 	if string(c.Creates) != "" {
-		_, err := os.Stat(string(c.Creates))
-		if err == nil {
-			return false, nil
-		} else {
-			if errors.Is(err, os.ErrNotExist) {
-				return true, nil
-			} else {
-				return false, err
-			}
+		matches, err := filepath.Glob(string(c.Creates))
+		if err != nil {
+			return false, err
 		}
+		return len(matches) == 0, nil
 	}
 
 	if string(c.Removes) != "" {
-		_, err := os.Stat(string(c.Removes))
-		if err == nil {
-			return true, nil
-		} else {
-			if errors.Is(err, os.ErrNotExist) {
-				return false, nil
-			} else {
-				return false, err
-			}
+		matches, err := filepath.Glob(string(c.Removes))
+		if err != nil {
+			return false, err
 		}
+		return len(matches) > 0, nil
 	}
 
 	return true, nil

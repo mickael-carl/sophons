@@ -8,10 +8,17 @@
         # Intentional, to validate that `creates` is working.
         creates: "/tmp/foo"
     - ansible.builtin.command:
+        cmd: "/usr/bin/touch /tmp/baz"
+        # Intentional, to validate glob patterns
+        creates: "/tmp/*"
+    - ansible.builtin.command:
         argv:
           - "rm"
           - "/tmp/foo"
         removes: "/tmp/foo"
+    - ansible.builtin.command:
+        cmd: "rm /tmp/*"
+        removes: "/tmp/foo*"
     - ansible.builtin.command:
         cmd: "touch $HOME/foo"
         expand_argument_vars: true

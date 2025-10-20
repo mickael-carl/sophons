@@ -2,9 +2,9 @@
 
 ## Implementation
 
-| Source                                  | Parameters | Deviations |
-|-----------------------------------------|------------|------------|
-| [command.go](../../pkg/exec/command.go) | :x:        | :x:        |
+| Source                                  | Parameters | Deviations         |
+|-----------------------------------------|------------|--------------------|
+| [command.go](../../pkg/exec/command.go) | :x:        | :white_check_mark: |
 
 ## Parameters
 
@@ -22,4 +22,4 @@ strip_empty_ends     | :x:                |
 
 ## Deviations
 
-* `creates` and `removes` don't support glob pattern.
+None.
