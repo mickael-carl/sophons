@@ -5,7 +5,7 @@ go 1.25.1
 require (
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-cmp v0.7.0
-	github.com/nikolalohinski/gonja/v2 v2.4.0
+	github.com/nikolalohinski/gonja/v2 v2.4.1
 	github.com/pkg/sftp v1.13.9
 	golang.org/x/crypto v0.42.0
 )
