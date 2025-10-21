@@ -74,8 +74,8 @@ func (d *dialer) executerBinName() (string, error) {
 		return "", nil
 	}
 
-	os := strings.TrimSpace(o)
-	if os != "Linux" && os != "Darwin" {
+	os := strings.ToLower(strings.TrimSpace(o))
+	if os != "linux" && os != "darwin" {
 		return "", fmt.Errorf("unsupported OS: %s", os)
 	}
 

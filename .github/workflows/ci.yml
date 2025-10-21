@@ -1,0 +1,36 @@
+name: ci
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  golangci:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+      - name: unit tests
+        run: go test -test.v ./...
+  conformance:
+    name: Conformance Tests
+    needs: golangci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-docker-action@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - name: Build binaries
+        run: make all
+      - name: Build testing container image
+        run: make docker-testing
+      - name: Conformance tests
+        run: ./run-tests.sh

@@ -100,10 +100,7 @@ func main() {
 		fmt.Println(string(out))
 		dialer.Close()
 		if err != nil {
-			// No need to print the error here. It'll basically be `Process
-			// exited with status 1` which won't add more information than the
-			// command output already showing an error.
-			os.Exit(1)
+			log.Fatalf("running sophons against %s failed: %v", host, err)
 		}
 	}
 }
