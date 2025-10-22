@@ -10,13 +10,36 @@ import (
 	"strings"
 )
 
+//	@meta {
+//	  "deviations": [
+//	    "`src` doesn't support absolute paths when `remote_src` is false."
+//	  ]
+//	}
 type Copy struct {
 	CommonTask
 
-	Content   jinjaString
-	RemoteSrc bool
-	Src       jinjaString
-	Dest      jinjaString
+	Content   jinjaString `sophons:"implemented"`
+	RemoteSrc bool        `yaml:"remote_src"`
+	Src       jinjaString `sophons:"implemented"`
+	Dest      jinjaString `sophons:"implemented"`
+
+	Attributes    jinjaString
+	Backup        bool
+	Checksum      jinjaString
+	Decrypt       *bool
+	DirectoryMode jinjaString `yaml:"directory_mode"`
+	Follow        bool
+	Force         *bool
+	Group         jinjaString
+	LocalFollow   bool `yaml:"local_follow"`
+	Mode          jinjaString
+	Owner         jinjaString
+	Selevel       jinjaString
+	Serole        jinjaString
+	Setype        jinjaString
+	Seuser        jinjaString
+	UnsafeWrites  bool        `yaml:"unsafe_writes"`
+	AValidate     jinjaString `yaml:"validate"`
 }
 
 func init() {

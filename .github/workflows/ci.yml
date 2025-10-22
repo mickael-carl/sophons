@@ -34,3 +34,16 @@ jobs:
         run: make docker-testing
       - name: Conformance tests
         run: ./run-tests.sh
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - name: Build docs
+        run: make docs
+      - name: Check diff
+        run: git diff --quiet
+

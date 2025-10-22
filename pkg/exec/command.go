@@ -10,15 +10,19 @@ import (
 	"strings"
 )
 
+//	@meta {
+//	  "deviations": []
+//	}
 type Command struct {
-	Cmd                jinjaString
-	Argv               []jinjaString
-	Creates            jinjaString
-	Removes            jinjaString
-	Chdir              jinjaString
-	ExpandArgumentVars bool `yaml:"expand_argument_vars"`
-	Stdin              jinjaString
-	StdinAddNewline    *bool `yaml:"stdin_add_newline"`
+	Cmd                jinjaString   `sophons:"implemented"`
+	Argv               []jinjaString `sophons:"implemented"`
+	Creates            jinjaString   `sophons:"implemented"`
+	Removes            jinjaString   `sophons:"implemented"`
+	Chdir              jinjaString   `sophons:"implemented"`
+	ExpandArgumentVars bool          `yaml:"expand_argument_vars" sophons:"implemented"`
+	Stdin              jinjaString   `sophons:"implemented"`
+	StdinAddNewline    *bool         `yaml:"stdin_add_newline" sophons:"implemented"`
+	StripEmptyEnds     *bool         `yaml:"strip_empty_ends"`
 }
 
 func init() {
