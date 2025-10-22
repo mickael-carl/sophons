@@ -23,17 +23,34 @@ const (
 	FileTouch     FileState = "touch"
 )
 
+//	@meta{
+//	  "deviations": [
+//	    "`state=hard` is not implemented."
+//	  ]
+//	}
 type File struct {
 	CommonTask
 
-	Path    jinjaString
-	Follow  *bool
-	Group   jinjaString
-	Mode    jinjaString
-	Owner   jinjaString
-	Recurse bool
-	Src     jinjaString
-	State   FileState
+	Path    jinjaString `sophons:"implemented"`
+	Follow  *bool       `sophons:"implemented"`
+	Group   jinjaString `sophons:"implemented"`
+	Mode    jinjaString `sophons:"implemented"`
+	Owner   jinjaString `sophons:"implemented"`
+	Recurse bool        `sophons:"implemented"`
+	Src     jinjaString `sophons:"implemented"`
+	State   FileState   `sophons:"implemented"`
+
+	AccessTime             jinjaString `yaml:"access_time"`
+	AccessTimeFormat       jinjaString `yaml:"access_time_format"`
+	Attributes             jinjaString
+	Force                  bool
+	ModificationTime       jinjaString `yaml:"modification_time"`
+	ModificationTimeFormat jinjaString `yaml:"modification_time_format"`
+	Selevel                jinjaString
+	Serole                 jinjaString
+	Setype                 jinjaString
+	Seuser                 jinjaString
+	UnsafeWrites           bool `yaml:"unsafe_writes"`
 }
 
 func init() {

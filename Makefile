@@ -4,11 +4,12 @@ BINS = \
 	bin/executer-linux-arm64 \
 	bin/executer-linux-x86_64 \
 	bin/dialer \
-	bin/tardiff
+	bin/tardiff \
+	bin/docgen
 
 SRCS := $(shell find cmd pkg -name '*.go')
 
-.PHONY: clean docker-testing
+.PHONY: clean docker-testing docs
 
 all: $(BINS)
 
@@ -30,9 +31,14 @@ bin/dialer: $(SRCS)
 bin/tardiff: $(SRCS)
 	go build -o $@ ./cmd/tardiff
 
+bin/docgen: $(SRCS)
+	go build -o $@ ./cmd/docgen
+
 clean:
 	-rm -f $(BINS)
 
 docker-testing: Dockerfile.testing
 	docker build . -f Dockerfile.testing -t sophons-testing:latest
 
+docs: $(SRCS) bin/docgen
+	./bin/docgen pkg/exec docs/builtins
