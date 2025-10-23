@@ -51,6 +51,81 @@ func goFilesInDir(dir string) ([]string, error) {
 	})
 }
 
+func fileNodeToStructDoc(fileNode *ast.File, path string) (*structDoc, error) {
+	// We only care about top-level declarations, since that's where our
+	// structs are.
+	for _, decl := range fileNode.Decls {
+		// Structs are generic declarations
+		genDecl, ok := decl.(*ast.GenDecl)
+		// Exclude anything that's not a generic declaration or a type
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+
+		if genDecl.Doc == nil {
+			continue
+		}
+
+		m := metaRe.FindStringSubmatch(genDecl.Doc.Text())
+		if len(m) < 1 {
+			continue
+		}
+
+		var meta docMeta
+		if err := json.Unmarshal([]byte(m[1]), &meta); err != nil {
+			log.Printf("failed to parse meta: %v", err)
+			continue
+
+		}
+		sdoc := structDoc{
+			Meta:     &meta,
+			Filename: filepath.Base(path),
+			Filepath: path,
+		}
+
+		for _, spec := range genDecl.Specs {
+			// We're looking only for struct type specifications,
+			// everything else we can ignore.
+			typeSpec, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+
+			structType, ok := typeSpec.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+
+			sdoc.Name = strings.ToLower(typeSpec.Name.Name)
+
+			params := map[string]bool{}
+			for _, field := range structType.Fields.List {
+				if len(field.Names) == 0 {
+					continue
+				}
+				name := strings.ToLower(field.Names[0].Name)
+				if field.Tag != nil {
+					tags := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+
+					yamlName, ok := tags.Lookup("yaml")
+					if ok {
+						name = yamlName
+					}
+
+					sophonsTag := tags.Get("sophons")
+					params[name] = (sophonsTag == "implemented")
+				} else {
+					params[name] = false
+				}
+			}
+
+			sdoc.Parameters = params
+			return &sdoc, nil
+		}
+	}
+	return nil, nil
+}
+
 func extractStructDocs(dir string) ([]structDoc, error) {
 	var structs []structDoc
 	files, err := goFilesInDir(dir)
@@ -66,76 +141,13 @@ func extractStructDocs(dir string) ([]structDoc, error) {
 			return []structDoc{}, err
 		}
 
-		// We only care about top-level declarations, since that's where our
-		// structs are.
-		for _, decl := range fileNode.Decls {
-			// Structs are generic declarations
-			genDecl, ok := decl.(*ast.GenDecl)
-			// Exclude anything that's not a generic declaration or a type
-			if !ok || genDecl.Tok != token.TYPE {
-				continue
-			}
+		sdoc, err := fileNodeToStructDoc(fileNode, file)
+		if err != nil {
+			return []structDoc{}, err
+		}
 
-			if genDecl.Doc == nil {
-				continue
-			}
-
-			m := metaRe.FindStringSubmatch(genDecl.Doc.Text())
-			if len(m) < 1 {
-				continue
-			}
-
-			var meta docMeta
-			if err := json.Unmarshal([]byte(m[1]), &meta); err != nil {
-				log.Printf("failed to parse meta: %v", err)
-				continue
-
-			}
-			sdoc := structDoc{
-				Meta:     &meta,
-				Filename: filepath.Base(file),
-				Filepath: file,
-			}
-
-			for _, spec := range genDecl.Specs {
-				// We're looking only for struct type specifications,
-				// everything else we can ignore.
-				typeSpec, ok := spec.(*ast.TypeSpec)
-				if !ok {
-					continue
-				}
-
-				structType, ok := typeSpec.Type.(*ast.StructType)
-				if !ok {
-					continue
-				}
-
-				sdoc.Name = strings.ToLower(typeSpec.Name.Name)
-
-				params := map[string]bool{}
-				for _, field := range structType.Fields.List {
-					if len(field.Names) == 0 {
-						continue
-					}
-					name := strings.ToLower(field.Names[0].Name)
-					if field.Tag != nil {
-						tags := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
-
-						yamlName, ok := tags.Lookup("yaml")
-						if ok {
-							name = yamlName
-						}
-
-						sophonsTag := tags.Get("sophons")
-						params[name] = (sophonsTag == "implemented")
-					} else {
-						params[name] = false
-					}
-				}
-
-				sdoc.Parameters = params
-				structs = append(structs, sdoc)
-			}
+		if sdoc != nil {
+			structs = append(structs, *sdoc)
 		}
 	}
 	return structs, nil
