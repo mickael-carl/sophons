@@ -1,0 +1,14 @@
+- hosts: all
+  tasks:
+    - ansible.builtin.shell:
+        argv:
+          - "touch"
+          - "/foo"
+    - ansible.builtin.shell:
+        cmd: "cp /foo $HOME/bar"
+    - shell:
+        cmd: "touch /foo"
+        creates: "/foo"
+    - ansible.builtin.shell:
+        cmd: "echo $RANDOM"
+        executable: /bin/bash
