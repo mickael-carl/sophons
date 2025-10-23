@@ -2,12 +2,10 @@ package exec
 
 import "testing"
 
-func TestCommandValidateMissingCommand(t *testing.T) {
-	c := Command{
-		Chdir: "/tmp",
-	}
+var pFalse = false
 
-	err := c.Validate()
+func TestValidateCmdMissingCommand(t *testing.T) {
+	err := validateCmd([]jinjaString{}, "", "", &pFalse)
 	if err == nil {
 		t.Error("a command with cmd or argv set is not valid")
 	}
@@ -17,16 +15,17 @@ func TestCommandValidateMissingCommand(t *testing.T) {
 	}
 }
 
-func TestCommandValidateConflictingParameters(t *testing.T) {
-	c := Command{
-		Cmd: "ls -l",
-		Argv: []jinjaString{
+func TestValidateCmdConflictingParameters(t *testing.T) {
+	err := validateCmd(
+		[]jinjaString{
 			"ls",
 			"-l",
 		},
-	}
+		"ls -l",
+		"",
+		&pFalse,
+	)
 
-	err := c.Validate()
 	if err == nil {
 		t.Error("a command with both cmd and argv set is not valid")
 	}
@@ -36,25 +35,26 @@ func TestCommandValidateConflictingParameters(t *testing.T) {
 	}
 }
 
-func TestCommandValidate(t *testing.T) {
-	c := Command{
-		Cmd:   "ls -l",
-		Chdir: "/tmp",
-	}
-
-	if err := c.Validate(); err != nil {
+func TestValidateCmd(t *testing.T) {
+	if err := validateCmd(
+		[]jinjaString{},
+		"ls -l",
+		"",
+		&pFalse,
+	); err != nil {
 		t.Error(err)
 	}
 }
 
-func TestCommandValidateStdinMissing(t *testing.T) {
+func TestValidateCmdStdinMissing(t *testing.T) {
 	pTrue := true
-	c := Command{
-		Cmd:             "cat",
-		StdinAddNewline: &pTrue,
-	}
 
-	err := c.Validate()
+	err := validateCmd(
+		[]jinjaString{},
+		"cat",
+		"",
+		&pTrue,
+	)
 	if err == nil {
 		t.Error("a command with stdin_add_newline and without stdin is not valid")
 	}
