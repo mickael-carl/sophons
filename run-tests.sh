@@ -16,7 +16,7 @@ touch "${KNOWN_HOSTS}"
 
 setup_known_hosts() {
     if ! grep -q "\[${HOST}\]:${PORT}" "${KNOWN_HOSTS}" 2>/dev/null; then
-        ssh-keyscan -p "${PORT}" -H "${HOST}" | sed "s/^${HOST}/[${HOST}]:${PORT}/" >> "${KNOWN_HOSTS}"
+        ssh-keyscan -p "${PORT}" -H "${HOST}" | sed "s/^${HOST}/[${HOST}]:${PORT}/" >> "${KNOWN_HOSTS}" 2>/dev/null
     fi
 }
 
