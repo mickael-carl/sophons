@@ -49,3 +49,26 @@ func TestFileNodeToStructDoc(t *testing.T) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
+
+func TestFileNodeToStructDocMissingAnnotation(t *testing.T) {
+	fileContent := "package exec\n" +
+		"\n" +
+		"type someRandomType struct {}"
+
+	fset := token.NewFileSet()
+	fileNode, err := parser.ParseFile(fset, "pkg/exec/test.go", fileContent, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := fileNodeToStructDoc(fileNode, "pkg/exec/test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := (*structDoc)(nil)
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+}
