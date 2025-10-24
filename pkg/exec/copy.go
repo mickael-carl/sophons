@@ -11,13 +11,9 @@ import (
 )
 
 //	@meta {
-//	  "deviations": [
-//	    "`src` doesn't support absolute paths when `remote_src` is false."
-//	  ]
+//	  "deviations": ["`src` doesn't support absolute paths when `remote_src` is false."]
 //	}
 type Copy struct {
-	CommonTask
-
 	Content   jinjaString `sophons:"implemented"`
 	RemoteSrc bool        `yaml:"remote_src"`
 	Src       jinjaString `sophons:"implemented"`
@@ -43,8 +39,8 @@ type Copy struct {
 }
 
 func init() {
-	RegisterTaskType("copy", func() Task { return &Copy{} })
-	RegisterTaskType("ansible.builtin.copy", func() Task { return &Copy{} })
+	RegisterTaskType("copy", func() TaskContent { return &Copy{} })
+	RegisterTaskType("ansible.builtin.copy", func() TaskContent { return &Copy{} })
 }
 
 func copySingleFile(src, dst string) error {

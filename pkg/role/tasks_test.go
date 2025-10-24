@@ -28,8 +28,10 @@ func TestProcessTasks(t *testing.T) {
 	}
 
 	expected := []exec.Task{
-		&exec.Command{
-			Cmd: "echo 'hello world!'",
+		exec.Task{
+			Content: &exec.Command{
+				Cmd: "echo 'hello world!'",
+			},
 		},
 	}
 

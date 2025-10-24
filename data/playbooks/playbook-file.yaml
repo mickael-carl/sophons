@@ -1,6 +1,7 @@
 - hosts: all
   tasks:
-    - file:
+    - name: foo
+      file:
         path: /tmp/ansible/foo/bar
         state: directory
         recurse: true

@@ -59,9 +59,11 @@ fruit: "banana"
 			"answer": uint64(42),
 		},
 		Tasks: []exec.Task{
-			&exec.File{
-				Path:  "/foo",
-				State: exec.FileTouch,
+			exec.Task{
+				Content: &exec.File{
+					Path:  "/foo",
+					State: exec.FileTouch,
+				},
 			},
 		},
 	}
@@ -125,17 +127,23 @@ fruit: "banana"
 			"answer": uint64(42),
 		},
 		Tasks: []exec.Task{
-			&exec.File{
-				Path:  "/hello/world!",
-				State: exec.FileTouch,
+			exec.Task{
+				Content: &exec.File{
+					Path:  "/hello/world!",
+					State: exec.FileTouch,
+				},
 			},
-			&exec.File{
-				Path:  "/answer/42",
-				State: exec.FileTouch,
+			exec.Task{
+				Content: &exec.File{
+					Path:  "/answer/42",
+					State: exec.FileTouch,
+				},
 			},
-			&exec.File{
-				Path:  "/fruit/banana",
-				State: exec.FileTouch,
+			exec.Task{
+				Content: &exec.File{
+					Path:  "/fruit/banana",
+					State: exec.FileTouch,
+				},
 			},
 		},
 	}

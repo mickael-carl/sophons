@@ -57,42 +57,54 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		Play{
 			Hosts: "all",
 			Tasks: []exec.Task{
-				&exec.File{
-					Path:  "/foo",
-					State: exec.FileDirectory,
+				exec.Task{
+					Content: &exec.File{
+						Path:  "/foo",
+						State: exec.FileDirectory,
+					},
 				},
-				&exec.File{
-					Path:  "/foo/bar",
-					State: exec.FileFile,
+				exec.Task{
+					Content: &exec.File{
+						Path:  "/foo/bar",
+						State: exec.FileFile,
+					},
 				},
 			},
 		},
 		Play{
 			Hosts: "some-group",
 			Tasks: []exec.Task{
-				&exec.File{
-					Path:  "/foo/bar/baz",
-					State: exec.FileTouch,
+				exec.Task{
+					Content: &exec.File{
+						Path:  "/foo/bar/baz",
+						State: exec.FileTouch,
+					},
 				},
-				&exec.File{
-					Path:    "/foo/bar",
-					State:   exec.FileDirectory,
-					Recurse: true,
-					Mode:    "384", // 0600
+				exec.Task{
+					Content: &exec.File{
+						Path:    "/foo/bar",
+						State:   exec.FileDirectory,
+						Recurse: true,
+						Mode:    "384", // 0600
+					},
 				},
 			},
 		},
 		Play{
 			Hosts: "jinja-test",
 			Tasks: []exec.Task{
-				&exec.File{
-					Path:  "/banana",
-					State: exec.FileTouch,
+				exec.Task{
+					Content: &exec.File{
+						Path:  "/banana",
+						State: exec.FileTouch,
+					},
 				},
-				&exec.Command{
-					Cmd:             "dd of=/tmp/hello",
-					Stdin:           "hello world!",
-					StdinAddNewline: &pTrue,
+				exec.Task{
+					Content: &exec.Command{
+						Cmd:             "dd of=/tmp/hello",
+						Stdin:           "hello world!",
+						StdinAddNewline: &pTrue,
+					},
 				},
 			},
 		},

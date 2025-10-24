@@ -22,8 +22,8 @@ type Shell struct {
 }
 
 func init() {
-	RegisterTaskType("shell", func() Task { return &Shell{} })
-	RegisterTaskType("ansible.builtin.shell", func() Task { return &Shell{} })
+	RegisterTaskType("shell", func() TaskContent { return &Shell{} })
+	RegisterTaskType("ansible.builtin.shell", func() TaskContent { return &Shell{} })
 }
 
 func (s *Shell) Validate() error {

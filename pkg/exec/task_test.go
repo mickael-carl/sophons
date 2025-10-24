@@ -15,10 +15,12 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 	})
 
 	b := []byte(`
-- ansible.builtin.file:
+- name: "testing"
+  ansible.builtin.file:
     path: "{{ foo }}"
     state: "touch"
-- ansible.builtin.command:
+- someunknownfield: ignored
+  ansible.builtin.command:
     cmd: "echo hello"
     stdin: "{{ input }}"
 `)
@@ -29,13 +31,18 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 	}
 
 	expected := []Task{
-		&File{
-			Path:  "bar",
-			State: FileTouch,
+		Task{
+			Name: "testing",
+			Content: &File{
+				Path:  "bar",
+				State: FileTouch,
+			},
 		},
-		&Command{
-			Cmd:   "echo hello",
-			Stdin: "world",
+		Task{
+			Content: &Command{
+				Cmd:   "echo hello",
+				Stdin: "world",
+			},
 		},
 	}
 
