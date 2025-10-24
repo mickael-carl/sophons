@@ -24,8 +24,8 @@ type Command struct {
 }
 
 func init() {
-	RegisterTaskType("command", func() Task { return &Command{} })
-	RegisterTaskType("ansible.builtin.command", func() Task { return &Command{} })
+	RegisterTaskType("command", func() TaskContent { return &Command{} })
+	RegisterTaskType("ansible.builtin.command", func() TaskContent { return &Command{} })
 }
 
 func (c *Command) Validate() error {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
@@ -13,18 +14,40 @@ import (
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
-type CommonTask struct {
-	Name jinjaString
+type Task struct {
+	Name    string
+	Content TaskContent
 }
 
-type Task interface {
+func (t Task) Validate() error {
+	return t.Content.Validate()
+}
+
+func (t Task) Apply(parentPath string) error {
+	return t.Content.Apply(parentPath)
+}
+
+func (t Task) String() string {
+	if t.Content == nil {
+		return fmt.Sprintf("Task{Name:%q, Content:nil}", t.Name)
+	}
+
+	v := reflect.ValueOf(t.Content)
+	if v.Kind() == reflect.Ptr && !v.IsNil() {
+		v = v.Elem()
+	}
+
+	return fmt.Sprintf("Task{Name:%q, Content:%#v}", t.Name, v.Interface())
+}
+
+type TaskContent interface {
 	Validate() error
 	Apply(string) error
 }
 
-var taskRegistry = map[string]func() Task{}
+var taskRegistry = map[string]func() TaskContent{}
 
-func RegisterTaskType(name string, factory func() Task) {
+func RegisterTaskType(name string, factory func() TaskContent) {
 	taskRegistry[name] = factory
 }
 
@@ -41,20 +64,31 @@ func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
 
 	var tasksOut []Task
 	for _, task := range raw {
+		var name string
+		if n, ok := task["name"]; ok {
+			var buf bytes.Buffer
+			if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, n, &name); err != nil {
+				return err
+			}
+		}
+		t := Task{
+			Name: name,
+		}
 		for taskType, node := range task {
 			factory, ok := taskRegistry[taskType]
 			if !ok {
-				return fmt.Errorf("unsupported task type: %s", taskType)
+				continue
 			}
 
-			t := factory()
+			f := factory()
 
 			var buf bytes.Buffer
-			if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, node, t); err != nil {
+			if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, node, f); err != nil {
 				return err
 			}
-			tasksOut = append(tasksOut, t)
+			t.Content = f
 		}
+		tasksOut = append(tasksOut, t)
 	}
 
 	*t = tasksOut

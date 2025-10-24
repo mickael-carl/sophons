@@ -29,8 +29,6 @@ const (
 //	  ]
 //	}
 type File struct {
-	CommonTask
-
 	Path    jinjaString `sophons:"implemented"`
 	Follow  *bool       `sophons:"implemented"`
 	Group   jinjaString `sophons:"implemented"`
@@ -54,8 +52,8 @@ type File struct {
 }
 
 func init() {
-	RegisterTaskType("file", func() Task { return &File{} })
-	RegisterTaskType("ansible.builtin.file", func() Task { return &File{} })
+	RegisterTaskType("file", func() TaskContent { return &File{} })
+	RegisterTaskType("ansible.builtin.file", func() TaskContent { return &File{} })
 }
 
 func getUid(uidOrUserName string) (int, error) {
