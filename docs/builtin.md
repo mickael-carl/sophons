@@ -2,11 +2,12 @@
 
 ## Modules
 
-| Module Name            | Implemented | Compatible | Test Playbook |
-|------------------------|-------------|---------------|------------|
-| [command](builtins/command.md) | :white_check_mark: | :x: | [playbook-command.yaml](../data/playbooks/playbook-command.yaml) |
-| [copy](builtins/copy.md) | :white_check_mark: | :x: | [playbook-copy.yaml](../data/playbooks/playbook-copy.yaml) |
-| [file](builtins/file.md) | :white_check_mark: | :x: | [playbook-file.yaml](../data/playbooks/playbook-file.yaml) |
+| Module Name                    | Implemented        | Compatible         | Test Playbook |
+|--------------------------------|--------------------|--------------------|---------------|
+| [command](builtins/command.md) | :white_check_mark: | :x:                | [playbook-command.yaml](../data/playbooks/playbook-command.yaml) |
+| [copy](builtins/copy.md)       | :white_check_mark: | :x:                | [playbook-copy.yaml](../data/playbooks/playbook-copy.yaml) |
+| [file](builtins/file.md)       | :white_check_mark: | :x:                | [playbook-file.yaml](../data/playbooks/playbook-file.yaml) |
+| [shell](builtins/shell.md)     | :white_check_mark: | :white_check_mark: | [playbook-shell.yaml](../data/playbooks/playbook-shell.yaml) |
 | add_host               | :x: | :x: | |
 | apt                    | :x: | :x: | |
 | apt_key                | :x: | :x: | |
@@ -59,7 +60,6 @@
 | set_fact               | :x: | :x: | |
 | set_stats              | :x: | :x: | |
 | setup                  | :x: | :x: | |
-| shell                  | :x: | :x: | |
 | slurp                  | :x: | :x: | |
 | stat                   | :x: | :x: | |
 | subversion             | :x: | :x: | |
@@ -74,7 +74,6 @@
 | wait_for               | :x: | :x: | |
 | wait_for_connection    | :x: | :x: | |
 | yum_repository         | :x: | :x: | |
-
 
 ## Others (strategy, inventory, connection, ..., plugins)
 
