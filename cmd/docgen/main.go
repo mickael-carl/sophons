@@ -30,6 +30,18 @@ type structDoc struct {
 
 var metaRe = regexp.MustCompile(`@meta\s*(\{[\s\S]*\})`)
 
+func toSnakeCase(s string) string {
+	// Insert an underscore before all caps that are followed by lowercase letters
+	re1 := regexp.MustCompile(`([a-z0-9])([A-Z])`)
+	s = re1.ReplaceAllString(s, "${1}_${2}")
+
+	// Handle cases like "HTTPServer" → "http_server"
+	re2 := regexp.MustCompile(`([A-Z])([A-Z][a-z])`)
+	s = re2.ReplaceAllString(s, "${1}_${2}")
+
+	return strings.ToLower(s)
+}
+
 func goFilesInDir(dir string) ([]string, error) {
 	var files []string
 	return files, filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
@@ -96,7 +108,7 @@ func fileNodeToStructDoc(fileNode *ast.File, path string) (*structDoc, error) {
 				continue
 			}
 
-			sdoc.Name = strings.ToLower(typeSpec.Name.Name)
+			sdoc.Name = toSnakeCase(typeSpec.Name.Name)
 
 			params := map[string]bool{}
 			for _, field := range structType.Fields.List {
