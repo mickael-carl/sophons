@@ -138,7 +138,7 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 		// TODO: don't crash mid-run, throw a warning.
 		return "", fmt.Errorf("failed to create temporary directory on target host: %w", err)
 	}
-	//defer d.sftpClient.RemoveAll(dirPath) //nolint:errcheck
+	defer d.sftpClient.RemoveAll(dirPath) //nolint:errcheck
 
 	if err := d.copyExecuterBinary(binDir, dirPath); err != nil {
 		return "", err

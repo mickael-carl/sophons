@@ -23,8 +23,8 @@ func (t Task) Validate() error {
 	return t.Content.Validate()
 }
 
-func (t Task) Apply(parentPath string) error {
-	return t.Content.Apply(parentPath)
+func (t Task) Apply(parentPath string, isRole bool) error {
+	return t.Content.Apply(parentPath, isRole)
 }
 
 func (t Task) String() string {
@@ -42,7 +42,7 @@ func (t Task) String() string {
 
 type TaskContent interface {
 	Validate() error
-	Apply(string) error
+	Apply(string, bool) error
 }
 
 var taskRegistry = map[string]func() TaskContent{}

@@ -151,7 +151,7 @@ func (c *Copy) copyFile(actualSrc string) error {
 	return copySingleFile(actualSrc, string(c.Dest))
 }
 
-func (c *Copy) Apply(parentPath string) error {
+func (c *Copy) Apply(parentPath string, _ bool) error {
 	if c.Content != "" {
 		return c.copyContent()
 	}

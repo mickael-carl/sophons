@@ -20,7 +20,7 @@ setup_known_hosts() {
     fi
 }
 
-for playbook in data/playbooks/*.yaml; do
+for playbook in data/playbooks/playbook*.yaml; do
     echo "running ${playbook}"
 
     sha=$(docker run -d -p "127.0.0.1:${PORT}:22" sophons-testing:latest)

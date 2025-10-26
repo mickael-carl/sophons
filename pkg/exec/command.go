@@ -32,7 +32,7 @@ func (c *Command) Validate() error {
 	return validateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
 }
 
-func (c *Command) Apply(_ string) error {
+func (c *Command) Apply(_ string, _ bool) error {
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
 		if string(c.Cmd) != "" {
