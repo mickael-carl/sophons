@@ -72,3 +72,19 @@ func TestFileNodeToStructDocMissingAnnotation(t *testing.T) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
+
+func TestToSnakeCase(t *testing.T) {
+	got := toSnakeCase("IncludeTasks")
+	expected := "include_tasks"
+
+	if got != expected {
+		t.Errorf("got %s but expected %s", got, expected)
+	}
+
+	got = toSnakeCase("SomeHTTPString")
+	expected = "some_http_string"
+
+	if got != expected {
+		t.Errorf("got %s but expected %s", got, expected)
+	}
+}

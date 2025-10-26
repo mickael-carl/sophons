@@ -2,12 +2,13 @@
 
 ## Modules
 
-| Module Name                    | Implemented        | Compatible         | Test Playbook |
-|--------------------------------|--------------------|--------------------|---------------|
-| [command](builtins/command.md) | :white_check_mark: | :x:                | [playbook-command.yaml](../data/playbooks/playbook-command.yaml) |
-| [copy](builtins/copy.md)       | :white_check_mark: | :x:                | [playbook-copy.yaml](../data/playbooks/playbook-copy.yaml) |
-| [file](builtins/file.md)       | :white_check_mark: | :x:                | [playbook-file.yaml](../data/playbooks/playbook-file.yaml) |
-| [shell](builtins/shell.md)     | :white_check_mark: | :white_check_mark: | [playbook-shell.yaml](../data/playbooks/playbook-shell.yaml) |
+| Module Name                                | Implemented        | Compatible         | Test Playbook |
+|--------------------------------------------|--------------------|--------------------|---------------|
+| [command](builtins/command.md)             | :white_check_mark: | :x:                | [playbook-command.yaml](../data/playbooks/playbook-command.yaml) |
+| [copy](builtins/copy.md)                   | :white_check_mark: | :x:                | [playbook-copy.yaml](../data/playbooks/playbook-copy.yaml) |
+| [file](builtins/file.md)                   | :white_check_mark: | :x:                | [playbook-file.yaml](../data/playbooks/playbook-file.yaml) |
+| [include_tasks](builtins/include_tasks.md) | :white_check_mark: | :white_check_mark: | [playbook-include-tasks](../data/playbooks/playbook-include-tasks.yaml) |
+| [shell](builtins/shell.md)                 | :white_check_mark: | :white_check_mark: | [playbook-shell.yaml](../data/playbooks/playbook-shell.yaml) |
 | add_host               | :x: | :x: | |
 | apt                    | :x: | :x: | |
 | apt_key                | :x: | :x: | |
@@ -38,7 +39,6 @@
 | import_role            | :x: | :x: | |
 | import_tasks           | :x: | :x: | |
 | include_role           | :x: | :x: | |
-| include_tasks          | :x: | :x: | |
 | include_vars           | :x: | :x: | |
 | iptables               | :x: | :x: | |
 | known_hosts            | :x: | :x: | |

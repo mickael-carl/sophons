@@ -153,7 +153,7 @@ func (f *File) Validate() error {
 	return nil
 }
 
-func (f *File) Apply(_ string) error {
+func (f *File) Apply(_ string, _ bool) error {
 	var follow bool
 	// The default for `follow` is true.
 	if f.Follow == nil {

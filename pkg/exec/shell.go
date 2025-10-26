@@ -30,7 +30,7 @@ func (s *Shell) Validate() error {
 	return validateCmd(s.Argv, s.Cmd, s.Stdin, s.StdinAddNewline)
 }
 
-func (s *Shell) Apply(_ string) error {
+func (s *Shell) Apply(_ string, _ bool) error {
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
 		exe := "/bin/sh"
