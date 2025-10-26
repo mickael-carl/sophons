@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -19,24 +18,66 @@ import (
 )
 
 var (
-	inventoryPath = flag.String("i", "", "path to inventory file")
-	node          = flag.String("n", "localhost", "name of the node to run the playbook against")
+	inventoryPath    = flag.String("i", "", "path to inventory file")
+	dataArchive      = flag.String("d", "", "path to data archive")
+	playbooksDirName = flag.String("p", "", "name of the directory containing playbooks")
+	node             = flag.String("n", "localhost", "name of the node to run the playbook against")
 )
 
-func untarIfExists(playbookDir, name string) error {
-	archivePath := filepath.Join(playbookDir, fmt.Sprintf("%s.tar.gz", name))
-
-	_, err := os.Stat(archivePath)
-	if err == nil {
-		if err := util.UntarRoles(archivePath, playbookDir); err != nil {
-			return fmt.Errorf("failed to unpack %s.tar.gz: %w", name, err)
-		}
-	} else {
-		if !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("failed to stat %s.tar.gz: %w", name, err)
-		}
+func playbookApply(ctx context.Context, playbookPath, node string, groups map[string]struct{}, roles map[string]role.Role, rolesDir string) error {
+	playbookData, err := os.ReadFile(playbookPath)
+	if err != nil {
+		return fmt.Errorf("failed to read playbook from %s: %w", playbookPath, err)
 	}
 
+	var playbook playbook.Playbook
+	if err := yaml.UnmarshalContext(ctx, playbookData, &playbook); err != nil {
+		return fmt.Errorf("failed to unmarshal playbook from %s: %w", playbookPath, err)
+	}
+
+	for _, play := range playbook {
+		if _, ok := groups[play.Hosts]; ok || play.Hosts == node {
+			// Ansible executes roles first, then tasks. See
+			// https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#using-roles-at-the-play-level.
+			for _, roleName := range play.Roles {
+				// TODO: debug.
+				log.Printf("executing %s", roleName)
+
+				role, ok := roles[roleName]
+				if !ok {
+					log.Fatalf("no such role: %s", roleName)
+				}
+
+				for _, task := range role.Tasks {
+					// TODO: remove the duplication with the play level tasks
+					// execution: add a Apply() to Play and Role and call that.
+
+					// TODO: better formatting or maybe make that a new method.
+					log.Printf("%+v", task)
+
+					if err := task.Validate(); err != nil {
+						return fmt.Errorf("validation failed: %w", err)
+					}
+
+					if err := task.Apply(filepath.Join(rolesDir, roleName), true); err != nil {
+						return fmt.Errorf("failed to apply task: %w", err)
+					}
+				}
+			}
+			for _, task := range play.Tasks {
+				// TODO: better formatting or maybe make that a new method.
+				log.Printf("%+v", task)
+
+				if err := task.Validate(); err != nil {
+					return fmt.Errorf("validation failed: %w", err)
+				}
+
+				if err := task.Apply(filepath.Dir(playbookPath), false); err != nil {
+					return fmt.Errorf("failed to apply task: %w", err)
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -45,6 +86,10 @@ func main() {
 
 	if len(flag.Args()) != 1 {
 		log.Fatal("usage: executer spec.yaml")
+	}
+
+	if *dataArchive != "" && *playbooksDirName == "" || *dataArchive == "" && *playbooksDirName != "" {
+		log.Fatal("when either -d or -p is set, both flags must be set")
 	}
 
 	groups := map[string]struct{}{"all": struct{}{}}
@@ -68,11 +113,11 @@ func main() {
 	ctx := variables.NewContext(context.Background(), vars)
 
 	playbookDir := filepath.Dir(flag.Args()[0])
-
-	for _, dir := range []string{"roles", "files", "templates"} {
-		if err := untarIfExists(playbookDir, dir); err != nil {
-			log.Fatalf("failed to untar archive for %s: %v", dir, err)
+	if *dataArchive != "" {
+		if err := util.Untar(*dataArchive, filepath.Dir(*dataArchive)); err != nil {
+			log.Fatalf("failed to untar archive at %s: %v", *dataArchive, err)
 		}
+		playbookDir = filepath.Join(filepath.Dir(*dataArchive), *playbooksDirName)
 	}
 
 	rolesDir := filepath.Join(playbookDir, "roles")
@@ -83,57 +128,7 @@ func main() {
 	}
 
 	playbookPath := flag.Args()[0]
-	playbookData, err := os.ReadFile(playbookPath)
-	if err != nil {
-		log.Fatalf("failed to read playbook from %s: %v", playbookPath, err)
-	}
-
-	var playbook playbook.Playbook
-	if err := yaml.UnmarshalContext(ctx, playbookData, &playbook); err != nil {
-		log.Fatalf("failed to unmarshal playbook from %s: %v", playbookPath, err)
-	}
-
-	for _, play := range playbook {
-		if _, ok := groups[play.Hosts]; ok || play.Hosts == *node {
-			// Ansible executes roles first, then tasks. See
-			// https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#using-roles-at-the-play-level.
-			for _, roleName := range play.Roles {
-				// TODO: debug.
-				log.Printf("executing %s", roleName)
-
-				role, ok := roles[roleName]
-				if !ok {
-					log.Fatalf("no such role: %s", roleName)
-				}
-
-				for _, task := range role.Tasks {
-					// TODO: remove the duplication with the play level tasks
-					// execution: add a Apply() to Play and Role and call that.
-
-					// TODO: better formatting or maybe make that a new method.
-					log.Printf("%+v", task)
-
-					if err := task.Validate(); err != nil {
-						log.Fatalf("validation failed: %v", err)
-					}
-
-					if err := task.Apply(filepath.Join(rolesDir, roleName)); err != nil {
-						log.Fatalf("failed to apply task: %v", err)
-					}
-				}
-			}
-			for _, task := range play.Tasks {
-				// TODO: better formatting or maybe make that a new method.
-				log.Printf("%+v", task)
-
-				if err := task.Validate(); err != nil {
-					log.Fatalf("validation failed: %v", err)
-				}
-
-				if err := task.Apply(playbookDir); err != nil {
-					log.Fatalf("failed to apply task: %v", err)
-				}
-			}
-		}
+	if err := playbookApply(ctx, playbookPath, *node, groups, roles, rolesDir); err != nil {
+		log.Fatal(err)
 	}
 }
