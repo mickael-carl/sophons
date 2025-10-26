@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 )
 
-func TarRoles(rolesPath string) (string, error) {
-	f, err := os.CreateTemp("", "sophons-roles-*.tar.gz")
+func Tar(src string) (string, error) {
+	f, err := os.CreateTemp("", "sophons-*.tar.gz")
 	if err != nil {
 		return "", fmt.Errorf("could not create target file: %w", err)
 	}
@@ -22,12 +22,12 @@ func TarRoles(rolesPath string) (string, error) {
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 
-	err = filepath.Walk(rolesPath, func(file string, fi os.FileInfo, err error) error {
+	err = filepath.Walk(src, func(file string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		headerName, err := filepath.Rel(filepath.Dir(rolesPath), file)
+		headerName, err := filepath.Rel(filepath.Dir(src), file)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func TarRoles(rolesPath string) (string, error) {
 	return f.Name(), err
 }
 
-func UntarRoles(src, dest string) error {
+func Untar(src, dest string) error {
 	f, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("could not open source file: %w", err)

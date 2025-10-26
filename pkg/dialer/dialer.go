@@ -132,34 +132,13 @@ func (d *dialer) copyExecuterBinary(localDir, remoteDir string) error {
 	return d.copyFile(path.Join(localDir, binName), path.Join(remoteDir, "executer"), true)
 }
 
-func (d *dialer) tarAndCopyIfExists(name, srcDir, dstDir string) error {
-	dir := filepath.Join(srcDir, name)
-	_, err := os.Stat(dir)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-	if err == nil {
-		archive, err := util.TarRoles(dir)
-		if err != nil {
-			return err
-		}
-		defer os.Remove(archive)
-
-		if err := d.copyFile(archive, path.Join(dstDir, fmt.Sprintf("%s.tar.gz", name)), false); err != nil {
-			return fmt.Errorf("failed to copy roles archive to target host: %w", err)
-		}
-		return nil
-	}
-	return nil
-}
-
 func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, error) {
 	dirPath := path.Join("/tmp", tempDirName())
 	if err := d.sftpClient.Mkdir(dirPath); err != nil {
 		// TODO: don't crash mid-run, throw a warning.
 		return "", fmt.Errorf("failed to create temporary directory on target host: %w", err)
 	}
-	defer d.sftpClient.RemoveAll(dirPath) //nolint:errcheck
+	//defer d.sftpClient.RemoveAll(dirPath) //nolint:errcheck
 
 	if err := d.copyExecuterBinary(binDir, dirPath); err != nil {
 		return "", err
@@ -169,15 +148,14 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 		return "", fmt.Errorf("failed to copy inventory to target host: %w", err)
 	}
 
-	if err := d.copyFile(playbook, path.Join(dirPath, "playbook.yaml"), false); err != nil {
-		return "", fmt.Errorf("failed to copy playbook to target host: %w", err)
+	// TODO: ansible looks in other places for roles.
+	archivePath, err := util.Tar(filepath.Dir(playbook))
+	if err != nil {
+		return "", fmt.Errorf("failed to archive and copy %s to target host: %w", filepath.Dir(playbook), err)
 	}
 
-	// TODO: ansible looks in other places for roles.
-	for _, dir := range []string{"roles", "files", "templates"} {
-		if err := d.tarAndCopyIfExists(dir, filepath.Dir(playbook), dirPath); err != nil {
-			return "", fmt.Errorf("failed to archive and copy %s to target host: %w", dir, err)
-		}
+	if err := d.copyFile(archivePath, path.Join(dirPath, "data.tar.gz"), false); err != nil {
+		return "", fmt.Errorf("failed to copy data from %s to target host: %w", archivePath, err)
 	}
 
 	session, err := d.sshClient.NewSession()
@@ -186,10 +164,14 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 	}
 	defer session.Close()
 
+	playbookFileName := filepath.Base(playbook)
+	playbookDirName := filepath.Base(filepath.Dir(playbook))
 	// TODO: strings.Builder
 	cmdLine := path.Join(dirPath, "executer")
 	cmdLine += fmt.Sprintf(" -i %s", path.Join(dirPath, "inventory.yaml"))
-	cmdLine += fmt.Sprintf(" -n %s %s", host, path.Join(dirPath, "playbook.yaml"))
+	cmdLine += fmt.Sprintf(" -d %s", path.Join(dirPath, "data.tar.gz"))
+	cmdLine += fmt.Sprintf(" -p %s", playbookDirName)
+	cmdLine += fmt.Sprintf(" -n %s %s", host, path.Join(dirPath, playbookDirName, playbookFileName))
 
 	return d.runCommand(cmdLine)
 }
