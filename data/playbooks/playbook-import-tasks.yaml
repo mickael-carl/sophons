@@ -1,0 +1,6 @@
+- hosts: all
+  roles:
+    - import_tasks
+  tasks:
+    - import_tasks:
+        file: tasks-import-tasks.yaml
