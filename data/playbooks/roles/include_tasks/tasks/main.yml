@@ -1,2 +1,4 @@
 - ansible.builtin.include_tasks:
     file: "file.yaml"
+- ansible.builtin.include_tasks:
+    file: "{{ task_file }}"

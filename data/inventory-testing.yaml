@@ -5,3 +5,4 @@ all:
    vars:
       "filepath": "/banana"
       "someothervar": "inventory"
+      "includetaskspath": "tasks-include-tasks-var.yaml"

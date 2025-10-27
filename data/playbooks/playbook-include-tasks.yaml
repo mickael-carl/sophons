@@ -4,4 +4,5 @@
   tasks:
     - include_tasks:
         file: tasks-include-tasks.yaml
-# TODO: also test `file` with variables.
+    - include_tasks:
+        file: "{{ includetaskspath }}"
