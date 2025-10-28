@@ -2,7 +2,10 @@ module github.com/mickael-carl/sophons
 
 go 1.25.1
 
+replace github.com/arduino/go-apt-client => github.com/mickael-carl/go-apt-client v0.0.0-20250612150138-0d7233b455eb
+
 require (
+	github.com/arduino/go-apt-client v0.0.0-20250612150138-0d7233b455eb
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-cmp v0.7.0
 	github.com/nikolalohinski/gonja/v2 v2.4.1
