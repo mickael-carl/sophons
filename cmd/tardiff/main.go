@@ -37,6 +37,10 @@ func filterOut(name string) bool {
 		return true
 	}
 
+	if strings.HasPrefix(name, "var/cache") {
+		return true
+	}
+
 	return false
 }
 

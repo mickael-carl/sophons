@@ -1,0 +1,12 @@
+- hosts: all
+  tasks:
+    - ansible.builtin.apt:
+        name:
+          - "htop"
+          - "mysql-client"
+          - "postgresql-client"
+        update_cache: true
+    - apt:
+        name:
+          - "mysql-client"
+        state: "absent"
