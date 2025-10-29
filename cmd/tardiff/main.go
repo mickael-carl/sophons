@@ -25,23 +25,20 @@ type entry struct {
 }
 
 func filterOut(name string) bool {
-	if strings.HasPrefix(name, "var/log") {
-		return true
+	ignoredPrefixes := []string{
+		"tmp/sophons",
+		"var/cache",
+		"var/lib/apt/lists/",
+		"var/log",
 	}
 
-	if strings.Contains(name, ".ansible/") {
-		return true
+	for _, p := range ignoredPrefixes {
+		if strings.HasPrefix(name, p) {
+			return true
+		}
 	}
 
-	if strings.HasPrefix(name, "tmp/sophons") {
-		return true
-	}
-
-	if strings.HasPrefix(name, "var/cache") {
-		return true
-	}
-
-	return false
+	return strings.Contains(name, ".ansible/")
 }
 
 func tarToEntries(path string) (map[string]*entry, error) {

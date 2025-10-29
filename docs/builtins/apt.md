@@ -16,7 +16,7 @@
 | auto_install_module_deps |  :x:  |
 | autoclean |  :x:  |
 | autoremove |  :x:  |
-| cache_valid_time |  :x:  |
+| cache_valid_time |  :white_check_mark:  |
 | clean |  :x:  |
 | deb |  :x:  |
 | default_release |  :x:  |
@@ -30,15 +30,16 @@
 | only_upgrade |  :x:  |
 | policy_rc_d |  :x:  |
 | purge |  :x:  |
-| state |  :x:  |
+| state |  :white_check_mark:  |
 | update_cache |  :white_check_mark:  |
 | update_cache_retries |  :x:  |
 | update_cache_retry_max_delay |  :x:  |
-| upgrade |  :x:  |
+| upgrade |  :white_check_mark:  |
 
 ## Deviations
 
 * `state` only supports `present`, `latest` and `absent`
+* `upgrade` only supports `dist` and `yes`
 * aliases for `name` are not supported
 * version strings in package names are not supported
 * `name` needs to be a list (one element is ok), a single string is not supported

@@ -6,6 +6,7 @@
         name: ["libc-bin"]
         state: "latest"
         update_cache: true
+        cache_valid_time: 1
     - ansible.builtin.apt:
         name:
           - "htop"
@@ -16,3 +17,5 @@
         name:
           - "mysql-client"
         state: "absent"
+    - apt:
+        upgrade: "yes"
