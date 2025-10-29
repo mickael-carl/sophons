@@ -1,7 +1,10 @@
 package exec
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/arduino/go-apt-client"
 )
@@ -19,6 +22,7 @@ const (
 //	@meta{
 //	  "deviations": [
 //	    "`state` only supports `present`, `latest` and `absent`",
+//	    "`upgrade` only supports `dist` and `yes`",
 //	    "aliases for `name` are not supported",
 //	    "version strings in package names are not supported",
 //	    "`name` needs to be a list (one element is ok), a single string is not supported"
@@ -31,7 +35,7 @@ type Apt struct {
 	AutoInstallModuleDeps    *bool `yaml:"auto_install_module_deps"`
 	Autoclean                bool
 	Autoremove               bool
-	CacheValidTime           int64 `yaml:"cache_valid_time"`
+	CacheValidTime           int64 `yaml:"cache_valid_time" sophons:"implemented"`
 	Clean                    bool
 	Deb                      jinjaString
 	DefaultRelease           jinjaString `yaml:"default_release"`
@@ -45,11 +49,11 @@ type Apt struct {
 	OnlyUpgrade              bool          `yaml:"only_upgrade"`
 	PolicyRCD                int64         `yaml:"policy_rc_d"`
 	Purge                    bool
-	State                    jinjaString
-	UpdateCache              bool   `yaml:"update_cache" sophons:"implemented"`
-	UpdateCacheRetries       uint64 `yaml:"update_cache_retries"`
-	UpdateCacheRetryMaxDelay uint64 `yaml:"update_cache_retry_max_delay"`
-	Upgrade                  jinjaString
+	State                    jinjaString `sophons:"implemented"`
+	UpdateCache              bool        `yaml:"update_cache" sophons:"implemented"`
+	UpdateCacheRetries       uint64      `yaml:"update_cache_retries"`
+	UpdateCacheRetryMaxDelay uint64      `yaml:"update_cache_retry_max_delay"`
+	Upgrade                  jinjaString `sophons:"implemented"`
 }
 
 func init() {
@@ -68,9 +72,31 @@ func (a *Apt) Apply(_ string, _ bool) error {
 		actualState = AptPresent
 	}
 
-	if a.UpdateCache {
-		if _, err := apt.CheckForUpdates(); err != nil {
-			return fmt.Errorf("failed to update apt cache: %w", err)
+	cacheInfo, err := os.Stat("")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to check cache last refresh time: %w", err)
+	}
+
+	if err == nil {
+		if a.UpdateCache && time.Since(cacheInfo.ModTime()).Seconds() > float64(a.CacheValidTime) {
+			if _, err := apt.CheckForUpdates(); err != nil {
+				return fmt.Errorf("failed to update apt cache: %w", err)
+			}
+		}
+	}
+
+	if a.Upgrade != "" {
+		switch a.Upgrade {
+		case "yes":
+			if _, err := apt.UpgradeAll(); err != nil {
+				return fmt.Errorf("failed to upgrade: %w", err)
+			}
+		case "dist":
+			if _, err := apt.DistUpgrade(); err != nil {
+				return fmt.Errorf("failed to dist-upgrade: %w", err)
+			}
+		default:
+			return fmt.Errorf("unsupported value of upgrade: %s", a.Upgrade)
 		}
 	}
 
@@ -106,6 +132,9 @@ func (a *Apt) Apply(_ string, _ bool) error {
 			})
 		}
 
+		// We don't need to think about upgrading vs installing: installing an
+		// already installed package will upgrade it if a new version is
+		// available.
 		if _, err := apt.Install(toInstall...); err != nil {
 			return fmt.Errorf("failed to install package list: %w", err)
 		}
