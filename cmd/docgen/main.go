@@ -181,7 +181,8 @@ var pageTemplate = `# ansible.builtin.{{ .Doc.Name }}
 {{end}}
 ## Deviations
 
-{{if eq (len .Doc.Meta.Deviations) 0}}None.{{else}}{{range .Doc.Meta.Deviations}}* {{.}}{{end}}{{end}}
+{{if eq (len .Doc.Meta.Deviations) 0}}None.{{else}}{{range .Doc.Meta.Deviations}}* {{.}}
+{{end}}{{end}}
 `
 
 func main() {
