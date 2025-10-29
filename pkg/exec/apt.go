@@ -18,8 +18,10 @@ const (
 
 //	@meta{
 //	  "deviations": [
-//	    "`state` only supports `present` and `absent`",
-//	    "aliases for `name` are not supported"
+//	    "`state` only supports `present`, `latest` and `absent`",
+//	    "aliases for `name` are not supported",
+//	    "version strings in package names are not supported",
+//	    "`name` needs to be a list (one element is ok), a single string is not supported"
 //	  ]
 //	}
 type Apt struct {
@@ -72,20 +74,50 @@ func (a *Apt) Apply(_ string, _ bool) error {
 		}
 	}
 
-	packages := []*apt.Package{}
-	for _, n := range a.Name {
-		packages = append(packages, &apt.Package{
-			Name: string(n),
-		})
-	}
-
 	switch actualState {
 	case AptPresent:
-		if _, err := apt.Install(packages...); err != nil {
+		installed, err := apt.ListInstalled()
+		if err != nil {
+			return fmt.Errorf("failed to list installed packages: %w", err)
+		}
+
+		toInstall := []*apt.Package{}
+		for _, wanted := range a.Name {
+			found := false
+			for _, p := range installed {
+				if p.Name == string(wanted) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				toInstall = append(toInstall, &apt.Package{Name: string(wanted)})
+			}
+		}
+
+		if _, err := apt.Install(toInstall...); err != nil {
+			return fmt.Errorf("failed to install package list: %w", err)
+		}
+	case AptLatest:
+		toInstall := []*apt.Package{}
+		for _, p := range a.Name {
+			toInstall = append(toInstall, &apt.Package{
+				Name: string(p),
+			})
+		}
+
+		if _, err := apt.Install(toInstall...); err != nil {
 			return fmt.Errorf("failed to install package list: %w", err)
 		}
 	case AptAbsent:
-		if _, err := apt.Remove(packages...); err != nil {
+		toRemove := []*apt.Package{}
+		for _, p := range a.Name {
+			toRemove = append(toRemove, &apt.Package{
+				Name: string(p),
+			})
+		}
+
+		if _, err := apt.Remove(toRemove...); err != nil {
 			return fmt.Errorf("failed to remove package list: %w", err)
 		}
 	default:
