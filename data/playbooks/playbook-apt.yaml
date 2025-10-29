@@ -1,6 +1,12 @@
 - hosts: all
   tasks:
     - ansible.builtin.apt:
+        name: ["dpkg"]
+    - ansible.builtin.apt:
+        name: ["libc-bin"]
+        state: "latest"
+        update_cache: true
+    - ansible.builtin.apt:
         name:
           - "htop"
           - "mysql-client"
