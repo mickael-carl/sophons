@@ -28,7 +28,6 @@ func filterOut(name string) bool {
 	ignoredPrefixes := []string{
 		"tmp/sophons",
 		"var/cache",
-		"var/lib/apt/lists/",
 		"var/log",
 	}
 

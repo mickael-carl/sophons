@@ -72,7 +72,7 @@ func (a *Apt) Apply(_ string, _ bool) error {
 		actualState = AptPresent
 	}
 
-	cacheInfo, err := os.Stat("")
+	cacheInfo, err := os.Stat("/var/lib/apt/lists")
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to check cache last refresh time: %w", err)
 	}
