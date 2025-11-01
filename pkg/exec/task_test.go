@@ -31,14 +31,14 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 	}
 
 	expected := []Task{
-		Task{
+		{
 			Name: "testing",
 			Content: &File{
 				Path:  "bar",
 				State: FileTouch,
 			},
 		},
-		Task{
+		{
 			Content: &Command{
 				Cmd:   "echo hello",
 				Stdin: "world",

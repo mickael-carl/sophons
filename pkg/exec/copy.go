@@ -98,7 +98,7 @@ func (c *Copy) copyDir(actualSrc string) error {
 		dstDir = filepath.Join(string(c.Dest), filepath.Base(string(c.Src)))
 	}
 
-	if err := os.MkdirAll(dstDir, 0777); err != nil {
+	if err := os.MkdirAll(dstDir, 0o777); err != nil {
 		return fmt.Errorf("failed to create destination directory %s: %w", dstDir, err)
 	}
 
@@ -114,7 +114,7 @@ func (c *Copy) copyDir(actualSrc string) error {
 
 		if d.IsDir() {
 			// TODO: change when adding c.Mode.
-			return os.MkdirAll(filepath.Join(dstDir, relPath), 0777)
+			return os.MkdirAll(filepath.Join(dstDir, relPath), 0o777)
 		}
 
 		return copySingleFile(path, filepath.Join(dstDir, relPath))
@@ -122,7 +122,7 @@ func (c *Copy) copyDir(actualSrc string) error {
 }
 
 func (c *Copy) copyContent() error {
-	if err := os.WriteFile(string(c.Dest), []byte(c.Content), 0666); err != nil {
+	if err := os.WriteFile(string(c.Dest), []byte(c.Content), 0o666); err != nil {
 		return fmt.Errorf("failed to write content to %s: %w", c.Dest, err)
 	}
 	return nil
@@ -130,7 +130,7 @@ func (c *Copy) copyContent() error {
 
 func (c *Copy) copyFile(actualSrc string) error {
 	if strings.HasSuffix(string(c.Dest), "/") {
-		if err := os.Mkdir(string(c.Dest), 0777); err != nil && !errors.Is(err, fs.ErrExist) {
+		if err := os.Mkdir(string(c.Dest), 0o777); err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
 		}
 		return copySingleFile(actualSrc, filepath.Join(string(c.Dest), string(c.Src)))

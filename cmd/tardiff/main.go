@@ -81,7 +81,6 @@ func tarToEntries(path string) (map[string]*entry, error) {
 	}
 
 	return out, nil
-
 }
 
 func main() {

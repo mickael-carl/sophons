@@ -6,3 +6,11 @@ linters:
       #This throws off errcheck which is a bit too pedantic in this case. Let's
       #just exclude those checks.
       - std-error-handling
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    gofumpt:
+      extra-rules: true

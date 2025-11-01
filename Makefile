@@ -9,7 +9,7 @@ BINS = \
 
 SRCS := $(shell find cmd pkg -name '*.go')
 
-.PHONY: clean docker-testing docs
+.PHONY: clean docker-testing docs fmt lint
 
 all: $(BINS)
 
@@ -42,3 +42,9 @@ docker-testing: Dockerfile.testing
 
 docs: $(SRCS) bin/docgen
 	./bin/docgen pkg/exec docs/builtins
+
+fmt:
+	golangci-lint fmt
+
+lint:
+	golangci-lint run

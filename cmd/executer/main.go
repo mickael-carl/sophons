@@ -92,7 +92,7 @@ func main() {
 		log.Fatal("when either -d or -p is set, both flags must be set")
 	}
 
-	groups := map[string]struct{}{"all": struct{}{}}
+	groups := map[string]struct{}{"all": {}}
 	vars := variables.Variables{}
 
 	if *inventoryPath != "" {

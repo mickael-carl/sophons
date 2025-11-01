@@ -11,15 +11,15 @@ import (
 var ErrInvalidMode = errors.New("invalid mode specification")
 
 const (
-	userRead   = 0400
-	userWrite  = 0200
-	userExec   = 0100
-	groupRead  = 0040
-	groupWrite = 0020
-	groupExec  = 0010
-	otherRead  = 0004
-	otherWrite = 0002
-	otherExec  = 0001
+	userRead   = 0o400
+	userWrite  = 0o200
+	userExec   = 0o100
+	groupRead  = 0o040
+	groupWrite = 0o020
+	groupExec  = 0o010
+	otherRead  = 0o004
+	otherWrite = 0o002
+	otherExec  = 0o001
 )
 
 func ChmodFromString(path, spec string) error {
@@ -101,16 +101,16 @@ func NewModeFromSpec(fsys fs.FS, path, spec string) (os.FileMode, error) {
 			mode &^= mask
 		case '=':
 			if strings.Contains(who, "u") {
-				mode &^= 0700
-				mode |= mask & 0700
+				mode &^= 0o700
+				mode |= mask & 0o700
 			}
 			if strings.Contains(who, "g") {
-				mode &^= 0070
-				mode |= mask & 0070
+				mode &^= 0o070
+				mode |= mask & 0o070
 			}
 			if strings.Contains(who, "o") {
-				mode &^= 0007
-				mode |= mask & 0007
+				mode &^= 0o007
+				mode |= mask & 0o007
 			}
 		default:
 			return 0, ErrInvalidMode

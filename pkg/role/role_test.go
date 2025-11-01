@@ -59,7 +59,7 @@ fruit: "banana"
 			"answer": uint64(42),
 		},
 		Tasks: []exec.Task{
-			exec.Task{
+			{
 				Content: &exec.File{
 					Path:  "/foo",
 					State: exec.FileTouch,
@@ -127,19 +127,19 @@ fruit: "banana"
 			"answer": uint64(42),
 		},
 		Tasks: []exec.Task{
-			exec.Task{
+			{
 				Content: &exec.File{
 					Path:  "/hello/world!",
 					State: exec.FileTouch,
 				},
 			},
-			exec.Task{
+			{
 				Content: &exec.File{
 					Path:  "/answer/42",
 					State: exec.FileTouch,
 				},
 			},
-			exec.Task{
+			{
 				Content: &exec.File{
 					Path:  "/fruit/banana",
 					State: exec.FileTouch,
@@ -151,7 +151,6 @@ fruit: "banana"
 	if !cmp.Equal(got, expected) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
-
 }
 
 func TestDiscoverRoleNotOK(t *testing.T) {

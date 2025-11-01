@@ -57,13 +57,13 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		Play{
 			Hosts: "all",
 			Tasks: []exec.Task{
-				exec.Task{
+				{
 					Content: &exec.File{
 						Path:  "/foo",
 						State: exec.FileDirectory,
 					},
 				},
-				exec.Task{
+				{
 					Content: &exec.File{
 						Path:  "/foo/bar",
 						State: exec.FileFile,
@@ -74,13 +74,13 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		Play{
 			Hosts: "some-group",
 			Tasks: []exec.Task{
-				exec.Task{
+				{
 					Content: &exec.File{
 						Path:  "/foo/bar/baz",
 						State: exec.FileTouch,
 					},
 				},
-				exec.Task{
+				{
 					Content: &exec.File{
 						Path:    "/foo/bar",
 						State:   exec.FileDirectory,
@@ -93,13 +93,13 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		Play{
 			Hosts: "jinja-test",
 			Tasks: []exec.Task{
-				exec.Task{
+				{
 					Content: &exec.File{
 						Path:  "/banana",
 						State: exec.FileTouch,
 					},
 				},
-				exec.Task{
+				{
 					Content: &exec.Command{
 						Cmd:             "dd of=/tmp/hello",
 						Stdin:           "hello world!",

@@ -106,7 +106,7 @@ func getGid(gidOrGroupName string) (int, error) {
 	return gid, nil
 }
 
-func applyModeAndIDs(path string, mode string, uid, gid int) error {
+func applyModeAndIDs(path, mode string, uid, gid int) error {
 	if mode != "" {
 		// First try to parse mode as octal. If that fails we'll assume it's a
 		// string-based mode spec.
@@ -125,12 +125,12 @@ func applyModeAndIDs(path string, mode string, uid, gid int) error {
 
 func (f *File) Validate() error {
 	validStates := map[FileState]struct{}{
-		FileAbsent:    struct{}{},
-		FileDirectory: struct{}{},
-		FileFile:      struct{}{},
-		FileHard:      struct{}{},
-		FileLink:      struct{}{},
-		FileTouch:     struct{}{},
+		FileAbsent:    {},
+		FileDirectory: {},
+		FileFile:      {},
+		FileHard:      {},
+		FileLink:      {},
+		FileTouch:     {},
 	}
 
 	if _, ok := validStates[f.State]; !ok {
@@ -203,7 +203,7 @@ func (f *File) Apply(_ string, _ bool) error {
 		// says it'll use the default umask. To emulate that, but not do
 		// anything on existing files/directories, we call MkdirAll, which
 		// won't alter existing things as expected.
-		if err := os.MkdirAll(string(f.Path), os.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(string(f.Path), os.FileMode(0o755)); err != nil {
 			return err
 		}
 
