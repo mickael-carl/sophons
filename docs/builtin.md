@@ -8,6 +8,7 @@
 | [command](builtins/command.md)             | :white_check_mark: | :x:                | [playbook-command.yaml](../data/playbooks/playbook-command.yaml) |
 | [copy](builtins/copy.md)                   | :white_check_mark: | :x:                | [playbook-copy.yaml](../data/playbooks/playbook-copy.yaml) |
 | [file](builtins/file.md)                   | :white_check_mark: | :x:                | [playbook-file.yaml](../data/playbooks/playbook-file.yaml) |
+| [get_url](builtins/get_url.md)             | :white_check_mark: | :x:                | [playbook-get-url.yaml](../data/playbooks/playbook-get-url) |
 | [import_tasks](builtins/import_tasks.md)   | :white_check_mark: | :white_check_mark: | [playbook-import-tasks](../data/playbooks/playbook-import-tasks.yaml) |
 | [include_tasks](builtins/include_tasks.md) | :white_check_mark: | :x:                | [playbook-include-tasks](../data/playbooks/playbook-include-tasks.yaml) |
 | [shell](builtins/shell.md)                 | :white_check_mark: | :white_check_mark: | [playbook-shell.yaml](../data/playbooks/playbook-shell.yaml) |
@@ -30,7 +31,6 @@
 | fetch                  | :x: | :x: | |
 | find                   | :x: | :x: | |
 | gather_facts           | :x: | :x: | |
-| get_url                | :x: | :x: | |
 | getent                 | :x: | :x: | |
 | git                    | :x: | :x: | |
 | group                  | :x: | :x: | |

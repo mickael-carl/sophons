@@ -1,0 +1,11 @@
+- hosts: all
+  tasks:
+    - get_url:
+        url: "http://example.com"
+        dest: /http-get-url
+    - ansible.builtin.get_url:
+        url: "https://example.com"
+        dest: /https-get-url
+    - ansible.builtin.get_url:
+        url: "https://example.com"
+        dest: /
