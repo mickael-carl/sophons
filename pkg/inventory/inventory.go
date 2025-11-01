@@ -18,7 +18,7 @@ type Group struct {
 
 func (i Inventory) Find(node string) map[string]struct{} {
 	// All nodes are part of the `all` group inconditionally.
-	foundIn := map[string]struct{}{"all": struct{}{}}
+	foundIn := map[string]struct{}{"all": {}}
 	for name, group := range i.Groups {
 		maps.Copy(foundIn, group.Find(name, node))
 	}

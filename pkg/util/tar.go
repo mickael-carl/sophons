@@ -103,7 +103,7 @@ func Untar(src, dest string) error {
 			}
 
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return fmt.Errorf("could not create parent directory: %w", err)
 			}
 
@@ -119,7 +119,7 @@ func Untar(src, dest string) error {
 			outFile.Close()
 
 		case tar.TypeSymlink:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return fmt.Errorf("could not create parent directory for symlink: %w", err)
 			}
 

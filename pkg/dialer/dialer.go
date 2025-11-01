@@ -115,7 +115,7 @@ func (d *dialer) copyFile(localPath, remotePath string, executable bool) error {
 	}
 
 	if executable {
-		if err := d.sftpClient.Chmod(remotePath, 0755); err != nil {
+		if err := d.sftpClient.Chmod(remotePath, 0o755); err != nil {
 			return err
 		}
 	}

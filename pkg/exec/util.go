@@ -70,5 +70,4 @@ func applyCmd(cmdFunc func() *exec.Cmd, creates, removes, chdir, stdin jinjaStri
 	}
 
 	return cmd.CombinedOutput()
-
 }

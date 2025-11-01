@@ -10,13 +10,13 @@ import (
 func TestNewModeFromSpec(t *testing.T) {
 	fsys := fstest.MapFS{
 		"hello": &fstest.MapFile{
-			Mode: 0000,
+			Mode: 0o000,
 		},
 		"world": &fstest.MapFile{
-			Mode: 0777,
+			Mode: 0o777,
 		},
 		"notevil": &fstest.MapFile{
-			Mode: 0444,
+			Mode: 0o444,
 		},
 	}
 
@@ -25,7 +25,7 @@ func TestNewModeFromSpec(t *testing.T) {
 		t.Error(err)
 	}
 
-	expected := os.FileMode(0610)
+	expected := os.FileMode(0o610)
 	if got != expected {
 		t.Errorf("expected %o but got %o", expected, got)
 	}
@@ -35,7 +35,7 @@ func TestNewModeFromSpec(t *testing.T) {
 		t.Error(err)
 	}
 
-	expected = os.FileMode(0117)
+	expected = os.FileMode(0o117)
 	if got != expected {
 		t.Errorf("expected %o but got %o", expected, got)
 	}
@@ -45,7 +45,7 @@ func TestNewModeFromSpec(t *testing.T) {
 		t.Error(err)
 	}
 
-	expected = os.FileMode(0666)
+	expected = os.FileMode(0o666)
 	if got != expected {
 		t.Errorf("expected %o but got %o", expected, got)
 	}
@@ -54,7 +54,7 @@ func TestNewModeFromSpec(t *testing.T) {
 func TestNewModeFromSpecInvalid(t *testing.T) {
 	fsys := fstest.MapFS{
 		"hello": &fstest.MapFile{
-			Mode: 0000,
+			Mode: 0o000,
 		},
 	}
 

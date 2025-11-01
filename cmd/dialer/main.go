@@ -54,7 +54,6 @@ func sshConfig(u, k string) (*ssh.ClientConfig, error) {
 		HostKeyCallback: hostKeyCallback,
 		Timeout:         10 * time.Second,
 	}, nil
-
 }
 
 func main() {
