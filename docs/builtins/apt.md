@@ -17,7 +17,7 @@
 | autoclean |  :x:  |
 | autoremove |  :x:  |
 | cache_valid_time |  :white_check_mark:  |
-| clean |  :x:  |
+| clean |  :white_check_mark:  |
 | deb |  :x:  |
 | default_release |  :x:  |
 | dpkg_options |  :x:  |
@@ -39,7 +39,6 @@
 ## Deviations
 
 * `state` only supports `present`, `latest` and `absent`
-* `upgrade` only supports `dist` and `yes`
 * aliases for `name` are not supported
 * version strings in package names are not supported
 * `name` needs to be a list (one element is ok), a single string is not supported
