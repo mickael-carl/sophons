@@ -19,24 +19,34 @@ const (
 	AptFixed    AptState = "fixed"
 )
 
+const (
+	AptUpgradeYes  = "yes"
+	AptUpgradeFull = "full"
+	AptUpgradeDist = "dist"
+	AptUpgradeSafe = "safe"
+	AptUpgradeNo   = "no"
+)
+
+// TODO: this is fixable: if we implement a custom unmarshaller for Apt, we can
+// implement aliases and name being either a list of a single string.
+//
 //	@meta{
 //	  "deviations": [
 //	    "`state` only supports `present`, `latest` and `absent`",
-//	    "`upgrade` only supports `dist` and `yes`",
 //	    "aliases for `name` are not supported",
 //	    "version strings in package names are not supported",
 //	    "`name` needs to be a list (one element is ok), a single string is not supported"
 //	  ]
 //	}
 type Apt struct {
-	AllowChangeHeldPackages  bool  `yaml:"allow_change_held_packages"`
-	AllowDowngrade           bool  `yaml:"allow_downgrade"`
-	AllowUnauthenticated     bool  `yaml:"allow_unauthenticated"`
-	AutoInstallModuleDeps    *bool `yaml:"auto_install_module_deps"`
-	Autoclean                bool
-	Autoremove               bool
-	CacheValidTime           int64 `yaml:"cache_valid_time" sophons:"implemented"`
-	Clean                    bool
+	AllowChangeHeldPackages  bool    `yaml:"allow_change_held_packages"`
+	AllowDowngrade           bool    `yaml:"allow_downgrade"`
+	AllowUnauthenticated     bool    `yaml:"allow_unauthenticated"`
+	AutoInstallModuleDeps    *bool   `yaml:"auto_install_module_deps"`
+	AutoClean                bool    `yaml:"autoclean"`
+	AutoRemove               bool    `yaml:"autoremove"`
+	CacheValidTime           *uint64 `yaml:"cache_valid_time" sophons:"implemented"`
+	Clean                    bool    `sophons:"implemented"`
 	Deb                      jinjaString
 	DefaultRelease           jinjaString `yaml:"default_release"`
 	DpkgOptions              jinjaString `yaml:"dpkg_options"`
@@ -62,36 +72,84 @@ func init() {
 }
 
 func (a *Apt) Validate() error {
-	// TODO
+	supportedUpgrade := map[string]struct{}{
+		AptUpgradeYes:  {},
+		AptUpgradeNo:   {},
+		AptUpgradeFull: {},
+		AptUpgradeDist: {},
+		AptUpgradeSafe: {},
+		"":             {},
+	}
+
+	if _, ok := supportedUpgrade[string(a.Upgrade)]; !ok {
+		return fmt.Errorf("unsupported upgrade mode: %s", a.Upgrade)
+	}
+
+	supportedState := map[AptState]struct{}{
+		AptAbsent:  {},
+		AptPresent: {},
+		AptLatest:  {},
+		"":         {},
+	}
+
+	if _, ok := supportedState[AptState(a.State)]; !ok {
+		return fmt.Errorf("unsupported state: %s", a.State)
+	}
+
 	return nil
 }
 
-func (a *Apt) Apply(_ string, _ bool) error {
-	actualState := AptState(a.State)
-	if a.State == "" {
-		actualState = AptPresent
-	}
-
+func (a *Apt) handleUpdate() error {
 	cacheInfo, err := os.Stat("/var/lib/apt/lists")
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to check cache last refresh time: %w", err)
 	}
 
+	if errors.Is(err, os.ErrNotExist) && a.UpdateCache {
+		_, cacheErr := apt.CheckForUpdates()
+		return cacheErr
+	}
+
 	if err == nil {
-		if a.UpdateCache && time.Since(cacheInfo.ModTime()).Seconds() > float64(a.CacheValidTime) {
-			if _, err := apt.CheckForUpdates(); err != nil {
-				return fmt.Errorf("failed to update apt cache: %w", err)
-			}
+		if a.UpdateCache || a.CacheValidTime != nil && time.Since(cacheInfo.ModTime()).Seconds() > float64(*a.CacheValidTime) {
+			_, cacheErr := apt.CheckForUpdates()
+			return cacheErr
 		}
+	}
+
+	return nil
+}
+
+func (a *Apt) Apply(_ string, _ bool) error {
+	if a.Clean {
+		if _, err := apt.Clean(); err != nil {
+			return fmt.Errorf("failed to clean apt cache: %w", err)
+		}
+
+		// This is similar to Ansible's implementation. See
+		// https://github.com/ansible/ansible/issues/82611 and
+		// https://github.com/ansible/ansible/pull/82800 for some context.
+		if len(a.Name) == 0 && (a.Upgrade == "no" || a.Upgrade == "") && a.Deb == "" {
+			return nil
+		}
+	}
+
+	actualState := AptState(a.State)
+	if a.State == "" {
+		actualState = AptPresent
+	}
+
+	if err := a.handleUpdate(); err != nil {
+		return fmt.Errorf("failed to update apt cache: %w", err)
 	}
 
 	if a.Upgrade != "" {
 		switch a.Upgrade {
-		case "yes":
+		case "yes", "safe":
 			if _, err := apt.UpgradeAll(); err != nil {
 				return fmt.Errorf("failed to upgrade: %w", err)
 			}
-		case "dist":
+		case "dist", "full":
 			if _, err := apt.DistUpgrade(); err != nil {
 				return fmt.Errorf("failed to dist-upgrade: %w", err)
 			}

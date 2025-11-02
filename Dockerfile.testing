@@ -1,5 +1,8 @@
 FROM ubuntu:rolling
 
-RUN apt update && apt install -y openssh-server python3-apt && echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+RUN apt update \
+  && apt install -y openssh-server python3-apt \
+  && echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config \
+  && rm /etc/apt/apt.conf.d/docker-clean
 
 CMD ["/usr/sbin/sshd", "-D", "-e"]

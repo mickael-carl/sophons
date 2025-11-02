@@ -19,3 +19,5 @@
         state: "absent"
     - apt:
         upgrade: "yes"
+    - apt:
+        clean: true

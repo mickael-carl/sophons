@@ -27,7 +27,7 @@ type entry struct {
 func filterOut(name string) bool {
 	ignoredPrefixes := []string{
 		"tmp/sophons",
-		"var/cache",
+		"var/cache/ldconfig",
 		"var/log",
 	}
 
