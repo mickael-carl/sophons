@@ -7,7 +7,7 @@ BINS = \
 	bin/tardiff \
 	bin/docgen
 
-SRCS := $(shell find cmd pkg -name '*.go')
+SRCS := $(shell find cmd pkg -name '*.go') go.mod go.sum
 
 .PHONY: clean docker-testing docs fmt lint
 

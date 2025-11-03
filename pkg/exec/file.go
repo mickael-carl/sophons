@@ -137,7 +137,7 @@ func (f *File) Validate() error {
 		return errors.New("invalid state")
 	}
 
-	if string(f.Path) == "" {
+	if f.Path == "" {
 		return errors.New("path is required")
 	}
 
@@ -146,7 +146,7 @@ func (f *File) Validate() error {
 	}
 
 	// TODO: not exactly true: ansible will use the previous state of the link.
-	if (f.State == FileLink || f.State == FileHard) && string(f.Src) == "" {
+	if (f.State == FileLink || f.State == FileHard) && f.Src == "" {
 		return errors.New("src option is required when state is 'link' or 'hard'")
 	}
 

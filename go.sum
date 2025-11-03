@@ -20,8 +20,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kr/fs v0.1.0 h1:Jskdu9ieNAYnjxsi0LbQp1ulIKZV1LAFgK1tWhpZgl8=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
-github.com/mickael-carl/go-apt-client v0.0.0-20251102134406-fa149036e78a h1:U2JMamiGsT7/UzfZCpthR1QH5zONhds5NCYbsgS1vdM=
-github.com/mickael-carl/go-apt-client v0.0.0-20251102134406-fa149036e78a/go.mod h1:+NLbdigbEvrQDYX9uFyOH9qvZo80qjE8MW+3k8EV+4E=
+github.com/mickael-carl/go-apt-client v0.0.0-20251103214501-acf989747918 h1:dVKZI6ynDJOkz4gmnAXWcdZ2/Lc7f6ZNaqN8gU8xWAc=
+github.com/mickael-carl/go-apt-client v0.0.0-20251103214501-acf989747918/go.mod h1:+NLbdigbEvrQDYX9uFyOH9qvZo80qjE8MW+3k8EV+4E=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
