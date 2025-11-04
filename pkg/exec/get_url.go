@@ -90,40 +90,40 @@ func dirDest(h http.Header, src, dest string) (string, error) {
 	return filepath.Join(dest, "index.html"), nil
 }
 
-func (c *GetURL) Validate() error {
-	if c.URL == "" {
+func (g *GetURL) Validate() error {
+	if g.URL == "" {
 		return errors.New("url is required")
 	}
 
-	if c.Dest == "" {
+	if g.Dest == "" {
 		return errors.New("dest is required")
 	}
 
-	if _, err := url.Parse(string(c.URL)); err != nil {
-		return fmt.Errorf("invalid URL provided: %w", err)
+	if _, err := url.Parse(string(g.URL)); err != nil {
+		return fmt.Errorf("invalid URL provided")
 	}
 	return nil
 }
 
-func (c *GetURL) Apply(parentPath string, _ bool) error {
-	resp, err := http.Get(string(c.URL))
+func (g *GetURL) Apply(parentPath string, _ bool) error {
+	resp, err := http.Get(string(g.URL))
 	if err != nil {
-		return fmt.Errorf("failed to get URL %s: %w", c.URL, err)
+		return fmt.Errorf("failed to get URL %s: %w", g.URL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status getting URL %s: %s", c.URL, resp.Status)
+		return fmt.Errorf("unexpected status getting URL %s: %s", g.URL, resp.Status)
 	}
 
-	d, err := os.Stat(string(c.Dest))
+	d, err := os.Stat(string(g.Dest))
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("failed to stat %s: %w", c.Dest, err)
+		return fmt.Errorf("failed to stat %s: %w", g.Dest, err)
 	}
 
-	actualDest := string(c.Dest)
+	actualDest := string(g.Dest)
 	if err == nil && d.IsDir() {
-		actualDest, err = dirDest(resp.Header, string(c.URL), string(c.Dest))
+		actualDest, err = dirDest(resp.Header, string(g.URL), string(g.Dest))
 		if err != nil {
 			return fmt.Errorf("failed to determine path from dest: %w", err)
 		}
@@ -131,13 +131,13 @@ func (c *GetURL) Apply(parentPath string, _ bool) error {
 
 	out, err := os.Create(actualDest)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", c.Dest, err)
+		return fmt.Errorf("failed to create file %s: %w", g.Dest, err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to write to file %s: %w", c.Dest, err)
+		return fmt.Errorf("failed to write to file %s: %w", g.Dest, err)
 	}
 
 	return nil
