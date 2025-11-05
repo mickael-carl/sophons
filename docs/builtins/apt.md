@@ -39,7 +39,6 @@
 ## Deviations
 
 * `state` only supports `present`, `latest` and `absent`
-* aliases for `name` are not supported
 * version strings in package names are not supported
 * `name` needs to be a list (one element is ok), a single string is not supported
 

@@ -5,7 +5,7 @@
     - ansible.builtin.apt:
         name: ["libc-bin"]
         state: "latest"
-        update_cache: true
+        update-cache: true
         cache_valid_time: 1
     - ansible.builtin.apt:
         name:
@@ -13,6 +13,12 @@
           - "mysql-client"
           - "postgresql-client"
         update_cache: true
+    - ansible.builtin.apt:
+        pkg:
+          - "curl"
+    - ansible.builtin.apt:
+        package:
+          - "kubectx"
     - apt:
         name:
           - "mysql-client"

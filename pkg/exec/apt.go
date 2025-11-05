@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/arduino/go-apt-client"
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
 )
 
 type AptState State
@@ -33,34 +35,34 @@ const (
 //	@meta{
 //	  "deviations": [
 //	    "`state` only supports `present`, `latest` and `absent`",
-//	    "aliases for `name` are not supported",
 //	    "version strings in package names are not supported",
 //	    "`name` needs to be a list (one element is ok), a single string is not supported"
 //	  ]
 //	}
 type Apt struct {
-	AllowChangeHeldPackages  bool    `yaml:"allow_change_held_packages"`
-	AllowDowngrade           bool    `yaml:"allow_downgrade"`
-	AllowUnauthenticated     bool    `yaml:"allow_unauthenticated"`
-	AutoInstallModuleDeps    *bool   `yaml:"auto_install_module_deps"`
-	AutoClean                bool    `yaml:"autoclean"`
-	AutoRemove               bool    `yaml:"autoremove"`
-	CacheValidTime           *uint64 `yaml:"cache_valid_time" sophons:"implemented"`
-	Clean                    bool    `sophons:"implemented"`
-	Deb                      jinjaString
-	DefaultRelease           jinjaString `yaml:"default_release"`
-	DpkgOptions              jinjaString `yaml:"dpkg_options"`
-	FailOnAutoremove         bool        `yaml:"fail_on_autoremove"`
-	Force                    bool
-	ForceAptGet              bool          `yaml:"force_apt_get"`
-	InstallRecommends        bool          `yaml:"install_recommends"`
-	LockTimeout              int64         `yaml:"lock_timeout"`
-	Name                     []jinjaString `sophons:"implemented"`
-	OnlyUpgrade              bool          `yaml:"only_upgrade"`
-	PolicyRCD                int64         `yaml:"policy_rc_d"`
+	AllowChangeHeldPackages bool    `yaml:"allow_change_held_packages"`
+	AllowDowngrade          bool    `yaml:"allow_downgrade"`
+	AllowUnauthenticated    bool    `yaml:"allow_unauthenticated"`
+	AutoInstallModuleDeps   *bool   `yaml:"auto_install_module_deps"`
+	AutoClean               bool    `yaml:"autoclean"`
+	AutoRemove              bool    `yaml:"autoremove"`
+	CacheValidTime          *uint64 `yaml:"cache_valid_time" sophons:"implemented"`
+	Clean                   bool    `sophons:"implemented"`
+	Deb                     jinjaString
+	DefaultRelease          jinjaString `yaml:"default_release"`
+	DpkgOptions             jinjaString `yaml:"dpkg_options"`
+	FailOnAutoremove        bool        `yaml:"fail_on_autoremove"`
+	Force                   bool
+	ForceAptGet             bool          `yaml:"force_apt_get"`
+	InstallRecommends       bool          `yaml:"install_recommends"`
+	LockTimeout             int64         `yaml:"lock_timeout"`
+	Name                    []jinjaString `sophons:"implemented"`
+
+	OnlyUpgrade              bool  `yaml:"only_upgrade"`
+	PolicyRCD                int64 `yaml:"policy_rc_d"`
 	Purge                    bool
 	State                    jinjaString `sophons:"implemented"`
-	UpdateCache              bool        `yaml:"update_cache" sophons:"implemented"`
+	UpdateCache              *bool       `yaml:"update_cache" sophons:"implemented"`
 	UpdateCacheRetries       uint64      `yaml:"update_cache_retries"`
 	UpdateCacheRetryMaxDelay uint64      `yaml:"update_cache_retry_max_delay"`
 	Upgrade                  jinjaString `sophons:"implemented"`
@@ -69,6 +71,38 @@ type Apt struct {
 func init() {
 	RegisterTaskType("apt", func() TaskContent { return &Apt{} })
 	RegisterTaskType("ansible.builtin.apt", func() TaskContent { return &Apt{} })
+}
+
+func (a *Apt) UnmarshalYAML(n ast.Node) error {
+	type plain Apt
+	if err := yaml.NodeToValue(n, (*plain)(a)); err != nil {
+		return err
+	}
+
+	type apt struct {
+		Pkg         []jinjaString
+		Package     []jinjaString
+		UpdateCache bool `yaml:"update-cache"`
+	}
+
+	var aux apt
+	if err := yaml.NodeToValue(n, &aux); err != nil {
+		return err
+	}
+
+	if len(a.Name) == 0 {
+		if len(aux.Package) != 0 {
+			a.Name = aux.Package
+		} else if len(aux.Pkg) != 0 {
+			a.Name = aux.Pkg
+		}
+	}
+
+	if a.UpdateCache == nil {
+		a.UpdateCache = &aux.UpdateCache
+	}
+
+	return nil
 }
 
 func (a *Apt) Validate() error {
@@ -105,13 +139,13 @@ func (a *Apt) handleUpdate() error {
 		return fmt.Errorf("failed to check cache last refresh time: %w", err)
 	}
 
-	if errors.Is(err, os.ErrNotExist) && a.UpdateCache {
+	if errors.Is(err, os.ErrNotExist) && a.UpdateCache != nil && *a.UpdateCache {
 		_, cacheErr := apt.CheckForUpdates()
 		return cacheErr
 	}
 
 	if err == nil {
-		if a.UpdateCache || a.CacheValidTime != nil && time.Since(cacheInfo.ModTime()).Seconds() > float64(*a.CacheValidTime) {
+		if a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil && time.Since(cacheInfo.ModTime()).Seconds() > float64(*a.CacheValidTime) {
 			_, cacheErr := apt.CheckForUpdates()
 			return cacheErr
 		}
