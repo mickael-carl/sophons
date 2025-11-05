@@ -1,6 +1,11 @@
 package exec
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/goccy/go-yaml"
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestAptRepositoryValidateInvalidState(t *testing.T) {
 	a := &AptRepository{
@@ -41,5 +46,51 @@ func TestAptRepositoryValidate(t *testing.T) {
 
 	if err := a.Validate(); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestAptRepositoryUnmarshalYAML(t *testing.T) {
+	b := []byte(`
+repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
+state: "present"
+update_cache: true`)
+
+	var got AptRepository
+	if err := yaml.Unmarshal(b, &got); err != nil {
+		t.Error(err)
+	}
+
+	pTrue := true
+	expected := AptRepository{
+		Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+		State:       AptRepositoryPresent,
+		UpdateCache: &pTrue,
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+}
+
+func TestAptRepositoryUnmarshalYAMLAliases(t *testing.T) {
+	b := []byte(`
+repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
+state: "present"
+update-cache: true`)
+
+	var got AptRepository
+	if err := yaml.Unmarshal(b, &got); err != nil {
+		t.Error(err)
+	}
+
+	pTrue := true
+	expected := AptRepository{
+		Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+		State:       AptRepositoryPresent,
+		UpdateCache: &pTrue,
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
