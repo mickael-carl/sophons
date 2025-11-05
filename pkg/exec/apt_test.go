@@ -34,12 +34,13 @@ func TestAptValidateInvalidUpgrade(t *testing.T) {
 
 func TestAptValidate(t *testing.T) {
 	cacheValidTime := uint64(360)
+	pTrue := true
 	a := &Apt{
 		Name: []jinjaString{
 			"curl",
 		},
 		CacheValidTime: &cacheValidTime,
-		UpdateCache:    true,
+		UpdateCache:    &pTrue,
 		Upgrade:        "dist",
 	}
 
