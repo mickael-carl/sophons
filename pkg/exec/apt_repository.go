@@ -7,6 +7,8 @@ import (
 	"regexp"
 
 	"github.com/arduino/go-apt-client"
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
 )
 
 type AptRepositoryState State
@@ -35,6 +37,28 @@ type AptRepository struct {
 func init() {
 	RegisterTaskType("apt_repository", func() TaskContent { return &AptRepository{} })
 	RegisterTaskType("ansible.builtin.apt_repository", func() TaskContent { return &AptRepository{} })
+}
+
+func (a *AptRepository) UnmarshalYAML(n ast.Node) error {
+	type plain AptRepository
+	if err := yaml.NodeToValue(n, (*plain)(a)); err != nil {
+		return err
+	}
+
+	type aptRepository struct {
+		UpdateCache *bool `yaml:"update-cache"`
+	}
+
+	var aux aptRepository
+	if err := yaml.NodeToValue(n, &aux); err != nil {
+		return err
+	}
+
+	if a.UpdateCache == nil {
+		a.UpdateCache = aux.UpdateCache
+	}
+
+	return nil
 }
 
 func uriToFilename(uri string) (string, error) {
