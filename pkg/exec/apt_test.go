@@ -1,6 +1,11 @@
 package exec
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/goccy/go-yaml"
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestAptValidateInvalidState(t *testing.T) {
 	a := &Apt{
@@ -46,5 +51,69 @@ func TestAptValidate(t *testing.T) {
 
 	if err := a.Validate(); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestAptUnmarshalYAML(t *testing.T) {
+	b := []byte(`
+clean: false
+name:
+  - "foo"
+  - "bar"
+state: "present"
+update_cache: true
+upgrade: "full"`)
+
+	var got Apt
+	if err := yaml.Unmarshal(b, &got); err != nil {
+		t.Error(err)
+	}
+
+	pTrue := true
+	expected := Apt{
+		Clean: false,
+		Name: []jinjaString{
+			"foo",
+			"bar",
+		},
+		State:       jinjaString(AptPresent),
+		UpdateCache: &pTrue,
+		Upgrade:     AptUpgradeFull,
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+}
+
+func TestAptUnmarshalYAMLAliases(t *testing.T) {
+	b := []byte(`
+clean: false
+package:
+  - "foo"
+  - "bar"
+state: "present"
+update-cache: true
+upgrade: "full"`)
+
+	var got Apt
+	if err := yaml.Unmarshal(b, &got); err != nil {
+		t.Error(err)
+	}
+
+	pTrue := true
+	expected := Apt{
+		Clean: false,
+		Name: []jinjaString{
+			"foo",
+			"bar",
+		},
+		State:       jinjaString(AptPresent),
+		UpdateCache: &pTrue,
+		Upgrade:     AptUpgradeFull,
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
