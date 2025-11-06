@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/goccy/go-yaml"
 	"github.com/mickael-carl/sophons/pkg/util"
 )
 
@@ -26,6 +28,7 @@ const (
 //	@meta{
 //	  "deviations": [
 //	    "`state=hard` is not implemented."
+//	    "There is no default for `state`, it is required."
 //	  ]
 //	}
 type File struct {
@@ -54,6 +57,33 @@ type File struct {
 func init() {
 	RegisterTaskType("file", func() TaskContent { return &File{} })
 	RegisterTaskType("ansible.builtin.file", func() TaskContent { return &File{} })
+}
+
+func (f *File) UnmarshalYAML(ctx context.Context, b []byte) error {
+	type plain File
+	if err := yaml.UnmarshalContext(ctx, b, (*plain)(f)); err != nil {
+		return err
+	}
+
+	type file struct {
+		Dest jinjaString
+		Name jinjaString
+	}
+
+	var aux file
+	if err := yaml.UnmarshalContext(ctx, b, &aux); err != nil {
+		return err
+	}
+
+	if f.Path == "" {
+		if aux.Dest != "" {
+			f.Path = aux.Dest
+		} else if aux.Name != "" {
+			f.Path = aux.Name
+		}
+	}
+
+	return nil
 }
 
 func getUid(uidOrUserName string) (int, error) {
