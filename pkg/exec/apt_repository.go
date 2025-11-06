@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/arduino/go-apt-client"
 	"github.com/goccy/go-yaml"
-	"github.com/goccy/go-yaml/ast"
 )
 
 type AptRepositoryState State
@@ -39,9 +39,9 @@ func init() {
 	RegisterTaskType("ansible.builtin.apt_repository", func() TaskContent { return &AptRepository{} })
 }
 
-func (a *AptRepository) UnmarshalYAML(n ast.Node) error {
+func (a *AptRepository) UnmarshalYAML(ctx context.Context, b []byte) error {
 	type plain AptRepository
-	if err := yaml.NodeToValue(n, (*plain)(a)); err != nil {
+	if err := yaml.UnmarshalContext(ctx, b, (*plain)(a)); err != nil {
 		return err
 	}
 
@@ -50,7 +50,7 @@ func (a *AptRepository) UnmarshalYAML(n ast.Node) error {
 	}
 
 	var aux aptRepository
-	if err := yaml.NodeToValue(n, &aux); err != nil {
+	if err := yaml.UnmarshalContext(ctx, b, &aux); err != nil {
 		return err
 	}
 
