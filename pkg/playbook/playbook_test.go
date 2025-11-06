@@ -95,14 +95,14 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 			Tasks: []exec.Task{
 				{
 					Content: &exec.File{
-						Path:  "/banana",
+						Path:  "{{ filepath }}",
 						State: exec.FileTouch,
 					},
 				},
 				{
 					Content: &exec.Command{
 						Cmd:             "dd of=/tmp/hello",
-						Stdin:           "hello world!",
+						Stdin:           "{{ hello }}",
 						StdinAddNewline: &pTrue,
 					},
 				},

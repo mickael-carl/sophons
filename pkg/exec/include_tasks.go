@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -14,7 +15,7 @@ import (
 //	}
 type IncludeTasks struct {
 	ApplyKeywords map[string]any `yaml:"apply"`
-	File          jinjaString    `sophons:"implemented"`
+	File          string         `sophons:"implemented"`
 }
 
 func init() {
@@ -30,16 +31,20 @@ func (it *IncludeTasks) Validate() error {
 	return nil
 }
 
-func (it *IncludeTasks) Apply(parentPath string, isRole bool) error {
+func (it *IncludeTasks) Apply(ctx context.Context, parentPath string, isRole bool) error {
+	if err := ProcessJinjaTemplates(ctx, it); err != nil {
+		return err
+	}
+
 	// This is Ansible madness: include_tasks' File is relative to where the
 	// task is defined. If the task is within a role, then it can be found in
 	// the same directory as other tasks (i.e. in `tasks/`); but if the task is
 	// within a play, then it's found in the play's directory.
 	var taskPath string
 	if isRole {
-		taskPath = filepath.Join(parentPath, "tasks", string(it.File))
+		taskPath = filepath.Join(parentPath, "tasks", it.File)
 	} else {
-		taskPath = filepath.Join(parentPath, string(it.File))
+		taskPath = filepath.Join(parentPath, it.File)
 	}
 
 	taskData, err := os.ReadFile(taskPath)
@@ -53,7 +58,7 @@ func (it *IncludeTasks) Apply(parentPath string, isRole bool) error {
 	}
 
 	for _, task := range tasks {
-		if err := task.Apply(parentPath, isRole); err != nil {
+		if err := task.Apply(ctx, parentPath, isRole); err != nil {
 			return fmt.Errorf("failed to apply tasks from %s: %w", taskPath, err)
 		}
 	}

@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -14,28 +15,28 @@ import (
 //	  "deviations": ["`src` doesn't support absolute paths when `remote_src` is false."]
 //	}
 type Copy struct {
-	Content   jinjaString `sophons:"implemented"`
-	RemoteSrc bool        `yaml:"remote_src"`
-	Src       jinjaString `sophons:"implemented"`
-	Dest      jinjaString `sophons:"implemented"`
+	Content   string `sophons:"implemented"`
+	RemoteSrc bool   `yaml:"remote_src"`
+	Src       string `sophons:"implemented"`
+	Dest      string `sophons:"implemented"`
 
-	Attributes    jinjaString
+	Attributes    string
 	Backup        bool
-	Checksum      jinjaString
+	Checksum      string
 	Decrypt       *bool
-	DirectoryMode jinjaString `yaml:"directory_mode"`
+	DirectoryMode string `yaml:"directory_mode"`
 	Follow        bool
 	Force         *bool
-	Group         jinjaString
+	Group         string
 	LocalFollow   bool `yaml:"local_follow"`
-	Mode          jinjaString
-	Owner         jinjaString
-	Selevel       jinjaString
-	Serole        jinjaString
-	Setype        jinjaString
-	Seuser        jinjaString
-	UnsafeWrites  bool        `yaml:"unsafe_writes"`
-	AValidate     jinjaString `yaml:"validate"`
+	Mode          string
+	Owner         string
+	Selevel       string
+	Serole        string
+	Setype        string
+	Seuser        string
+	UnsafeWrites  bool   `yaml:"unsafe_writes"`
+	AValidate     string `yaml:"validate"`
 }
 
 func init() {
@@ -67,7 +68,7 @@ func (c *Copy) Validate() error {
 	// We don't support copying random files from the controller, as it seems
 	// like a bad idea. All files should belong in a role. This might change
 	// eventually, provided there is a genuinely good usecase for it.
-	if filepath.IsAbs(string(c.Src)) && !c.RemoteSrc {
+	if filepath.IsAbs(c.Src) && !c.RemoteSrc {
 		return errors.New("copying from an absolute path without remote_src is not supported")
 	}
 
@@ -79,7 +80,7 @@ func (c *Copy) Validate() error {
 		return errors.New("src and content can't both be specified")
 	}
 
-	if c.Content != "" && strings.HasSuffix(string(c.Dest), string(os.PathSeparator)) {
+	if c.Content != "" && strings.HasSuffix(c.Dest, string(os.PathSeparator)) {
 		return errors.New("can't use content when dest is a directory")
 	}
 
@@ -93,9 +94,9 @@ func (c *Copy) Validate() error {
 func (c *Copy) copyDir(actualSrc string) error {
 	copyContentsOnly := strings.HasSuffix(actualSrc, string(os.PathSeparator))
 
-	dstDir := string(c.Dest)
+	dstDir := c.Dest
 	if !copyContentsOnly {
-		dstDir = filepath.Join(string(c.Dest), filepath.Base(string(c.Src)))
+		dstDir = filepath.Join(c.Dest, filepath.Base(c.Src))
 	}
 
 	if err := os.MkdirAll(dstDir, 0o777); err != nil {
@@ -122,41 +123,45 @@ func (c *Copy) copyDir(actualSrc string) error {
 }
 
 func (c *Copy) copyContent() error {
-	if err := os.WriteFile(string(c.Dest), []byte(c.Content), 0o666); err != nil {
+	if err := os.WriteFile(c.Dest, []byte(c.Content), 0o666); err != nil {
 		return fmt.Errorf("failed to write content to %s: %w", c.Dest, err)
 	}
 	return nil
 }
 
 func (c *Copy) copyFile(actualSrc string) error {
-	if strings.HasSuffix(string(c.Dest), "/") {
-		if err := os.Mkdir(string(c.Dest), 0o777); err != nil && !errors.Is(err, fs.ErrExist) {
+	if strings.HasSuffix(c.Dest, "/") {
+		if err := os.Mkdir(c.Dest, 0o777); err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
 		}
-		return copySingleFile(actualSrc, filepath.Join(string(c.Dest), string(c.Src)))
+		return copySingleFile(actualSrc, filepath.Join(c.Dest, c.Src))
 	}
 
-	d, err := os.Stat(string(c.Dest))
+	d, err := os.Stat(c.Dest)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return copySingleFile(actualSrc, string(c.Dest))
+			return copySingleFile(actualSrc, c.Dest)
 		}
 		return err
 	}
 
 	if d.IsDir() {
-		return copySingleFile(actualSrc, filepath.Join(string(c.Dest), string(c.Src)))
+		return copySingleFile(actualSrc, filepath.Join(c.Dest, c.Src))
 	}
 
-	return copySingleFile(actualSrc, string(c.Dest))
+	return copySingleFile(actualSrc, c.Dest)
 }
 
-func (c *Copy) Apply(parentPath string, _ bool) error {
+func (c *Copy) Apply(ctx context.Context, parentPath string, _ bool) error {
+	if err := ProcessJinjaTemplates(ctx, c); err != nil {
+		return err
+	}
+
 	if c.Content != "" {
 		return c.copyContent()
 	}
 
-	srcPath := filepath.Join(parentPath, "files", string(c.Src))
+	srcPath := filepath.Join(parentPath, "files", c.Src)
 	f, err := os.Stat(srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", c.Src, err)

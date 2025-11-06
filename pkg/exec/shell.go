@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os/exec"
@@ -11,14 +12,14 @@ import (
 //	  "deviations": []
 //	}
 type Shell struct {
-	Argv            []jinjaString `sophons:"implemented"`
-	Chdir           jinjaString   `sophons:"implemented"`
-	Cmd             jinjaString   `sophons:"implemented"`
-	Creates         jinjaString   `sophons:"implemented"`
-	Executable      jinjaString   `sophons:"implemented"`
-	Removes         jinjaString   `sophons:"implemented"`
-	Stdin           jinjaString   `sophons:"implemented"`
-	StdinAddNewline *bool         `yaml:"stdin_add_newline" sophons:"implemented"`
+	Argv            []string `sophons:"implemented"`
+	Chdir           string   `sophons:"implemented"`
+	Cmd             string   `sophons:"implemented"`
+	Creates         string   `sophons:"implemented"`
+	Executable      string   `sophons:"implemented"`
+	Removes         string   `sophons:"implemented"`
+	Stdin           string   `sophons:"implemented"`
+	StdinAddNewline *bool    `yaml:"stdin_add_newline" sophons:"implemented"`
 }
 
 func init() {
@@ -30,23 +31,23 @@ func (s *Shell) Validate() error {
 	return validateCmd(s.Argv, s.Cmd, s.Stdin, s.StdinAddNewline)
 }
 
-func (s *Shell) Apply(_ string, _ bool) error {
+func (s *Shell) Apply(ctx context.Context, _ string, _ bool) error {
+	if err := ProcessJinjaTemplates(ctx, s); err != nil {
+		return err
+	}
+
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
 		exe := "/bin/sh"
 		if s.Executable != "" {
-			exe = string(s.Executable)
+			exe = s.Executable
 		}
 
 		if s.Cmd != "" {
-			cmd = exec.Command(exe, "-c", string(s.Cmd))
+			cmd = exec.Command(exe, "-c", s.Cmd)
 		}
 		if len(s.Argv) != 0 {
-			args := []string{}
-			for _, arg := range s.Argv {
-				args = append(args, string(arg))
-			}
-			cmd = exec.Command(exe, "-c", strings.Join(args, " "))
+			cmd = exec.Command(exe, "-c", strings.Join(s.Argv, " "))
 		}
 		return cmd
 	}

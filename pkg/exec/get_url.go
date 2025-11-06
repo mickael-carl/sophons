@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -18,35 +19,35 @@ import (
 //	  ]
 //	}
 type GetURL struct {
-	Attributes          jinjaString
+	Attributes          string
 	Backup              bool
-	Checksum            jinjaString
-	Ciphers             []jinjaString
-	ClientCert          jinjaString `yaml:"client_cert"`
-	ClientKey           jinjaString `yaml:"client_key"`
+	Checksum            string
+	Ciphers             []string
+	ClientCert          string `yaml:"client_cert"`
+	ClientKey           string `yaml:"client_key"`
 	Decompress          *bool
-	Dest                jinjaString `sophons:"implemented"`
+	Dest                string `sophons:"implemented"`
 	Force               *bool
 	ForceBasicAuth      bool `yaml:"force_basic_auth"`
-	Group               jinjaString
-	Headers             map[jinjaString]jinjaString
-	Mode                jinjaString
-	Owner               jinjaString
-	Selevel             jinjaString
-	Serole              jinjaString
-	Setype              jinjaString
-	Seuser              jinjaString
+	Group               string
+	Headers             map[string]string
+	Mode                string
+	Owner               string
+	Selevel             string
+	Serole              string
+	Setype              string
+	Seuser              string
 	Timeout             uint64
-	TmpDest             jinjaString   `yaml:"tmp_dest"`
-	UnredirectedHeaders []jinjaString `yaml:"unredirected_headers"`
-	UnsafeWrites        bool          `yaml:"unsafe_writes"`
-	URL                 jinjaString   `sophons:"implemented"`
-	URLPassword         jinjaString   `yaml:"url_password"`
-	URLUsername         jinjaString   `yaml:"url_username"`
-	UseGSSAPI           bool          `yaml:"use_gssapi"`
-	UseNetRC            *bool         `yaml:"use_netrc"`
-	UseProxy            *bool         `yaml:"use_proxy"`
-	ValidateCerts       *bool         `yaml:"validate_certs"`
+	TmpDest             string   `yaml:"tmp_dest"`
+	UnredirectedHeaders []string `yaml:"unredirected_headers"`
+	UnsafeWrites        bool     `yaml:"unsafe_writes"`
+	URL                 string   `sophons:"implemented"`
+	URLPassword         string   `yaml:"url_password"`
+	URLUsername         string   `yaml:"url_username"`
+	UseGSSAPI           bool     `yaml:"use_gssapi"`
+	UseNetRC            *bool    `yaml:"use_netrc"`
+	UseProxy            *bool    `yaml:"use_proxy"`
+	ValidateCerts       *bool    `yaml:"validate_certs"`
 }
 
 func init() {
@@ -99,14 +100,18 @@ func (g *GetURL) Validate() error {
 		return errors.New("dest is required")
 	}
 
-	if _, err := url.Parse(string(g.URL)); err != nil {
+	if _, err := url.Parse(g.URL); err != nil {
 		return fmt.Errorf("invalid URL provided")
 	}
 	return nil
 }
 
-func (g *GetURL) Apply(parentPath string, _ bool) error {
-	resp, err := http.Get(string(g.URL))
+func (g *GetURL) Apply(ctx context.Context, parentPath string, _ bool) error {
+	if err := ProcessJinjaTemplates(ctx, g); err != nil {
+		return err
+	}
+
+	resp, err := http.Get(g.URL)
 	if err != nil {
 		return fmt.Errorf("failed to get URL %s: %w", g.URL, err)
 	}
@@ -116,14 +121,14 @@ func (g *GetURL) Apply(parentPath string, _ bool) error {
 		return fmt.Errorf("unexpected status getting URL %s: %s", g.URL, resp.Status)
 	}
 
-	d, err := os.Stat(string(g.Dest))
+	d, err := os.Stat(g.Dest)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to stat %s: %w", g.Dest, err)
 	}
 
-	actualDest := string(g.Dest)
+	actualDest := g.Dest
 	if err == nil && d.IsDir() {
-		actualDest, err = dirDest(resp.Header, string(g.URL), string(g.Dest))
+		actualDest, err = dirDest(resp.Header, g.URL, g.Dest)
 		if err != nil {
 			return fmt.Errorf("failed to determine path from dest: %w", err)
 		}

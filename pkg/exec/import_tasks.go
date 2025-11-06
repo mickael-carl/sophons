@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -29,7 +30,7 @@ func (it *ImportTasks) Validate() error {
 	return nil
 }
 
-func (it *ImportTasks) Apply(parentPath string, isRole bool) error {
+func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool) error {
 	// This is Ansible madness: import_tasks' File is relative to where the
 	// task is defined. If the task is within a role, then it can be found in
 	// the same directory as other tasks (i.e. in `tasks/`); but if the task is
@@ -52,7 +53,7 @@ func (it *ImportTasks) Apply(parentPath string, isRole bool) error {
 	}
 
 	for _, task := range tasks {
-		if err := task.Apply(parentPath, isRole); err != nil {
+		if err := task.Apply(ctx, parentPath, isRole); err != nil {
 			return fmt.Errorf("failed to apply tasks from %s: %w", taskPath, err)
 		}
 	}

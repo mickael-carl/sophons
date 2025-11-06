@@ -22,11 +22,11 @@ const (
 //	  "deviations": []
 //	}
 type AptRepository struct {
-	Codename                 jinjaString
-	Filename                 jinjaString
+	Codename                 string
+	Filename                 string
 	InstallPythonApt         bool `yaml:"install_python_apt"`
-	Mode                     jinjaString
-	Repo                     jinjaString        `sophons:"implemented"`
+	Mode                     string
+	Repo                     string             `sophons:"implemented"`
 	State                    AptRepositoryState `sophons:"implemented"`
 	UpdateCache              *bool              `yaml:"update_cache" sophons:"implemented"`
 	UpdateCacheRetries       uint64             `yaml:"update_cache_retries"`
@@ -82,13 +82,17 @@ func (ar *AptRepository) Validate() error {
 	return nil
 }
 
-func (ar *AptRepository) Apply(_ string, _ bool) error {
+func (ar *AptRepository) Apply(ctx context.Context, _ string, _ bool) error {
+	if err := ProcessJinjaTemplates(ctx, ar); err != nil {
+		return err
+	}
+
 	repos, err := apt.ParseAPTConfigFolder("/etc/apt")
 	if err != nil {
 		return fmt.Errorf("failed to parse existing repositories: %w", err)
 	}
 
-	repo := apt.ParseAPTConfigLine(string(ar.Repo))
+	repo := apt.ParseAPTConfigLine(ar.Repo)
 	if repo == nil {
 		return errors.New("failed to parse repo line")
 	}

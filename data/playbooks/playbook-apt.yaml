@@ -12,6 +12,7 @@
           - "htop"
           - "mysql-client"
           - "postgresql-client"
+        state: "{{ state }}"
         update_cache: true
     - ansible.builtin.apt:
         pkg:
