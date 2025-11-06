@@ -6,3 +6,4 @@ all:
       "filepath": "/banana"
       "someothervar": "inventory"
       "includetaskspath": "tasks-include-tasks-var.yaml"
+      "state": "present"

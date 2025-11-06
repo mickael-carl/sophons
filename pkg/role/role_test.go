@@ -129,19 +129,19 @@ fruit: "banana"
 		Tasks: []exec.Task{
 			{
 				Content: &exec.File{
-					Path:  "/hello/world!",
+					Path:  "/hello/{{ hello }}",
 					State: exec.FileTouch,
 				},
 			},
 			{
 				Content: &exec.File{
-					Path:  "/answer/42",
+					Path:  "/answer/{{ answer }}",
 					State: exec.FileTouch,
 				},
 			},
 			{
 				Content: &exec.File{
-					Path:  "/fruit/banana",
+					Path:  "/fruit/{{ fruit }}",
 					State: exec.FileTouch,
 				},
 			},

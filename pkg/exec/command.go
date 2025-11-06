@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -12,15 +13,15 @@ import (
 //	  "deviations": []
 //	}
 type Command struct {
-	Cmd                jinjaString   `sophons:"implemented"`
-	Argv               []jinjaString `sophons:"implemented"`
-	Creates            jinjaString   `sophons:"implemented"`
-	Removes            jinjaString   `sophons:"implemented"`
-	Chdir              jinjaString   `sophons:"implemented"`
-	ExpandArgumentVars bool          `yaml:"expand_argument_vars" sophons:"implemented"`
-	Stdin              jinjaString   `sophons:"implemented"`
-	StdinAddNewline    *bool         `yaml:"stdin_add_newline" sophons:"implemented"`
-	StripEmptyEnds     *bool         `yaml:"strip_empty_ends"`
+	Cmd                string   `sophons:"implemented"`
+	Argv               []string `sophons:"implemented"`
+	Creates            string   `sophons:"implemented"`
+	Removes            string   `sophons:"implemented"`
+	Chdir              string   `sophons:"implemented"`
+	ExpandArgumentVars bool     `yaml:"expand_argument_vars" sophons:"implemented"`
+	Stdin              string   `sophons:"implemented"`
+	StdinAddNewline    *bool    `yaml:"stdin_add_newline" sophons:"implemented"`
+	StripEmptyEnds     *bool    `yaml:"strip_empty_ends"`
 }
 
 func init() {
@@ -32,15 +33,19 @@ func (c *Command) Validate() error {
 	return validateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
 }
 
-func (c *Command) Apply(_ string, _ bool) error {
+func (c *Command) Apply(ctx context.Context, _ string, _ bool) error {
+	if err := ProcessJinjaTemplates(ctx, c); err != nil {
+		return err
+	}
+
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
-		if string(c.Cmd) != "" {
+		if c.Cmd != "" {
 			var splitCmd []string
 			if c.ExpandArgumentVars {
-				splitCmd = strings.Split(os.ExpandEnv(string(c.Cmd)), " ")
+				splitCmd = strings.Split(os.ExpandEnv(c.Cmd), " ")
 			} else {
-				splitCmd = strings.Split(string(c.Cmd), " ")
+				splitCmd = strings.Split(c.Cmd, " ")
 			}
 			var args []string
 			if len(splitCmd) > 1 {
@@ -52,12 +57,10 @@ func (c *Command) Apply(_ string, _ bool) error {
 			var argv []string
 			if c.ExpandArgumentVars {
 				for _, arg := range c.Argv {
-					argv = append(argv, os.ExpandEnv(string(arg)))
+					argv = append(argv, os.ExpandEnv(arg))
 				}
 			} else {
-				for _, arg := range c.Argv {
-					argv = append(argv, string(arg))
-				}
+				argv = c.Argv
 			}
 
 			if len(argv) > 1 {

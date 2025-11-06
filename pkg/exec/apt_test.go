@@ -41,7 +41,7 @@ func TestAptValidate(t *testing.T) {
 	cacheValidTime := uint64(360)
 	pTrue := true
 	a := &Apt{
-		Name: []jinjaString{
+		Name: []string{
 			"curl",
 		},
 		CacheValidTime: &cacheValidTime,
@@ -72,11 +72,11 @@ upgrade: "full"`)
 	pTrue := true
 	expected := Apt{
 		Clean: false,
-		Name: []jinjaString{
+		Name: []string{
 			"foo",
 			"bar",
 		},
-		State:       jinjaString(AptPresent),
+		State:       string(AptPresent),
 		UpdateCache: &pTrue,
 		Upgrade:     AptUpgradeFull,
 	}
@@ -104,11 +104,11 @@ upgrade: "full"`)
 	pTrue := true
 	expected := Apt{
 		Clean: false,
-		Name: []jinjaString{
+		Name: []string{
 			"foo",
 			"bar",
 		},
-		State:       jinjaString(AptPresent),
+		State:       string(AptPresent),
 		UpdateCache: &pTrue,
 		Upgrade:     AptUpgradeFull,
 	}

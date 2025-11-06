@@ -153,7 +153,7 @@ state: "touch"`)
 	}
 
 	expected := File{
-		Path:  "/bar",
+		Path:  "{{ foo }}",
 		State: FileTouch,
 	}
 

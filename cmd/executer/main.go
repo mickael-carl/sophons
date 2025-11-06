@@ -59,7 +59,7 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 						return fmt.Errorf("validation failed: %w", err)
 					}
 
-					if err := task.Apply(filepath.Join(rolesDir, roleName), true); err != nil {
+					if err := task.Apply(ctx, filepath.Join(rolesDir, roleName), true); err != nil {
 						return fmt.Errorf("failed to apply task: %w", err)
 					}
 				}
@@ -72,7 +72,7 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 					return fmt.Errorf("validation failed: %w", err)
 				}
 
-				if err := task.Apply(filepath.Dir(playbookPath), false); err != nil {
+				if err := task.Apply(ctx, filepath.Dir(playbookPath), false); err != nil {
 					return fmt.Errorf("failed to apply task: %w", err)
 				}
 			}

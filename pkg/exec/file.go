@@ -32,25 +32,25 @@ const (
 //	  ]
 //	}
 type File struct {
-	Path    jinjaString `sophons:"implemented"`
-	Follow  *bool       `sophons:"implemented"`
-	Group   jinjaString `sophons:"implemented"`
-	Mode    jinjaString `sophons:"implemented"`
-	Owner   jinjaString `sophons:"implemented"`
-	Recurse bool        `sophons:"implemented"`
-	Src     jinjaString `sophons:"implemented"`
-	State   FileState   `sophons:"implemented"`
+	Path    string    `sophons:"implemented"`
+	Follow  *bool     `sophons:"implemented"`
+	Group   string    `sophons:"implemented"`
+	Mode    string    `sophons:"implemented"`
+	Owner   string    `sophons:"implemented"`
+	Recurse bool      `sophons:"implemented"`
+	Src     string    `sophons:"implemented"`
+	State   FileState `sophons:"implemented"`
 
-	AccessTime             jinjaString `yaml:"access_time"`
-	AccessTimeFormat       jinjaString `yaml:"access_time_format"`
-	Attributes             jinjaString
+	AccessTime             string `yaml:"access_time"`
+	AccessTimeFormat       string `yaml:"access_time_format"`
+	Attributes             string
 	Force                  bool
-	ModificationTime       jinjaString `yaml:"modification_time"`
-	ModificationTimeFormat jinjaString `yaml:"modification_time_format"`
-	Selevel                jinjaString
-	Serole                 jinjaString
-	Setype                 jinjaString
-	Seuser                 jinjaString
+	ModificationTime       string `yaml:"modification_time"`
+	ModificationTimeFormat string `yaml:"modification_time_format"`
+	Selevel                string
+	Serole                 string
+	Setype                 string
+	Seuser                 string
 	UnsafeWrites           bool `yaml:"unsafe_writes"`
 }
 
@@ -66,8 +66,8 @@ func (f *File) UnmarshalYAML(ctx context.Context, b []byte) error {
 	}
 
 	type file struct {
-		Dest jinjaString
-		Name jinjaString
+		Dest string
+		Name string
 	}
 
 	var aux file
@@ -183,7 +183,11 @@ func (f *File) Validate() error {
 	return nil
 }
 
-func (f *File) Apply(_ string, _ bool) error {
+func (f *File) Apply(ctx context.Context, _ string, _ bool) error {
+	if err := ProcessJinjaTemplates(ctx, f); err != nil {
+		return err
+	}
+
 	var follow bool
 	// The default for `follow` is true.
 	if f.Follow == nil {
@@ -195,7 +199,7 @@ func (f *File) Apply(_ string, _ bool) error {
 	actualState := f.State
 
 	exists := false
-	_, err := os.Lstat(string(f.Path))
+	_, err := os.Lstat(f.Path)
 	if err == nil {
 		exists = true
 	} else {
@@ -214,31 +218,31 @@ func (f *File) Apply(_ string, _ bool) error {
 		}
 	}
 
-	uid, err := getUid(string(f.Owner))
+	uid, err := getUid(f.Owner)
 	if err != nil {
 		return err
 	}
 
-	gid, err := getGid(string(f.Owner))
+	gid, err := getGid(f.Owner)
 	if err != nil {
 		return err
 	}
 
 	switch actualState {
 	case FileAbsent:
-		return os.RemoveAll(string(f.Path))
+		return os.RemoveAll(f.Path)
 
 	case FileDirectory:
 		// If f.Mode is not specified, i.e. we don't specify a mode, Ansible
 		// says it'll use the default umask. To emulate that, but not do
 		// anything on existing files/directories, we call MkdirAll, which
 		// won't alter existing things as expected.
-		if err := os.MkdirAll(string(f.Path), os.FileMode(0o755)); err != nil {
+		if err := os.MkdirAll(f.Path, os.FileMode(0o755)); err != nil {
 			return err
 		}
 
 		if f.Recurse {
-			if err := filepath.WalkDir(string(f.Path), func(path string, d fs.DirEntry, err error) error {
+			if err := filepath.WalkDir(f.Path, func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
 				}
@@ -251,12 +255,12 @@ func (f *File) Apply(_ string, _ bool) error {
 						return err
 					}
 					if f.Mode != "" {
-						if err := util.ChmodFromString(path, string(f.Mode)); err != nil {
+						if err := util.ChmodFromString(path, f.Mode); err != nil {
 							return err
 						}
 					}
 				} else {
-					if err := applyModeAndIDs(path, string(f.Mode), uid, gid); err != nil {
+					if err := applyModeAndIDs(path, f.Mode, uid, gid); err != nil {
 						return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 					}
 				}
@@ -266,7 +270,7 @@ func (f *File) Apply(_ string, _ bool) error {
 				return err
 			}
 		} else {
-			if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+			if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
@@ -281,7 +285,7 @@ func (f *File) Apply(_ string, _ bool) error {
 			return nil
 		}
 
-		if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+		if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 
@@ -290,35 +294,35 @@ func (f *File) Apply(_ string, _ bool) error {
 
 	case FileLink:
 		if !exists {
-			if err := os.Symlink(string(f.Src), string(f.Path)); err != nil {
+			if err := os.Symlink(f.Src, f.Path); err != nil {
 				return err
 			}
 		} else {
-			existingSrc, err := os.Readlink(string(f.Path))
+			existingSrc, err := os.Readlink(f.Path)
 			if err != nil {
 				return err
 			}
 
-			if existingSrc != string(f.Src) {
-				if err := os.Remove(string(f.Path)); err != nil {
+			if existingSrc != f.Src {
+				if err := os.Remove(f.Path); err != nil {
 					return err
 				}
 
-				if err := os.Symlink(string(f.Src), string(f.Path)); err != nil {
+				if err := os.Symlink(f.Src, f.Path); err != nil {
 					return err
 				}
 			}
 		}
 
 		if follow {
-			if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+			if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
 
 	case FileTouch:
 		if !exists {
-			if _, err := os.Create(string(f.Path)); err != nil {
+			if _, err := os.Create(f.Path); err != nil {
 				return fmt.Errorf("failed to create %s: %w", f.Path, err)
 			}
 		}
@@ -326,7 +330,7 @@ func (f *File) Apply(_ string, _ bool) error {
 		// The Ansible docs say that if the file exists, atime and mtime will
 		// be updated but not more. That proves to not be accurate:
 		// permissions, uid and gid will be updated too.
-		if err := applyModeAndIDs(string(f.Path), string(f.Mode), uid, gid); err != nil {
+		if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 

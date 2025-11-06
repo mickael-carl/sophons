@@ -1,11 +1,60 @@
 package exec
 
-import "testing"
+import (
+	"context"
+	"testing"
 
-var pFalse = false
+	"github.com/google/go-cmp/cmp"
+	"github.com/mickael-carl/sophons/pkg/variables"
+)
+
+func TestProcessJinjaTemplates(t *testing.T) {
+	type testStruct struct {
+		Foo string
+		Bar []string
+		Baz struct {
+			Qux string
+		}
+	}
+
+	ctx := variables.NewContext(context.Background(), variables.Variables{
+		"foo": "bar",
+		"qux": "quux",
+	})
+
+	ts := &testStruct{
+		Foo: "{{ foo }}",
+		Bar: []string{"{{ foo }}", "{{ qux }}"},
+		Baz: struct {
+			Qux string
+		}{
+			Qux: "{{ qux }}",
+		},
+	}
+
+	if err := ProcessJinjaTemplates(ctx, ts); err != nil {
+		t.Error(err)
+	}
+
+	expected := &testStruct{
+		Foo: "bar",
+		Bar: []string{"bar", "quux"},
+		Baz: struct {
+			Qux string
+		}{
+			Qux: "quux",
+		},
+	}
+
+	if !cmp.Equal(ts, expected) {
+		t.Errorf("got %#v but expected %#v", ts, expected)
+	}
+}
 
 func TestValidateCmdMissingCommand(t *testing.T) {
-	err := validateCmd([]jinjaString{}, "", "", &pFalse)
+	pFalse := false
+
+	err := validateCmd([]string{}, "", "", &pFalse)
 	if err == nil {
 		t.Error("a command with cmd or argv set is not valid")
 	}
@@ -16,8 +65,10 @@ func TestValidateCmdMissingCommand(t *testing.T) {
 }
 
 func TestValidateCmdConflictingParameters(t *testing.T) {
+	pFalse := false
+
 	err := validateCmd(
-		[]jinjaString{
+		[]string{
 			"ls",
 			"-l",
 		},
@@ -36,8 +87,10 @@ func TestValidateCmdConflictingParameters(t *testing.T) {
 }
 
 func TestValidateCmd(t *testing.T) {
+	pFalse := false
+
 	if err := validateCmd(
-		[]jinjaString{},
+		[]string{},
 		"ls -l",
 		"",
 		&pFalse,
@@ -50,7 +103,7 @@ func TestValidateCmdStdinMissing(t *testing.T) {
 	pTrue := true
 
 	err := validateCmd(
-		[]jinjaString{},
+		[]string{},
 		"cat",
 		"",
 		&pTrue,

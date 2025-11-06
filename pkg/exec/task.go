@@ -8,10 +8,6 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
-	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/exec"
-
-	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 type Task struct {
@@ -23,8 +19,8 @@ func (t Task) Validate() error {
 	return t.Content.Validate()
 }
 
-func (t Task) Apply(parentPath string, isRole bool) error {
-	return t.Content.Apply(parentPath, isRole)
+func (t Task) Apply(ctx context.Context, parentPath string, isRole bool) error {
+	return t.Content.Apply(ctx, parentPath, isRole)
 }
 
 func (t Task) String() string {
@@ -42,7 +38,7 @@ func (t Task) String() string {
 
 type TaskContent interface {
 	Validate() error
-	Apply(string, bool) error
+	Apply(context.Context, string, bool) error
 }
 
 var taskRegistry = map[string]func() TaskContent{}
@@ -53,7 +49,6 @@ func RegisterTaskType(name string, factory func() TaskContent) {
 
 func init() {
 	yaml.RegisterCustomUnmarshalerContext[[]Task](tasksUnmarshalYAML)
-	yaml.RegisterCustomUnmarshalerContext[jinjaString](jinjaStringUnmarshalYAML)
 }
 
 func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
@@ -92,37 +87,5 @@ func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
 	}
 
 	*t = tasksOut
-	return nil
-}
-
-// TODO: move to support also Jinja in non-string types.
-type jinjaString string
-
-func jinjaStringUnmarshalYAML(ctx context.Context, j *jinjaString, b []byte) error {
-	var vars variables.Variables
-	vars, ok := variables.FromContext(ctx)
-	if !ok {
-		vars = variables.Variables{}
-	}
-
-	varsCtx := exec.NewContext(vars)
-
-	var raw string
-	if err := yaml.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-
-	template, err := gonja.FromString(raw)
-	if err != nil {
-		return err
-	}
-
-	expanded, err := template.ExecuteToString(varsCtx)
-	if err != nil {
-		return err
-	}
-
-	*j = jinjaString(expanded)
-
 	return nil
 }

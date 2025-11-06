@@ -48,24 +48,24 @@ type Apt struct {
 	AutoRemove              bool    `yaml:"autoremove"`
 	CacheValidTime          *uint64 `yaml:"cache_valid_time" sophons:"implemented"`
 	Clean                   bool    `sophons:"implemented"`
-	Deb                     jinjaString
-	DefaultRelease          jinjaString `yaml:"default_release"`
-	DpkgOptions             jinjaString `yaml:"dpkg_options"`
-	FailOnAutoremove        bool        `yaml:"fail_on_autoremove"`
+	Deb                     string
+	DefaultRelease          string `yaml:"default_release"`
+	DpkgOptions             string `yaml:"dpkg_options"`
+	FailOnAutoremove        bool   `yaml:"fail_on_autoremove"`
 	Force                   bool
-	ForceAptGet             bool          `yaml:"force_apt_get"`
-	InstallRecommends       bool          `yaml:"install_recommends"`
-	LockTimeout             int64         `yaml:"lock_timeout"`
-	Name                    []jinjaString `sophons:"implemented"`
+	ForceAptGet             bool     `yaml:"force_apt_get"`
+	InstallRecommends       bool     `yaml:"install_recommends"`
+	LockTimeout             int64    `yaml:"lock_timeout"`
+	Name                    []string `sophons:"implemented"`
 
 	OnlyUpgrade              bool  `yaml:"only_upgrade"`
 	PolicyRCD                int64 `yaml:"policy_rc_d"`
 	Purge                    bool
-	State                    jinjaString `sophons:"implemented"`
-	UpdateCache              *bool       `yaml:"update_cache" sophons:"implemented"`
-	UpdateCacheRetries       uint64      `yaml:"update_cache_retries"`
-	UpdateCacheRetryMaxDelay uint64      `yaml:"update_cache_retry_max_delay"`
-	Upgrade                  jinjaString `sophons:"implemented"`
+	State                    string `sophons:"implemented"`
+	UpdateCache              *bool  `yaml:"update_cache" sophons:"implemented"`
+	UpdateCacheRetries       uint64 `yaml:"update_cache_retries"`
+	UpdateCacheRetryMaxDelay uint64 `yaml:"update_cache_retry_max_delay"`
+	Upgrade                  string `sophons:"implemented"`
 }
 
 func init() {
@@ -80,8 +80,8 @@ func (a *Apt) UnmarshalYAML(ctx context.Context, b []byte) error {
 	}
 
 	type apt struct {
-		Pkg         []jinjaString
-		Package     []jinjaString
+		Pkg         []string
+		Package     []string
 		UpdateCache bool `yaml:"update-cache"`
 	}
 
@@ -115,7 +115,7 @@ func (a *Apt) Validate() error {
 		"":             {},
 	}
 
-	if _, ok := supportedUpgrade[string(a.Upgrade)]; !ok {
+	if _, ok := supportedUpgrade[a.Upgrade]; !ok {
 		return fmt.Errorf("unsupported upgrade mode: %s", a.Upgrade)
 	}
 
@@ -154,7 +154,11 @@ func (a *Apt) handleUpdate() error {
 	return nil
 }
 
-func (a *Apt) Apply(_ string, _ bool) error {
+func (a *Apt) Apply(ctx context.Context, _ string, _ bool) error {
+	if err := ProcessJinjaTemplates(ctx, a); err != nil {
+		return err
+	}
+
 	if a.Clean {
 		if _, err := apt.Clean(); err != nil {
 			return fmt.Errorf("failed to clean apt cache: %w", err)
@@ -203,13 +207,13 @@ func (a *Apt) Apply(_ string, _ bool) error {
 		for _, wanted := range a.Name {
 			found := false
 			for _, p := range installed {
-				if p.Name == string(wanted) {
+				if p.Name == wanted {
 					found = true
 					break
 				}
 			}
 			if !found {
-				toInstall = append(toInstall, &apt.Package{Name: string(wanted)})
+				toInstall = append(toInstall, &apt.Package{Name: wanted})
 			}
 		}
 
@@ -220,7 +224,7 @@ func (a *Apt) Apply(_ string, _ bool) error {
 		toInstall := []*apt.Package{}
 		for _, p := range a.Name {
 			toInstall = append(toInstall, &apt.Package{
-				Name: string(p),
+				Name: p,
 			})
 		}
 
@@ -234,7 +238,7 @@ func (a *Apt) Apply(_ string, _ bool) error {
 		toRemove := []*apt.Package{}
 		for _, p := range a.Name {
 			toRemove = append(toRemove, &apt.Package{
-				Name: string(p),
+				Name: p,
 			})
 		}
 
