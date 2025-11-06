@@ -1,6 +1,13 @@
 package exec
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	"github.com/goccy/go-yaml"
+	"github.com/google/go-cmp/cmp"
+	"github.com/mickael-carl/sophons/pkg/variables"
+)
 
 func TestFileValidateInvalidState(t *testing.T) {
 	f := &File{
@@ -62,5 +69,95 @@ func TestFileValidateLinkWithoutSrc(t *testing.T) {
 
 	if err.Error() != "src option is required when state is 'link' or 'hard'" {
 		t.Error(err)
+	}
+}
+
+func TestFileUnmarshalYAML(t *testing.T) {
+	b := []byte(`
+path: "/foo"
+follow: false
+group: "bar"
+mode: "0644"
+owner: "baz"
+recurse: false
+src: "/hello"
+state: "file"`)
+
+	var got File
+	if err := yaml.Unmarshal(b, &got); err != nil {
+		t.Error(err)
+	}
+
+	pFalse := false
+	expected := File{
+		Path:    "/foo",
+		Follow:  &pFalse,
+		Group:   "bar",
+		Mode:    "0644",
+		Owner:   "baz",
+		Recurse: false,
+		Src:     "/hello",
+		State:   FileFile,
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+}
+
+func TestFileUnmarshalYAMLAliases(t *testing.T) {
+	b := []byte(`
+dest: "/foo"
+follow: false
+group: "bar"
+mode: "0644"
+owner: "baz"
+recurse: false
+src: "/hello"
+state: "file"`)
+
+	var got File
+	if err := yaml.Unmarshal(b, &got); err != nil {
+		t.Error(err)
+	}
+
+	pFalse := false
+	expected := File{
+		Path:    "/foo",
+		Follow:  &pFalse,
+		Group:   "bar",
+		Mode:    "0644",
+		Owner:   "baz",
+		Recurse: false,
+		Src:     "/hello",
+		State:   FileFile,
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+}
+
+func TestFileUnmarshalYAMLAliasesVariables(t *testing.T) {
+	ctx := variables.NewContext(context.Background(), variables.Variables{
+		"foo": "/bar",
+	})
+
+	b := []byte(`
+name: "{{ foo }}"
+state: "touch"`)
+
+	var got File
+	if err := yaml.UnmarshalContext(ctx, b, &got); err != nil {
+		t.Error(err)
+	}
+
+	expected := File{
+		Path:  "/bar",
+		State: FileTouch,
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }

@@ -22,3 +22,6 @@
         path: /tmp/ansible/test-mode
         state: touch
         mode: "u=rwx,g+w,o-rwx"
+    - ansible.builtin.file:
+        name: "/bla"
+        state: touch
