@@ -1,19 +1,12 @@
 package exec
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 func TestTasksUnmarshalYAML(t *testing.T) {
-	ctx := variables.NewContext(context.Background(), variables.Variables{
-		"foo":   "bar",
-		"input": "world",
-	})
-
 	b := []byte(`
 - name: "testing"
   ansible.builtin.file:
@@ -26,7 +19,7 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 `)
 
 	var got []Task
-	if err := tasksUnmarshalYAML(ctx, &got, b); err != nil {
+	if err := tasksUnmarshalYAML(&got, b); err != nil {
 		t.Error(err)
 	}
 

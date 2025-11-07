@@ -1,7 +1,6 @@
 package role
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -17,7 +16,7 @@ import (
 // looks for a `tasks/main.yml` first, then if not found tries
 // `tasks/main.yaml`, then `tasks/main` but stops there. Contrary to variables,
 // it does not go into a subdirectory called `tasks/main`.
-func processTasks(ctx context.Context, fsys fs.FS, root string) ([]exec.Task, error) {
+func processTasks(fsys fs.FS, root string) ([]exec.Task, error) {
 	// NOTE: the code looks very similar to `processVars` and it could be tempting
 	// to try and refactor both those functions to not duplicate it so much. Given
 	// how quirky Ansible is though and the fact that variables and tasks are
@@ -28,7 +27,7 @@ func processTasks(ctx context.Context, fsys fs.FS, root string) ([]exec.Task, er
 	// Careful here: we look for no error first on purpose as it makes the code
 	// much more readable.
 	if err == nil {
-		if err = yaml.UnmarshalContext(ctx, data, &tasks); err != nil {
+		if err = yaml.Unmarshal(data, &tasks); err != nil {
 			return []exec.Task{}, fmt.Errorf("failed to unmarshal tasks: %w", err)
 		}
 		return tasks, nil
@@ -39,7 +38,7 @@ func processTasks(ctx context.Context, fsys fs.FS, root string) ([]exec.Task, er
 
 	data, err = fs.ReadFile(fsys, filepath.Join(root, "main.yaml"))
 	if err == nil {
-		if err = yaml.UnmarshalContext(ctx, data, &tasks); err != nil {
+		if err = yaml.Unmarshal(data, &tasks); err != nil {
 			return []exec.Task{}, fmt.Errorf("failed to unmarshal tasks: %w", err)
 		}
 		return tasks, nil
@@ -66,7 +65,7 @@ func processTasks(ctx context.Context, fsys fs.FS, root string) ([]exec.Task, er
 		return []exec.Task{}, fmt.Errorf("failed to read content of main/ directory: %w", err)
 	}
 
-	if err = yaml.UnmarshalContext(ctx, data, &tasks); err != nil {
+	if err = yaml.Unmarshal(data, &tasks); err != nil {
 		return []exec.Task{}, fmt.Errorf("failed to unmarshal tasks: %w", err)
 	}
 	return tasks, nil

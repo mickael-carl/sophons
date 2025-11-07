@@ -50,15 +50,13 @@ fruit: "banana"
 	}
 
 	expected := Role{
-		Defaults: variables.Variables{
-			"fruit": "banana",
-			"true":  true,
-		},
-		Variables: variables.Variables{
+		vars: variables.Variables{
+			"fruit":  "banana",
+			"true":   true,
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
-		Tasks: []exec.Task{
+		tasks: []exec.Task{
 			{
 				Content: &exec.File{
 					Path:  "/foo",
@@ -68,7 +66,7 @@ fruit: "banana"
 		},
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
@@ -118,15 +116,12 @@ fruit: "banana"
 	}
 
 	expected := Role{
-		Defaults: variables.Variables{
+		vars: variables.Variables{
 			"fruit":  "banana",
-			"answer": uint64(41),
-		},
-		Variables: variables.Variables{
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
-		Tasks: []exec.Task{
+		tasks: []exec.Task{
 			{
 				Content: &exec.File{
 					Path:  "/hello/{{ hello }}",
@@ -148,7 +143,7 @@ fruit: "banana"
 		},
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
@@ -197,12 +192,11 @@ This is a very minimal role.
 	}
 
 	expected := Role{
-		Defaults:  variables.Variables(nil),
-		Variables: variables.Variables(nil),
-		Tasks:     []exec.Task{},
+		vars:  variables.Variables{},
+		tasks: []exec.Task{},
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }

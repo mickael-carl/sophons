@@ -31,7 +31,7 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 	}
 
 	var playbook playbook.Playbook
-	if err := yaml.UnmarshalContext(ctx, playbookData, &playbook); err != nil {
+	if err := yaml.Unmarshal(playbookData, &playbook); err != nil {
 		return fmt.Errorf("failed to unmarshal playbook from %s: %w", playbookPath, err)
 	}
 
@@ -45,23 +45,13 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 
 				role, ok := roles[roleName]
 				if !ok {
-					log.Fatalf("no such role: %s", roleName)
+					return fmt.Errorf("no such role: %s", roleName)
 				}
 
-				for _, task := range role.Tasks {
-					// TODO: remove the duplication with the play level tasks
-					// execution: add a Apply() to Play and Role and call that.
+				log.Printf("%s: %#v", roleName, role)
 
-					// TODO: better formatting or maybe make that a new method.
-					log.Printf("%+v", task)
-
-					if err := task.Validate(); err != nil {
-						return fmt.Errorf("validation failed: %w", err)
-					}
-
-					if err := task.Apply(ctx, filepath.Join(rolesDir, roleName), true); err != nil {
-						return fmt.Errorf("failed to apply task: %w", err)
-					}
+				if err := role.Apply(filepath.Join(rolesDir, roleName)); err != nil {
+					return fmt.Errorf("failed to apply role %s: %w", roleName, err)
 				}
 			}
 			for _, task := range play.Tasks {
