@@ -48,10 +48,10 @@ func RegisterTaskType(name string, factory func() TaskContent) {
 }
 
 func init() {
-	yaml.RegisterCustomUnmarshalerContext[[]Task](tasksUnmarshalYAML)
+	yaml.RegisterCustomUnmarshaler[[]Task](tasksUnmarshalYAML)
 }
 
-func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
+func tasksUnmarshalYAML(t *[]Task, b []byte) error {
 	var raw []map[string]ast.Node
 	if err := yaml.Unmarshal(b, &raw); err != nil {
 		return err
@@ -62,7 +62,7 @@ func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
 		var name string
 		if n, ok := task["name"]; ok {
 			var buf bytes.Buffer
-			if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, n, &name); err != nil {
+			if err := yaml.NewDecoder(&buf).DecodeFromNode(n, &name); err != nil {
 				return err
 			}
 		}
@@ -78,7 +78,7 @@ func tasksUnmarshalYAML(ctx context.Context, t *[]Task, b []byte) error {
 			f := factory()
 
 			var buf bytes.Buffer
-			if err := yaml.NewDecoder(&buf).DecodeFromNodeContext(ctx, node, f); err != nil {
+			if err := yaml.NewDecoder(&buf).DecodeFromNode(node, f); err != nil {
 				return err
 			}
 			t.Content = f

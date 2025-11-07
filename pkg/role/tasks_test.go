@@ -1,7 +1,6 @@
 package role
 
 import (
-	"context"
 	"testing"
 	"testing/fstest"
 
@@ -22,7 +21,7 @@ func TestProcessTasks(t *testing.T) {
 		},
 	}
 
-	got, err := processTasks(context.Background(), fsys, "somerole/tasks")
+	got, err := processTasks(fsys, "somerole/tasks")
 	if err != nil {
 		t.Error(err)
 	}

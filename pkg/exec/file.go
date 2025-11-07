@@ -59,9 +59,9 @@ func init() {
 	RegisterTaskType("ansible.builtin.file", func() TaskContent { return &File{} })
 }
 
-func (f *File) UnmarshalYAML(ctx context.Context, b []byte) error {
+func (f *File) UnmarshalYAML(b []byte) error {
 	type plain File
-	if err := yaml.UnmarshalContext(ctx, b, (*plain)(f)); err != nil {
+	if err := yaml.Unmarshal(b, (*plain)(f)); err != nil {
 		return err
 	}
 
@@ -71,7 +71,7 @@ func (f *File) UnmarshalYAML(ctx context.Context, b []byte) error {
 	}
 
 	var aux file
-	if err := yaml.UnmarshalContext(ctx, b, &aux); err != nil {
+	if err := yaml.Unmarshal(b, &aux); err != nil {
 		return err
 	}
 

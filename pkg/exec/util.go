@@ -38,7 +38,7 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 
 		switch field.Kind() {
 		case reflect.String:
-			jinjaString := field.Interface().(string)
+			jinjaString := field.String()
 			if jinjaString == "" {
 				continue
 			}
@@ -54,7 +54,7 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 		case reflect.Slice:
 			if field.Type().Elem().Kind() == reflect.String {
 				for j := 0; j < field.Len(); j++ {
-					jinjaString := field.Index(j).Interface().(string)
+					jinjaString := field.Index(j).String()
 					if jinjaString == "" {
 						continue
 					}

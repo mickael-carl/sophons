@@ -1,12 +1,10 @@
 package exec
 
 import (
-	"context"
 	"testing"
 
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
-	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 func TestFileValidateInvalidState(t *testing.T) {
@@ -131,30 +129,6 @@ state: "file"`)
 		Recurse: false,
 		Src:     "/hello",
 		State:   FileFile,
-	}
-
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
-	}
-}
-
-func TestFileUnmarshalYAMLAliasesVariables(t *testing.T) {
-	ctx := variables.NewContext(context.Background(), variables.Variables{
-		"foo": "/bar",
-	})
-
-	b := []byte(`
-name: "{{ foo }}"
-state: "touch"`)
-
-	var got File
-	if err := yaml.UnmarshalContext(ctx, b, &got); err != nil {
-		t.Error(err)
-	}
-
-	expected := File{
-		Path:  "{{ foo }}",
-		State: FileTouch,
 	}
 
 	if !cmp.Equal(got, expected) {

@@ -39,9 +39,9 @@ func init() {
 	RegisterTaskType("ansible.builtin.apt_repository", func() TaskContent { return &AptRepository{} })
 }
 
-func (a *AptRepository) UnmarshalYAML(ctx context.Context, b []byte) error {
+func (a *AptRepository) UnmarshalYAML(b []byte) error {
 	type plain AptRepository
-	if err := yaml.UnmarshalContext(ctx, b, (*plain)(a)); err != nil {
+	if err := yaml.Unmarshal(b, (*plain)(a)); err != nil {
 		return err
 	}
 
@@ -50,7 +50,7 @@ func (a *AptRepository) UnmarshalYAML(ctx context.Context, b []byte) error {
 	}
 
 	var aux aptRepository
-	if err := yaml.UnmarshalContext(ctx, b, &aux); err != nil {
+	if err := yaml.Unmarshal(b, &aux); err != nil {
 		return err
 	}
 

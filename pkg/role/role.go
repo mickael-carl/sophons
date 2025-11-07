@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"maps"
 	"os"
 	"path"
@@ -15,9 +16,8 @@ import (
 
 type Role struct {
 	// TODO: add files and templates.
-	Defaults  variables.Variables
-	Variables variables.Variables
-	Tasks     []exec.Task
+	vars  variables.Variables
+	tasks []exec.Task
 }
 
 func DiscoverRoles(ctx context.Context, rolesPath string) (map[string]Role, error) {
@@ -53,6 +53,7 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 	isARole := false
 	var role Role
 
+	var defaults variables.Variables
 	// First check for defaults, since those have low precedence.
 	_, err := fs.Stat(fsys, path.Join(name, "defaults"))
 	if err != nil {
@@ -61,13 +62,13 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 		}
 	} else {
 		isARole = true
-		defaults, err := processVars(fsys, path.Join(name, "defaults"))
+		defaults, err = processVars(fsys, path.Join(name, "defaults"))
 		if err != nil {
 			return Role{}, false, err
 		}
-		role.Defaults = defaults
 	}
 
+	var vars variables.Variables
 	// Then check for role variables, since those have higher precedence than
 	// defaults, but lower than play/inventory-level variables.
 	// First check for defaults, since those have low precedence.
@@ -78,18 +79,17 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 		}
 	} else {
 		isARole = true
-		vars, err := processVars(fsys, path.Join(name, "vars"))
+		vars, err = processVars(fsys, path.Join(name, "vars"))
 		if err != nil {
 			return Role{}, false, err
 		}
-		role.Variables = vars
 	}
 
 	// Per https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence:
 	// defaults have lowest precedence. Over that are inventory vars, then
 	// playbook vars, then role vars.
 	roleVars := variables.Variables{}
-	maps.Copy(roleVars, role.Defaults)
+	maps.Copy(roleVars, defaults)
 
 	additionalVars, ok := variables.FromContext(ctx)
 	if !ok {
@@ -97,9 +97,9 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 	}
 	maps.Copy(roleVars, additionalVars)
 
-	maps.Copy(roleVars, role.Variables)
+	maps.Copy(roleVars, vars)
 
-	roleCtx := variables.NewContext(ctx, roleVars)
+	role.vars = roleVars
 
 	// Then process the rest of the directory (order doesn't really matter anymore).
 	entries, err := fs.ReadDir(fsys, name)
@@ -120,11 +120,11 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 		switch entry.Name() {
 		case "tasks":
 			isARole = true
-			tasks, err := processTasks(roleCtx, fsys, entryPath)
+			tasks, err := processTasks(fsys, entryPath)
 			if err != nil {
 				return Role{}, false, err
 			}
-			role.Tasks = tasks
+			role.tasks = tasks
 
 		// TODO: those are dirs found in a role, but not implemented currently.
 		case "handlers", "templates", "files", "meta", "library", "module_utils", "lookup_plugins":
@@ -134,4 +134,24 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 	}
 
 	return role, isARole, nil
+}
+
+func (r *Role) Apply(parentPath string) error {
+	// We need to apply role variables here, since we've resolved variables in
+	// DiscoverRoles in the right precedence order.
+	ctx := variables.NewContext(context.Background(), r.vars)
+	for _, t := range r.tasks {
+		// TODO: better formatting or maybe make that a new method.
+		log.Printf("%+v", t)
+
+		if err := t.Validate(); err != nil {
+			return fmt.Errorf("failed to validate task: %w", err)
+		}
+
+		if err := t.Apply(ctx, parentPath, true); err != nil {
+			return fmt.Errorf("failed to apply task: %w", err)
+		}
+	}
+
+	return nil
 }
