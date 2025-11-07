@@ -33,11 +33,7 @@ func (c *Command) Validate() error {
 	return validateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
 }
 
-func (c *Command) Apply(ctx context.Context, _ string, _ bool) error {
-	if err := ProcessJinjaTemplates(ctx, c); err != nil {
-		return err
-	}
-
+func (c *Command) Apply(_ context.Context, _ string, _ bool) error {
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
 		if c.Cmd != "" {

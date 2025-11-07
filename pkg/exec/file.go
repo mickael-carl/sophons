@@ -183,11 +183,7 @@ func (f *File) Validate() error {
 	return nil
 }
 
-func (f *File) Apply(ctx context.Context, _ string, _ bool) error {
-	if err := ProcessJinjaTemplates(ctx, f); err != nil {
-		return err
-	}
-
+func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 	var follow bool
 	// The default for `follow` is true.
 	if f.Follow == nil {

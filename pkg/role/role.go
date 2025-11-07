@@ -141,6 +141,10 @@ func (r *Role) Apply(parentPath string) error {
 	// DiscoverRoles in the right precedence order.
 	ctx := variables.NewContext(context.Background(), r.vars)
 	for _, t := range r.tasks {
+		if err := exec.ProcessJinjaTemplates(ctx, &t); err != nil {
+			return fmt.Errorf("failed process Jinja templating: %w", err)
+		}
+
 		// TODO: better formatting or maybe make that a new method.
 		log.Printf("%+v", t)
 

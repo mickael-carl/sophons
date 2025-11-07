@@ -82,11 +82,7 @@ func (ar *AptRepository) Validate() error {
 	return nil
 }
 
-func (ar *AptRepository) Apply(ctx context.Context, _ string, _ bool) error {
-	if err := ProcessJinjaTemplates(ctx, ar); err != nil {
-		return err
-	}
-
+func (ar *AptRepository) Apply(_ context.Context, _ string, _ bool) error {
 	repos, err := apt.ParseAPTConfigFolder("/etc/apt")
 	if err != nil {
 		return fmt.Errorf("failed to parse existing repositories: %w", err)

@@ -31,11 +31,7 @@ func (s *Shell) Validate() error {
 	return validateCmd(s.Argv, s.Cmd, s.Stdin, s.StdinAddNewline)
 }
 
-func (s *Shell) Apply(ctx context.Context, _ string, _ bool) error {
-	if err := ProcessJinjaTemplates(ctx, s); err != nil {
-		return err
-	}
-
+func (s *Shell) Apply(_ context.Context, _ string, _ bool) error {
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
 		exe := "/bin/sh"

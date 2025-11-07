@@ -154,11 +154,7 @@ func (a *Apt) handleUpdate() error {
 	return nil
 }
 
-func (a *Apt) Apply(ctx context.Context, _ string, _ bool) error {
-	if err := ProcessJinjaTemplates(ctx, a); err != nil {
-		return err
-	}
-
+func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 	if a.Clean {
 		if _, err := apt.Clean(); err != nil {
 			return fmt.Errorf("failed to clean apt cache: %w", err)

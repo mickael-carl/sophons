@@ -152,11 +152,7 @@ func (c *Copy) copyFile(actualSrc string) error {
 	return copySingleFile(actualSrc, c.Dest)
 }
 
-func (c *Copy) Apply(ctx context.Context, parentPath string, _ bool) error {
-	if err := ProcessJinjaTemplates(ctx, c); err != nil {
-		return err
-	}
-
+func (c *Copy) Apply(_ context.Context, parentPath string, _ bool) error {
 	if c.Content != "" {
 		return c.copyContent()
 	}
