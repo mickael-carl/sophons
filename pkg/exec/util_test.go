@@ -51,6 +51,40 @@ func TestProcessJinjaTemplates(t *testing.T) {
 	}
 }
 
+func TestProcessJinjaTemplatesInterface(t *testing.T) {
+	type interfaceStruct struct {
+		Content interface{}
+	}
+
+	type contentStruct struct {
+		Foo string
+	}
+
+	interfaceCtx := variables.NewContext(context.Background(), variables.Variables{
+		"foo": "bar",
+	})
+
+	is := &interfaceStruct{
+		Content: &contentStruct{
+			Foo: "{{ foo }}",
+		},
+	}
+
+	if err := ProcessJinjaTemplates(interfaceCtx, is); err != nil {
+		t.Error(err)
+	}
+
+	expectedInterface := &interfaceStruct{
+		Content: &contentStruct{
+			Foo: "bar",
+		},
+	}
+
+	if !cmp.Equal(is, expectedInterface) {
+		t.Errorf("got %#v but expected %#v", is, expectedInterface)
+	}
+}
+
 func TestValidateCmdMissingCommand(t *testing.T) {
 	pFalse := false
 
