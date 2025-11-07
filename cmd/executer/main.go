@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
+	"github.com/nikolalohinski/gonja/v2"
 
+	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/inventory"
 	"github.com/mickael-carl/sophons/pkg/playbook"
 	"github.com/mickael-carl/sophons/pkg/role"
@@ -55,6 +57,10 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 				}
 			}
 			for _, task := range play.Tasks {
+				if err := exec.ProcessJinjaTemplates(ctx, &task); err != nil {
+					return fmt.Errorf("failed to process Jinja templating: %w", err)
+				}
+
 				// TODO: better formatting or maybe make that a new method.
 				log.Printf("%+v", task)
 
@@ -72,6 +78,8 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 }
 
 func main() {
+	gonja.DefaultConfig.StrictUndefined = true
+
 	flag.Parse()
 
 	if len(flag.Args()) != 1 {

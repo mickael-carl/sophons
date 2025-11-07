@@ -53,8 +53,16 @@ func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool
 	}
 
 	for _, task := range tasks {
+		if err := ProcessJinjaTemplates(ctx, &task); err != nil {
+			return fmt.Errorf("failed to render Jinja templating from %s: %w", taskPath, err)
+		}
+
+		if err := task.Validate(); err != nil {
+			return fmt.Errorf("failed to validate task from %s: %w", taskPath, err)
+		}
+
 		if err := task.Apply(ctx, parentPath, isRole); err != nil {
-			return fmt.Errorf("failed to apply tasks from %s: %w", taskPath, err)
+			return fmt.Errorf("failed to apply task from %s: %w", taskPath, err)
 		}
 	}
 

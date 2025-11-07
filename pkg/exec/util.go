@@ -15,7 +15,7 @@ import (
 
 func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 	v := reflect.ValueOf(taskContent)
-	if v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 	t := v.Type()
@@ -72,6 +72,19 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 		case reflect.Struct:
 			if err := ProcessJinjaTemplates(ctx, field.Addr().Interface()); err != nil {
 				return err
+			}
+		case reflect.Interface:
+			if field.Elem().Kind() == reflect.Ptr {
+				if err := ProcessJinjaTemplates(ctx, field.Elem().Interface()); err != nil {
+					return err
+				}
+			} else {
+				newValue := reflect.New(field.Elem().Type())
+				newValue.Elem().Set(field.Elem())
+				if err := ProcessJinjaTemplates(ctx, newValue.Interface()); err != nil {
+					return err
+				}
+				field.Set(newValue)
 			}
 		}
 	}

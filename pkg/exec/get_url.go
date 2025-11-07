@@ -106,11 +106,7 @@ func (g *GetURL) Validate() error {
 	return nil
 }
 
-func (g *GetURL) Apply(ctx context.Context, parentPath string, _ bool) error {
-	if err := ProcessJinjaTemplates(ctx, g); err != nil {
-		return err
-	}
-
+func (g *GetURL) Apply(_ context.Context, parentPath string, _ bool) error {
 	resp, err := http.Get(g.URL)
 	if err != nil {
 		return fmt.Errorf("failed to get URL %s: %w", g.URL, err)

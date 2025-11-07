@@ -32,10 +32,6 @@ func (it *IncludeTasks) Validate() error {
 }
 
 func (it *IncludeTasks) Apply(ctx context.Context, parentPath string, isRole bool) error {
-	if err := ProcessJinjaTemplates(ctx, it); err != nil {
-		return err
-	}
-
 	// This is Ansible madness: include_tasks' File is relative to where the
 	// task is defined. If the task is within a role, then it can be found in
 	// the same directory as other tasks (i.e. in `tasks/`); but if the task is
@@ -58,8 +54,16 @@ func (it *IncludeTasks) Apply(ctx context.Context, parentPath string, isRole boo
 	}
 
 	for _, task := range tasks {
+		if err := ProcessJinjaTemplates(ctx, &task); err != nil {
+			return fmt.Errorf("failed to render Jinja templating from %s: %w", taskPath, err)
+		}
+
+		if err := task.Validate(); err != nil {
+			return fmt.Errorf("failed to validate task from %s: %w", taskPath, err)
+		}
+
 		if err := task.Apply(ctx, parentPath, isRole); err != nil {
-			return fmt.Errorf("failed to apply tasks from %s: %w", taskPath, err)
+			return fmt.Errorf("failed to apply task from %s: %w", taskPath, err)
 		}
 	}
 
