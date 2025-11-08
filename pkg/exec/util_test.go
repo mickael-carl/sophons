@@ -85,6 +85,62 @@ func TestProcessJinjaTemplatesInterface(t *testing.T) {
 	}
 }
 
+func TestProcessJinjaTemplatesInterfaceExpressionList(t *testing.T) {
+	type interfaceStruct struct {
+		Content interface{}
+	}
+
+	interfaceCtx := variables.NewContext(context.Background(), variables.Variables{
+		"foo": []string{"bar", "baz"},
+	})
+
+	is := &interfaceStruct{
+		Content: "{{ foo }}",
+	}
+
+	if err := ProcessJinjaTemplates(interfaceCtx, is); err != nil {
+		t.Error(err)
+	}
+
+	got := &interfaceStruct{
+		Content: getStringSlice(is.Content),
+	}
+
+	expectedInterface := &interfaceStruct{
+		Content: []string{"bar", "baz"},
+	}
+
+	if !cmp.Equal(got, expectedInterface) {
+		t.Errorf("got %#v but expected %#v", got, expectedInterface)
+	}
+}
+
+func TestProcessJinjaTemplatesInterfaceSlice(t *testing.T) {
+	type interfaceStruct struct {
+		Content interface{}
+	}
+
+	interfaceCtx := variables.NewContext(context.Background(), variables.Variables{
+		"foo": "bar",
+	})
+
+	is := &interfaceStruct{
+		Content: []string{"foo", "{{ foo }}"},
+	}
+
+	if err := ProcessJinjaTemplates(interfaceCtx, is); err != nil {
+		t.Error(err)
+	}
+
+	expectedInterface := &interfaceStruct{
+		Content: []string{"foo", "bar"},
+	}
+
+	if !cmp.Equal(is, expectedInterface) {
+		t.Errorf("got %#v but expected %#v", is, expectedInterface)
+	}
+}
+
 func TestValidateCmdMissingCommand(t *testing.T) {
 	pFalse := false
 

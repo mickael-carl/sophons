@@ -1,7 +1,7 @@
 - hosts: all
   tasks:
     - ansible.builtin.apt:
-        name: ["dpkg"]
+        name: "dpkg"
     - ansible.builtin.apt:
         name: ["libc-bin"]
         state: "latest"
@@ -11,9 +11,12 @@
         name:
           - "htop"
           - "mysql-client"
-          - "postgresql-client"
+          - "postgresql-{{ postgres_package_type }}"
+          - "{{ myawesomepackage }}"
         state: "{{ state }}"
         update_cache: true
+    - ansible.builtin.apt:
+        name: "{{ package_list }}"
     - ansible.builtin.apt:
         pkg:
           - "curl"

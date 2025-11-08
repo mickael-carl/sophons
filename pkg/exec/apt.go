@@ -29,9 +29,6 @@ const (
 	AptUpgradeNo   = "no"
 )
 
-// TODO: this is fixable: if we implement a custom unmarshaller for Apt, we can
-// implement aliases and name being either a list of a single string.
-//
 //	@meta{
 //	  "deviations": [
 //	    "`state` only supports `present`, `latest` and `absent`",
@@ -53,10 +50,10 @@ type Apt struct {
 	DpkgOptions             string `yaml:"dpkg_options"`
 	FailOnAutoremove        bool   `yaml:"fail_on_autoremove"`
 	Force                   bool
-	ForceAptGet             bool     `yaml:"force_apt_get"`
-	InstallRecommends       bool     `yaml:"install_recommends"`
-	LockTimeout             int64    `yaml:"lock_timeout"`
-	Name                    []string `sophons:"implemented"`
+	ForceAptGet             bool        `yaml:"force_apt_get"`
+	InstallRecommends       bool        `yaml:"install_recommends"`
+	LockTimeout             int64       `yaml:"lock_timeout"`
+	Name                    interface{} `sophons:"implemented"`
 
 	OnlyUpgrade              bool  `yaml:"only_upgrade"`
 	PolicyRCD                int64 `yaml:"policy_rc_d"`
@@ -80,8 +77,8 @@ func (a *Apt) UnmarshalYAML(b []byte) error {
 	}
 
 	type apt struct {
-		Pkg         []string
-		Package     []string
+		Pkg         interface{}
+		Package     interface{}
 		UpdateCache bool `yaml:"update-cache"`
 	}
 
@@ -90,12 +87,24 @@ func (a *Apt) UnmarshalYAML(b []byte) error {
 		return err
 	}
 
-	if len(a.Name) == 0 {
-		if len(aux.Package) != 0 {
+	if a.Name == nil {
+		if aux.Package != nil {
 			a.Name = aux.Package
-		} else if len(aux.Pkg) != 0 {
+		} else if aux.Pkg != nil {
 			a.Name = aux.Pkg
 		}
+	}
+
+	if name, ok := a.Name.([]interface{}); ok {
+		s := []string{}
+		for _, v := range name {
+			vStr, ok := v.(string)
+			if !ok {
+				return fmt.Errorf("package name is not a string: %v", v)
+			}
+			s = append(s, vStr)
+		}
+		a.Name = s
 	}
 
 	if a.UpdateCache == nil {
@@ -155,6 +164,8 @@ func (a *Apt) handleUpdate() error {
 }
 
 func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
+	name := getStringSlice(a.Name)
+
 	if a.Clean {
 		if _, err := apt.Clean(); err != nil {
 			return fmt.Errorf("failed to clean apt cache: %w", err)
@@ -163,7 +174,7 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		// This is similar to Ansible's implementation. See
 		// https://github.com/ansible/ansible/issues/82611 and
 		// https://github.com/ansible/ansible/pull/82800 for some context.
-		if len(a.Name) == 0 && (a.Upgrade == "no" || a.Upgrade == "") && a.Deb == "" {
+		if len(name) == 0 && (a.Upgrade == "no" || a.Upgrade == "") && a.Deb == "" {
 			return nil
 		}
 	}
@@ -200,7 +211,7 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		}
 
 		toInstall := []*apt.Package{}
-		for _, wanted := range a.Name {
+		for _, wanted := range name {
 			found := false
 			for _, p := range installed {
 				if p.Name == wanted {
@@ -213,12 +224,14 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 			}
 		}
 
-		if _, err := apt.Install(toInstall...); err != nil {
-			return fmt.Errorf("failed to install package list: %w", err)
+		if len(toInstall) > 0 {
+			if out, err := apt.Install(toInstall...); err != nil {
+				return fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
+			}
 		}
 	case AptLatest:
 		toInstall := []*apt.Package{}
-		for _, p := range a.Name {
+		for _, p := range name {
 			toInstall = append(toInstall, &apt.Package{
 				Name: p,
 			})
@@ -227,19 +240,23 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		// We don't need to think about upgrading vs installing: installing an
 		// already installed package will upgrade it if a new version is
 		// available.
-		if _, err := apt.Install(toInstall...); err != nil {
-			return fmt.Errorf("failed to install package list: %w", err)
+		if len(toInstall) > 0 {
+			if out, err := apt.Install(toInstall...); err != nil {
+				return fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
+			}
 		}
 	case AptAbsent:
 		toRemove := []*apt.Package{}
-		for _, p := range a.Name {
+		for _, p := range name {
 			toRemove = append(toRemove, &apt.Package{
 				Name: p,
 			})
 		}
 
-		if _, err := apt.Remove(toRemove...); err != nil {
-			return fmt.Errorf("failed to remove package list: %w", err)
+		if len(toRemove) > 0 {
+			if out, err := apt.Remove(toRemove...); err != nil {
+				return fmt.Errorf("failed to remove package list: %w. Output: %s", err, out)
+			}
 		}
 	default:
 		return fmt.Errorf("state %s is not implemented for apt", actualState)
