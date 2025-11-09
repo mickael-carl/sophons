@@ -85,7 +85,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 						Path:    "/foo/bar",
 						State:   exec.FileDirectory,
 						Recurse: true,
-						Mode:    "384", // 0600
+						Mode:    uint64(384), // 0600
 					},
 				},
 			},

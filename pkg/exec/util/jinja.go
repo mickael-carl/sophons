@@ -20,6 +20,11 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 	for v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
+
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+
 	t := v.Type()
 
 	for i := 0; i < v.NumField(); i++ {

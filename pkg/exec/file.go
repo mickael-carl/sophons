@@ -34,7 +34,7 @@ type File struct {
 	Path    string    `sophons:"implemented"`
 	Follow  *bool     `sophons:"implemented"`
 	Group   string    `sophons:"implemented"`
-	Mode    string    `sophons:"implemented"`
+	Mode    any       `sophons:"implemented"`
 	Owner   string    `sophons:"implemented"`
 	Recurse bool      `sophons:"implemented"`
 	Src     string    `sophons:"implemented"`
@@ -182,8 +182,8 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 					if err := os.Lchown(path, uid, gid); err != nil {
 						return err
 					}
-					if f.Mode != "" {
-						if err := util.ChmodFromString(path, f.Mode); err != nil {
+					if f.Mode != nil {
+						if err := util.ApplyModeAndIDs(path, f.Mode, -1, -1); err != nil {
 							return err
 						}
 					}
@@ -209,7 +209,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 		}
 
 		// Per Ansible docs: if no property are set, state=file does nothing.
-		if f.Mode == "" && f.Owner == "" && f.Group == "" {
+		if f.Mode == nil && f.Owner == "" && f.Group == "" {
 			return nil
 		}
 

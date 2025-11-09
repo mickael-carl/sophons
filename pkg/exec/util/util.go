@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -90,17 +91,36 @@ func GetGid(gidOrGroupName string) (int, error) {
 	return gid, nil
 }
 
-func ApplyModeAndIDs(path, mode string, uid, gid int) error {
-	if mode != "" {
-		// First try to parse mode as octal. If that fails we'll assume it's a
-		// string-based mode spec.
-		numMode, err := strconv.ParseUint(mode, 10, 32)
-		if err == nil {
-			return os.Chmod(path, os.FileMode(numMode))
+func ApplyModeAndIDs(path string, mode any, uid, gid int) error {
+	if mode != nil {
+		var chmodErr error
+		switch v := mode.(type) {
+		case string:
+			if v == "" {
+				break
+			}
+			if numMode, err := strconv.ParseUint(v, 8, 32); err == nil {
+				chmodErr = os.Chmod(path, os.FileMode(numMode))
+			} else {
+				chmodErr = ChmodFromString(path, v)
+			}
+
+		case int:
+			chmodErr = os.Chmod(path, os.FileMode(v))
+		case int64:
+			chmodErr = os.Chmod(path, os.FileMode(v))
+		case uint64:
+			chmodErr = os.Chmod(path, os.FileMode(v))
+		case *uint64:
+			if v != nil {
+				chmodErr = os.Chmod(path, os.FileMode(*v))
+			}
+		default:
+			return fmt.Errorf("unsupported mode type %T", mode)
 		}
 
-		if err := ChmodFromString(path, mode); err != nil {
-			return err
+		if chmodErr != nil {
+			return chmodErr
 		}
 	}
 
