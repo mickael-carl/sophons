@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mickael-carl/sophons/pkg/exec/util"
 	"github.com/mickael-carl/sophons/pkg/variables"
 	"github.com/nikolalohinski/gonja/v2"
 	gonjaexec "github.com/nikolalohinski/gonja/v2/exec"
@@ -16,8 +17,11 @@ import (
 //	  "deviations": ["`src` doesn't support absolute paths."]
 //	}
 type Template struct {
-	Src  string `sophons:"implemented"`
-	Dest string `sophons:"implemented"`
+	Dest  string `sophons:"implemented"`
+	Group string `sophons:"implemented"`
+	Mode  string `sophons:"implemented"`
+	Owner string `sophons:"implemented"`
+	Src   string `sophons:"implemented"`
 
 	Attributes          string
 	Backup              bool
@@ -27,12 +31,9 @@ type Template struct {
 	CommentStartString  string `yaml:"comment_start_string"`
 	Follow              bool
 	Force               *bool
-	Group               string
-	LStripBlocks        bool `yaml:"lstrip_blocks"`
-	Mode                string
+	LStripBlocks        bool   `yaml:"lstrip_blocks"`
 	NewlineSequence     string `yaml:"newline_sequence"`
 	OutputEncoding      string `yaml:"output_encoding"`
-	Owner               string
 	Selevel             string
 	Serole              string
 	Setype              string
@@ -73,11 +74,11 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) er
 	if err != nil {
 		return fmt.Errorf("failed to create destination %s: %w", c.Dest, err)
 	}
-	defer f.Close()
 
 	srcPath := filepath.Join(parentPath, "templates", c.Src)
 	template, err := gonja.FromFile(srcPath)
 	if err != nil {
+		f.Close()
 		return fmt.Errorf("failed to read template file %s: %w", srcPath, err)
 	}
 
@@ -88,7 +89,30 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) er
 	varsCtx := gonjaexec.NewContext(vars)
 
 	if err := template.Execute(f, varsCtx); err != nil {
+		f.Close()
 		return fmt.Errorf("failed to template file %s to %s: %w", srcPath, c.Dest, err)
+	}
+
+	if err := f.Close(); err != nil {
+		return err
+	}
+
+	if c.Mode == "" && c.Owner == "" && c.Group == "" {
+		return nil
+	}
+
+	uid, err := util.GetUid(c.Owner)
+	if err != nil {
+		return err
+	}
+
+	gid, err := util.GetGid(c.Group)
+	if err != nil {
+		return err
+	}
+
+	if err := util.ApplyModeAndIDs(c.Dest, c.Mode, uid, gid); err != nil {
+		return fmt.Errorf("failed to apply mode and IDs to %s: %w", c.Dest, err)
 	}
 
 	return nil
