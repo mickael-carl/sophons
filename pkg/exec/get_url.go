@@ -24,7 +24,7 @@ type GetURL struct {
 	Dest  string `sophons:"implemented"`
 	URL   string `sophons:"implemented"`
 	Group string `sophons:"implemented"`
-	Mode  string `sophons:"implemented"`
+	Mode  any    `sophons:"implemented"`
 	Owner string `sophons:"implemented"`
 
 	Attributes          string
@@ -148,7 +148,7 @@ func (g *GetURL) Apply(_ context.Context, parentPath string, _ bool) error {
 		return err
 	}
 
-	if g.Mode == "" && g.Owner == "" && g.Group == "" {
+	if g.Mode == nil && g.Owner == "" && g.Group == "" {
 		return nil
 	}
 

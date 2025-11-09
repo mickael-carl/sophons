@@ -24,12 +24,12 @@ type Copy struct {
 	Backup        bool
 	Checksum      string
 	Decrypt       *bool
-	DirectoryMode string `yaml:"directory_mode"`
+	DirectoryMode any `yaml:"directory_mode"`
 	Follow        bool
 	Force         *bool
 	Group         string
 	LocalFollow   bool `yaml:"local_follow"`
-	Mode          string
+	Mode          any
 	Owner         string
 	Selevel       string
 	Serole        string

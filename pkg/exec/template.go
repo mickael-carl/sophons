@@ -19,7 +19,7 @@ import (
 type Template struct {
 	Dest  string `sophons:"implemented"`
 	Group string `sophons:"implemented"`
-	Mode  string `sophons:"implemented"`
+	Mode  any    `sophons:"implemented"`
 	Owner string `sophons:"implemented"`
 	Src   string `sophons:"implemented"`
 
@@ -97,7 +97,7 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) er
 		return err
 	}
 
-	if c.Mode == "" && c.Owner == "" && c.Group == "" {
+	if c.Mode == nil && c.Owner == "" && c.Group == "" {
 		return nil
 	}
 
