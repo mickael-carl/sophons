@@ -85,9 +85,7 @@ func fileNodeToStructDoc(fileNode *ast.File, path string) (*structDoc, error) {
 
 		var meta docMeta
 		if err := json.Unmarshal([]byte(m[1]), &meta); err != nil {
-			log.Printf("failed to parse meta: %v", err)
-			continue
-
+			return nil, fmt.Errorf("failed to parse meta in %s: %w", path, err)
 		}
 		sdoc := structDoc{
 			Meta:     &meta,
