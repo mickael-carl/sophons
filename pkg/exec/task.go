@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -78,8 +77,7 @@ func tasksUnmarshalYAML(t *[]Task, b []byte) error {
 
 			f := factory()
 
-			var buf bytes.Buffer
-			if err := yaml.NewDecoder(&buf).DecodeFromNode(node, f); err != nil {
+			if err := yaml.NodeToValue(node, f); err != nil {
 				return err
 			}
 			t.Content = f
