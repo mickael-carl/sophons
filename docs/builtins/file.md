@@ -33,4 +33,5 @@
 ## Deviations
 
 * `state=hard` is not implemented.
+* There is no default for `state`, it is required.
 

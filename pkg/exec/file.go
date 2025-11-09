@@ -27,7 +27,7 @@ const (
 
 //	@meta{
 //	  "deviations": [
-//	    "`state=hard` is not implemented."
+//	    "`state=hard` is not implemented.",
 //	    "There is no default for `state`, it is required."
 //	  ]
 //	}
