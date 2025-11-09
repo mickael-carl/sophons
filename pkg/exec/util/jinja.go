@@ -1,20 +1,18 @@
-package exec
+package util
 
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strings"
 
-	"github.com/mickael-carl/sophons/pkg/variables"
 	"github.com/nikolalohinski/gonja/v2"
 	gonjaexec "github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/loaders"
 	"github.com/nikolalohinski/gonja/v2/nodes"
+
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
@@ -182,83 +180,5 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 		}
 	}
 
-	return nil
-}
-
-func shouldApply(creates, removes string) (bool, error) {
-	if creates != "" {
-		matches, err := filepath.Glob(creates)
-		if err != nil {
-			return false, err
-		}
-		return len(matches) == 0, nil
-	}
-
-	if removes != "" {
-		matches, err := filepath.Glob(removes)
-		if err != nil {
-			return false, err
-		}
-		return len(matches) > 0, nil
-	}
-
-	return true, nil
-}
-
-func validateCmd(argv []string, cmd, stdin string, stdinAddNewline *bool) error {
-	if cmd != "" && len(argv) != 0 {
-		return errors.New("cmd and argv can't be both specified at the same time")
-	}
-
-	if cmd == "" && len(argv) == 0 {
-		return errors.New("either cmd or argv need to be specified")
-	}
-
-	if stdin == "" && stdinAddNewline != nil && *stdinAddNewline {
-		return errors.New("stdin_add_newline can't be set if stdin is unset")
-	}
-	return nil
-}
-
-// applyCmd expects an *exec.Cmd that already has Args set, e.g. by calling
-// exec.Command("foo").
-func applyCmd(cmdFunc func() *exec.Cmd, creates, removes, chdir, stdin string, stdinAddNewline *bool) ([]byte, error) {
-	ok, err := shouldApply(creates, removes)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	if !ok {
-		return []byte{}, nil
-	}
-
-	cmd := cmdFunc()
-
-	if chdir != "" {
-		cmd.Dir = chdir
-	}
-
-	if stdin != "" {
-		cmdStdin := stdin
-
-		if stdinAddNewline == nil || stdinAddNewline != nil && *stdinAddNewline {
-			cmdStdin += "\n"
-		}
-		cmd.Stdin = strings.NewReader(cmdStdin)
-	}
-
-	return cmd.CombinedOutput()
-}
-
-func getStringSlice(i interface{}) []string {
-	if i == nil {
-		return nil
-	}
-	if str, ok := i.(string); ok {
-		return []string{str}
-	}
-	if slice, ok := i.([]string); ok {
-		return slice
-	}
 	return nil
 }

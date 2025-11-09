@@ -9,6 +9,8 @@ import (
 
 	"github.com/arduino/go-apt-client"
 	"github.com/goccy/go-yaml"
+
+	"github.com/mickael-carl/sophons/pkg/exec/util"
 )
 
 type AptState State
@@ -164,7 +166,7 @@ func (a *Apt) handleUpdate() error {
 }
 
 func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
-	name := getStringSlice(a.Name)
+	name := util.GetStringSlice(a.Name)
 
 	if a.Clean {
 		if _, err := apt.Clean(); err != nil {

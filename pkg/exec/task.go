@@ -9,6 +9,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 
+	"github.com/mickael-carl/sophons/pkg/exec/util"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -116,7 +117,7 @@ func deepCopyContent(content TaskContent) (TaskContent, error) {
 }
 
 func processAndRunTask(ctx context.Context, task Task, parentPath string, isRole bool) error {
-	if err := ProcessJinjaTemplates(ctx, &task); err != nil {
+	if err := util.ProcessJinjaTemplates(ctx, &task); err != nil {
 		return fmt.Errorf("failed to process Jinja templating: %w", err)
 	}
 	log.Printf("%+v", task)
@@ -134,7 +135,7 @@ func processAndRunTask(ctx context.Context, task Task, parentPath string, isRole
 func ExecuteTask(ctx context.Context, task Task, parentPath string, isRole bool) error {
 	if task.Loop != nil {
 		tempLoopHolder := struct{ Loop interface{} }{Loop: task.Loop}
-		if err := ProcessJinjaTemplates(ctx, &tempLoopHolder); err != nil {
+		if err := util.ProcessJinjaTemplates(ctx, &tempLoopHolder); err != nil {
 			return fmt.Errorf("failed to process Jinja templating for loop: %w", err)
 		}
 		task.Loop = tempLoopHolder.Loop

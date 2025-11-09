@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/user"
 	"path/filepath"
-	"strconv"
 
 	"github.com/goccy/go-yaml"
-	"github.com/mickael-carl/sophons/pkg/util"
+
+	"github.com/mickael-carl/sophons/pkg/exec/util"
 )
 
 type FileState State
@@ -86,73 +85,6 @@ func (f *File) UnmarshalYAML(b []byte) error {
 	return nil
 }
 
-func getUid(uidOrUserName string) (int, error) {
-	// -1 is the value for not changing owner in calls to Chown/Lchown.
-	uid := int(-1)
-	if uidOrUserName != "" {
-		u, err := user.LookupId(uidOrUserName)
-		if err == nil {
-			uid, err = strconv.Atoi(u.Uid)
-			if err != nil {
-				return -1, err
-			}
-		} else {
-			u, err := user.Lookup(uidOrUserName)
-			if err != nil {
-				return -1, err
-			}
-			uid, err = strconv.Atoi(u.Uid)
-			if err != nil {
-				return -1, err
-			}
-		}
-	}
-
-	return uid, nil
-}
-
-func getGid(gidOrGroupName string) (int, error) {
-	// -1 is the value for not changing group in calls to Chown/Lchown.
-	gid := int(-1)
-	if gidOrGroupName != "" {
-		g, err := user.LookupGroupId(gidOrGroupName)
-		if err == nil {
-			gid, err = strconv.Atoi(g.Gid)
-			if err != nil {
-				return -1, err
-			}
-		} else {
-			g, err := user.LookupGroup(gidOrGroupName)
-			if err != nil {
-				return -1, err
-			}
-			gid, err = strconv.Atoi(g.Gid)
-			if err != nil {
-				return -1, err
-			}
-		}
-	}
-
-	return gid, nil
-}
-
-func applyModeAndIDs(path, mode string, uid, gid int) error {
-	if mode != "" {
-		// First try to parse mode as octal. If that fails we'll assume it's a
-		// string-based mode spec.
-		numMode, err := strconv.ParseUint(mode, 10, 32)
-		if err == nil {
-			return os.Chmod(path, os.FileMode(numMode))
-		}
-
-		if err := util.ChmodFromString(path, mode); err != nil {
-			return err
-		}
-	}
-
-	return os.Chown(path, uid, gid)
-}
-
 func (f *File) Validate() error {
 	validStates := map[FileState]struct{}{
 		FileAbsent:    {},
@@ -214,12 +146,12 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 		}
 	}
 
-	uid, err := getUid(f.Owner)
+	uid, err := util.GetUid(f.Owner)
 	if err != nil {
 		return err
 	}
 
-	gid, err := getGid(f.Owner)
+	gid, err := util.GetGid(f.Owner)
 	if err != nil {
 		return err
 	}
@@ -256,7 +188,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 						}
 					}
 				} else {
-					if err := applyModeAndIDs(path, f.Mode, uid, gid); err != nil {
+					if err := util.ApplyModeAndIDs(path, f.Mode, uid, gid); err != nil {
 						return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 					}
 				}
@@ -266,7 +198,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 				return err
 			}
 		} else {
-			if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+			if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
@@ -281,7 +213,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 			return nil
 		}
 
-		if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+		if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 
@@ -311,7 +243,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 		}
 
 		if follow {
-			if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+			if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
@@ -326,7 +258,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 		// The Ansible docs say that if the file exists, atime and mtime will
 		// be updated but not more. That proves to not be accurate:
 		// permissions, uid and gid will be updated too.
-		if err := applyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+		if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
 			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 

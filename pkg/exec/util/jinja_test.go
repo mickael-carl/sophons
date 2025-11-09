@@ -1,10 +1,11 @@
-package exec
+package util
 
 import (
 	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -103,7 +104,7 @@ func TestProcessJinjaTemplatesInterfaceExpressionList(t *testing.T) {
 	}
 
 	got := &interfaceStruct{
-		Content: getStringSlice(is.Content),
+		Content: GetStringSlice(is.Content),
 	}
 
 	expectedInterface := &interfaceStruct{
@@ -138,71 +139,5 @@ func TestProcessJinjaTemplatesInterfaceSlice(t *testing.T) {
 
 	if !cmp.Equal(is, expectedInterface) {
 		t.Errorf("got %#v but expected %#v", is, expectedInterface)
-	}
-}
-
-func TestValidateCmdMissingCommand(t *testing.T) {
-	pFalse := false
-
-	err := validateCmd([]string{}, "", "", &pFalse)
-	if err == nil {
-		t.Error("a command with cmd or argv set is not valid")
-	}
-
-	if err.Error() != "either cmd or argv need to be specified" {
-		t.Error(err)
-	}
-}
-
-func TestValidateCmdConflictingParameters(t *testing.T) {
-	pFalse := false
-
-	err := validateCmd(
-		[]string{
-			"ls",
-			"-l",
-		},
-		"ls -l",
-		"",
-		&pFalse,
-	)
-
-	if err == nil {
-		t.Error("a command with both cmd and argv set is not valid")
-	}
-
-	if err.Error() != "cmd and argv can't be both specified at the same time" {
-		t.Error(err)
-	}
-}
-
-func TestValidateCmd(t *testing.T) {
-	pFalse := false
-
-	if err := validateCmd(
-		[]string{},
-		"ls -l",
-		"",
-		&pFalse,
-	); err != nil {
-		t.Error(err)
-	}
-}
-
-func TestValidateCmdStdinMissing(t *testing.T) {
-	pTrue := true
-
-	err := validateCmd(
-		[]string{},
-		"cat",
-		"",
-		&pTrue,
-	)
-	if err == nil {
-		t.Error("a command with stdin_add_newline and without stdin is not valid")
-	}
-
-	if err.Error() != "stdin_add_newline can't be set if stdin is unset" {
-		t.Error(err)
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
+
+	"github.com/mickael-carl/sophons/pkg/exec/util"
 )
 
 //	@meta{
@@ -53,7 +55,7 @@ func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool
 	}
 
 	for _, task := range tasks {
-		if err := ProcessJinjaTemplates(ctx, &task); err != nil {
+		if err := util.ProcessJinjaTemplates(ctx, &task); err != nil {
 			return fmt.Errorf("failed to render Jinja templating from %s: %w", taskPath, err)
 		}
 

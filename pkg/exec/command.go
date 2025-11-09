@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/mickael-carl/sophons/pkg/exec/util"
 )
 
 //	@meta {
@@ -30,7 +32,7 @@ func init() {
 }
 
 func (c *Command) Validate() error {
-	return validateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
+	return util.ValidateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
 }
 
 func (c *Command) Apply(_ context.Context, _ string, _ bool) error {
@@ -68,7 +70,7 @@ func (c *Command) Apply(_ context.Context, _ string, _ bool) error {
 		return cmd
 	}
 
-	out, err := applyCmd(cmdFunc, c.Creates, c.Removes, c.Chdir, c.Stdin, c.StdinAddNewline)
+	out, err := util.ApplyCmd(cmdFunc, c.Creates, c.Removes, c.Chdir, c.Stdin, c.StdinAddNewline)
 	if err != nil {
 		return fmt.Errorf("failed to execute command: %s", string(out))
 	}
