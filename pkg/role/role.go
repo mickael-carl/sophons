@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"maps"
 	"os"
 	"path"
@@ -140,20 +139,9 @@ func (r *Role) Apply(parentPath string) error {
 	// We need to apply role variables here, since we've resolved variables in
 	// DiscoverRoles in the right precedence order.
 	ctx := variables.NewContext(context.Background(), r.vars)
-	for _, t := range r.tasks {
-		if err := exec.ProcessJinjaTemplates(ctx, &t); err != nil {
-			return fmt.Errorf("failed process Jinja templating: %w", err)
-		}
-
-		// TODO: better formatting or maybe make that a new method.
-		log.Printf("%+v", t)
-
-		if err := t.Validate(); err != nil {
-			return fmt.Errorf("failed to validate task: %w", err)
-		}
-
-		if err := t.Apply(ctx, parentPath, true); err != nil {
-			return fmt.Errorf("failed to apply task: %w", err)
+	for _, task := range r.tasks {
+		if err := exec.ExecuteTask(ctx, task, parentPath, true); err != nil {
+			return fmt.Errorf("failed to execute task: %w", err)
 		}
 	}
 

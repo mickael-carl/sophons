@@ -57,19 +57,8 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 				}
 			}
 			for _, task := range play.Tasks {
-				if err := exec.ProcessJinjaTemplates(ctx, &task); err != nil {
-					return fmt.Errorf("failed to process Jinja templating: %w", err)
-				}
-
-				// TODO: better formatting or maybe make that a new method.
-				log.Printf("%+v", task)
-
-				if err := task.Validate(); err != nil {
-					return fmt.Errorf("validation failed: %w", err)
-				}
-
-				if err := task.Apply(ctx, filepath.Dir(playbookPath), false); err != nil {
-					return fmt.Errorf("failed to apply task: %w", err)
+				if err := exec.ExecuteTask(ctx, task, filepath.Dir(playbookPath), false); err != nil {
+					return fmt.Errorf("failed to execute task: %w", err)
 				}
 			}
 		}

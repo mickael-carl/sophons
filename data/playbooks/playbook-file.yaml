@@ -23,5 +23,13 @@
         state: touch
         mode: "u=rwx,g+w,o-rwx"
     - ansible.builtin.file:
-        name: "/bla"
+        name: "{{ item }}"
         state: touch
+      loop:
+        - "/bla"
+        - "/blabla"
+    - ansible.builtin.file:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop:
+        - { name: "/loopname", state: "touch" }
