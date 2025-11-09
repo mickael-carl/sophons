@@ -1,0 +1,8 @@
+- hosts: all
+  roles:
+    - template
+- hosts: all
+  tasks:
+    - ansible.builtin.template:
+        src: sometemplate
+        dest: /tmp/templated
