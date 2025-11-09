@@ -6,6 +6,10 @@
     - ansible.builtin.get_url:
         url: "https://example.com"
         dest: /https-get-url
+        mode: "0642"
+        owner: 1000
+        group: 1000
     - ansible.builtin.get_url:
         url: "https://example.com"
         dest: /
+        group: 1000

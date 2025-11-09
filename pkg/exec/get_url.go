@@ -11,6 +11,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/mickael-carl/sophons/pkg/exec/util"
 )
 
 //	@meta {
@@ -19,6 +21,12 @@ import (
 //	  ]
 //	}
 type GetURL struct {
+	Dest  string `sophons:"implemented"`
+	URL   string `sophons:"implemented"`
+	Group string `sophons:"implemented"`
+	Mode  string `sophons:"implemented"`
+	Owner string `sophons:"implemented"`
+
 	Attributes          string
 	Backup              bool
 	Checksum            string
@@ -26,13 +34,9 @@ type GetURL struct {
 	ClientCert          string `yaml:"client_cert"`
 	ClientKey           string `yaml:"client_key"`
 	Decompress          *bool
-	Dest                string `sophons:"implemented"`
 	Force               *bool
 	ForceBasicAuth      bool `yaml:"force_basic_auth"`
-	Group               string
 	Headers             map[string]string
-	Mode                string
-	Owner               string
 	Selevel             string
 	Serole              string
 	Setype              string
@@ -41,7 +45,6 @@ type GetURL struct {
 	TmpDest             string   `yaml:"tmp_dest"`
 	UnredirectedHeaders []string `yaml:"unredirected_headers"`
 	UnsafeWrites        bool     `yaml:"unsafe_writes"`
-	URL                 string   `sophons:"implemented"`
 	URLPassword         string   `yaml:"url_password"`
 	URLUsername         string   `yaml:"url_username"`
 	UseGSSAPI           bool     `yaml:"use_gssapi"`
@@ -134,11 +137,33 @@ func (g *GetURL) Apply(_ context.Context, parentPath string, _ bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", g.Dest, err)
 	}
-	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
+		out.Close()
 		return fmt.Errorf("failed to write to file %s: %w", g.Dest, err)
+	}
+
+	if err := out.Close(); err != nil {
+		return err
+	}
+
+	if g.Mode == "" && g.Owner == "" && g.Group == "" {
+		return nil
+	}
+
+	uid, err := util.GetUid(g.Owner)
+	if err != nil {
+		return err
+	}
+
+	gid, err := util.GetGid(g.Group)
+	if err != nil {
+		return err
+	}
+
+	if err := util.ApplyModeAndIDs(actualDest, g.Mode, uid, gid); err != nil {
+		return fmt.Errorf("failed to apply mode and IDs to %s: %w", actualDest, err)
 	}
 
 	return nil

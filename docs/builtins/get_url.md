@@ -20,10 +20,10 @@
 | dest |  :white_check_mark:  |
 | force |  :x:  |
 | force_basic_auth |  :x:  |
-| group |  :x:  |
+| group |  :white_check_mark:  |
 | headers |  :x:  |
-| mode |  :x:  |
-| owner |  :x:  |
+| mode |  :white_check_mark:  |
+| owner |  :white_check_mark:  |
 | selevel |  :x:  |
 | serole |  :x:  |
 | setype |  :x:  |
