@@ -6,3 +6,9 @@
     - ansible.builtin.template:
         src: sometemplate
         dest: /tmp/templated
+    - ansible.builtin.template:
+        src: sometemplate
+        dest: /tmp/templated-with-attributes
+        owner: 1000
+        group: 1000
+        mode: "0642"

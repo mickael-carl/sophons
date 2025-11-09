@@ -19,12 +19,12 @@
 | dest |  :white_check_mark:  |
 | follow |  :x:  |
 | force |  :x:  |
-| group |  :x:  |
+| group |  :white_check_mark:  |
 | lstrip_blocks |  :x:  |
-| mode |  :x:  |
+| mode |  :white_check_mark:  |
 | newline_sequence |  :x:  |
 | output_encoding |  :x:  |
-| owner |  :x:  |
+| owner |  :white_check_mark:  |
 | selevel |  :x:  |
 | serole |  :x:  |
 | setype |  :x:  |
