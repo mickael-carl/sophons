@@ -13,6 +13,7 @@
 | [import_tasks](builtins/import_tasks.md)     | :white_check_mark: | :white_check_mark: | [playbook-import-tasks](../data/playbooks/playbook-import-tasks.yaml) |
 | [include_tasks](builtins/include_tasks.md)   | :white_check_mark: | :x:                | [playbook-include-tasks](../data/playbooks/playbook-include-tasks.yaml) |
 | [shell](builtins/shell.md)                   | :white_check_mark: | :white_check_mark: | [playbook-shell.yaml](../data/playbooks/playbook-shell.yaml) |
+| [template](builtins/template.md)             | :white_check_mark: | :x:                | [playbook-template.yaml](../data/playbooks/playbook-template.yaml) |
 | add_host               | :x: | :x: | |
 | apt_key                | :x: | :x: | |
 | assemble               | :x: | :x: | |
@@ -66,7 +67,6 @@
 | systemd_service        | :x: | :x: | |
 | sysvinit               | :x: | :x: | |
 | tempfile               | :x: | :x: | |
-| template               | :x: | :x: | |
 | unarchive              | :x: | :x: | |
 | uri                    | :x: | :x: | |
 | user                   | :x: | :x: | |

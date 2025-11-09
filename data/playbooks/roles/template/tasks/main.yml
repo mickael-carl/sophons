@@ -1,0 +1,3 @@
+- ansible.builtin.template:
+    src: "test"
+    dest: "/roletemplate"
