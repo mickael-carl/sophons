@@ -1,0 +1,33 @@
+- hosts: all
+  tasks:
+    - name: "This task should run because whentrue is true"
+      ansible.builtin.file:
+        path: "/whentrue"
+        state: "touch"
+      when: "whentrue"
+
+    - name: "This task should be skipped because whenfalse is false"
+      ansible.builtin.file:
+        path: "/whenfalse"
+        state: "touch"
+      when: "whenfalse"
+
+    # TODO: enable once https://github.com/NikolaLohinski/gonja/pull/64 is
+    # merged and released.
+    #- name: "This task should run because whenanswer is 42"
+    #  ansible.builtin.file:
+    #    path: "/whenanswer"
+    #    state: "touch"
+    #  when: "whenanswer is eq 42"
+
+    - name: "This task should run because whenfibo is 3"
+      ansible.builtin.file:
+        path: "/whenfibo"
+        state: "touch"
+      when: "whenfibo is in [1, 1, 2, 3, 5, 8]"
+
+    - name: "This task shouldn't run because a string is not an integer"
+      ansible.builtin.file:
+        path: "/whennotiterable"
+        state: "touch"
+      when: "\"hello world!\" is number()"

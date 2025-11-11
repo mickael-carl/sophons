@@ -15,6 +15,7 @@ import (
 
 type Task struct {
 	Name    string
+	When    string
 	Loop    interface{}
 	Content TaskContent
 }
@@ -120,6 +121,17 @@ func processAndRunTask(ctx context.Context, task Task, parentPath string, isRole
 	if err := util.ProcessJinjaTemplates(ctx, &task); err != nil {
 		return fmt.Errorf("failed to process Jinja templating: %w", err)
 	}
+
+	whenResult, err := util.JinjaProcessWhen(ctx, task.When)
+	if err != nil {
+		return fmt.Errorf("failed to process when condition: %w", err)
+	}
+
+	if !whenResult {
+		log.Printf("Skipping task %q due to when condition", task.Name)
+		return nil
+	}
+
 	log.Printf("%+v", task)
 	if err := task.Validate(); err != nil {
 		return fmt.Errorf("validation failed: %w", err)

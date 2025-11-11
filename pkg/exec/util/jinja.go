@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/nikolalohinski/gonja/v2"
@@ -14,6 +15,45 @@ import (
 
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
+
+func JinjaProcessWhen(ctx context.Context, when string) (bool, error) {
+	if when == "" {
+		return true, nil
+	}
+
+	vars, ok := variables.FromContext(ctx)
+	if !ok {
+		vars = variables.Variables{}
+	}
+	varsCtx := gonjaexec.NewContext(vars)
+
+	template, err := gonja.FromString("{{ " + when + " }}")
+	if err != nil {
+		return false, err
+	}
+
+	result, err := template.ExecuteToString(varsCtx)
+	if err != nil {
+		return false, err
+	}
+
+	// TODO: For now, we'll consider "true" as true, and anything else as
+	// false. Ansible has more complex rules, but this is a start.
+	// https://docs.ansible.com/ansible/latest/user_guide/playbooks_conditionals.html#conditionals
+	switch result {
+	case "True", "true":
+		return true, nil
+	case "False", "false":
+		return false, nil
+	}
+
+	// Attempt to convert to a number
+	if i, err := strconv.Atoi(result); err == nil {
+		return i != 0, nil
+	}
+
+	return false, nil
+}
 
 func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 	v := reflect.ValueOf(taskContent)
