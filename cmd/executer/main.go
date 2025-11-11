@@ -39,6 +39,27 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 
 	for _, play := range playbook {
 		if _, ok := groups[play.Hosts]; ok || play.Hosts == node {
+			inventoryVars, ok := variables.FromContext(ctx)
+			if !ok {
+				inventoryVars = variables.Variables{}
+			}
+
+			playVars := variables.Variables{}
+			playVars.Merge(inventoryVars)
+
+			playVars.Merge(play.Vars)
+
+			for _, varsFile := range play.VarsFiles {
+				absVarsFilePath := filepath.Join(filepath.Dir(playbookPath), varsFile)
+				fileVars, err := variables.LoadFromFile(absVarsFilePath)
+				if err != nil {
+					return fmt.Errorf("failed to load vars file %s for play: %w", absVarsFilePath, err)
+				}
+				playVars.Merge(fileVars)
+			}
+
+			playCtx := variables.NewContext(ctx, playVars)
+
 			// Ansible executes roles first, then tasks. See
 			// https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#using-roles-at-the-play-level.
 			for _, roleName := range play.Roles {
@@ -50,14 +71,17 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 					return fmt.Errorf("no such role: %s", roleName)
 				}
 
-				log.Printf("%s: %#v", roleName, role)
-
-				if err := role.Apply(filepath.Join(rolesDir, roleName)); err != nil {
+				// Headsup: roles variables are *not* scoped to only the role
+				// itself. This means this call actually *has to mutate*
+				// playCtx, so that variables defined in a role can be used in
+				// subsequent ones as well as the rest of the play. Sorry
+				// Ansible but this is STUPID.
+				if err := role.Apply(playCtx, filepath.Join(rolesDir, roleName)); err != nil {
 					return fmt.Errorf("failed to apply role %s: %w", roleName, err)
 				}
 			}
 			for _, task := range play.Tasks {
-				if err := exec.ExecuteTask(ctx, task, filepath.Dir(playbookPath), false); err != nil {
+				if err := exec.ExecuteTask(playCtx, task, filepath.Dir(playbookPath), false); err != nil { // use playCtx
 					return fmt.Errorf("failed to execute task: %w", err)
 				}
 			}

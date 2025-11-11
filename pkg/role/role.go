@@ -14,8 +14,9 @@ import (
 
 type Role struct {
 	// TODO: add files and templates.
-	vars  variables.Variables
-	tasks []exec.Task
+	defaults variables.Variables
+	vars     variables.Variables
+	tasks    []exec.Task
 }
 
 func DiscoverRoles(ctx context.Context, rolesPath string) (map[string]Role, error) {
@@ -83,21 +84,8 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 		}
 	}
 
-	// Per https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence:
-	// defaults have lowest precedence. Over that are inventory vars, then
-	// playbook vars, then role vars.
-	roleVars := variables.Variables{}
-	maps.Copy(roleVars, defaults)
-
-	additionalVars, ok := variables.FromContext(ctx)
-	if !ok {
-		additionalVars = variables.Variables{}
-	}
-	maps.Copy(roleVars, additionalVars)
-
-	maps.Copy(roleVars, vars)
-
-	role.vars = roleVars
+	role.defaults = defaults
+	role.vars = vars
 
 	// Then process the rest of the directory (order doesn't really matter anymore).
 	entries, err := fs.ReadDir(fsys, name)
@@ -134,15 +122,36 @@ func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error)
 	return role, isARole, nil
 }
 
-func (r *Role) Apply(parentPath string) error {
-	// We need to apply role variables here, since we've resolved variables in
-	// DiscoverRoles in the right precedence order.
-	ctx := variables.NewContext(context.Background(), r.vars)
+func (r *Role) Apply(ctx context.Context, parentPath string) error {
+	inventoryAndPlayVars, ok := variables.FromContext(ctx)
+	if !ok {
+		inventoryAndPlayVars = variables.Variables{}
+	}
+
+	roleCtxVars := make(variables.Variables)
+	roleCtxVars.Merge(r.defaults)
+	roleCtxVars.Merge(inventoryAndPlayVars)
+	roleCtxVars.Merge(r.vars)
+
+	roleCtx := variables.NewContext(ctx, roleCtxVars)
 	for _, task := range r.tasks {
-		if err := exec.ExecuteTask(ctx, task, parentPath, true); err != nil {
+		if err := exec.ExecuteTask(roleCtx, task, parentPath, true); err != nil {
 			return fmt.Errorf("failed to execute task: %w", err)
 		}
 	}
+
+	// After the role has been executed, its variables should be merged back
+	// into the main context for the rest of the play. Role defaults have
+	// the lowest precedence, so we don't merge them back. See
+	// https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_variables.html#tips-on-where-to-set-variables
+	// for more details, but specifically:
+	// > Variables set in one role are available to later roles. You can set
+	// > variables in the role’s vars directory [...] and use them in other roles
+	// > and elsewhere in your playbook
+	// Author's note: this is utterly insane. So much for scoping. If this code
+	// ever makes it to production somewhere, we should absolutely disable
+	// this madness. It is *DANGEROUS*.
+	inventoryAndPlayVars.Merge(r.vars)
 
 	return nil
 }
