@@ -14,6 +14,11 @@ import (
 func TestPlaybookUnmarshalYAML(t *testing.T) {
 	a := []byte(`
  - hosts: all
+   vars:
+     var1: foo
+     var2: bar
+   vars_files:
+     - myvars.yml
    tasks:
      - ansible.builtin.file:
          path: /foo
@@ -56,6 +61,11 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 	expected := Playbook{
 		Play{
 			Hosts: "all",
+			Vars: variables.Variables{
+				"var1": "foo",
+				"var2": "bar",
+			},
+			VarsFiles: []string{"myvars.yml"},
 			Tasks: []exec.Task{
 				{
 					Content: &exec.File{

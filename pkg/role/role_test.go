@@ -50,9 +50,11 @@ fruit: "banana"
 	}
 
 	expected := Role{
+		defaults: variables.Variables{
+			"fruit": "banana",
+			"true":  true,
+		},
 		vars: variables.Variables{
-			"fruit":  "banana",
-			"true":   true,
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
@@ -116,8 +118,11 @@ fruit: "banana"
 	}
 
 	expected := Role{
-		vars: variables.Variables{
+		defaults: variables.Variables{
+			"answer": uint64(41),
 			"fruit":  "banana",
+		},
+		vars: variables.Variables{
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
@@ -192,8 +197,9 @@ This is a very minimal role.
 	}
 
 	expected := Role{
-		vars:  variables.Variables{},
-		tasks: []exec.Task{},
+		defaults: nil,
+		vars:     nil,
+		tasks:    []exec.Task{},
 	}
 
 	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {

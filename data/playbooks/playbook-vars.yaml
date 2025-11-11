@@ -1,0 +1,26 @@
+- hosts: all
+  roles:
+    - play_vars
+  vars:
+    "var1": "foo"
+    "var2": "bar"
+    "var3": "baz"
+    "var4": "banana"
+  vars_files:
+    - vars/foo.yml
+  tasks:
+    - ansible.builtin.file:
+        path: "/play-vars-play-{{ var1 }}"
+        state: touch
+    - ansible.builtin.file:
+        path: "/play-vars-play-{{ var2 }}"
+        state: touch
+    - ansible.builtin.file:
+        path: "/play-vars-play-{{ var3 }}"
+        state: touch
+    - ansible.builtin.file:
+        path: "/play-vars-play-{{ var4 }}"
+        state: touch
+    - ansible.builtin.file:
+        path: "/play-vars-play-{{ varsfile }}"
+        state: touch

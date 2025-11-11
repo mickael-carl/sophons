@@ -1,0 +1,12 @@
+- ansible.builtin.file:
+    path: "/play-vars-role-{{ var1 }}"
+    state: touch
+- ansible.builtin.file:
+    path: "/play-vars-role-{{ var2 }}"
+    state: touch
+- ansible.builtin.file:
+    path: "/play-vars-role-{{ var3 }}"
+    state: touch
+- ansible.builtin.file:
+    path: "/play-vars-role-{{ var4 }}"
+    state: touch
