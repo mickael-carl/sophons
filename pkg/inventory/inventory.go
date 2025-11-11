@@ -40,10 +40,10 @@ func (i Inventory) NodeVars(node string) variables.Variables {
 	groupVars := variables.Variables{}
 	for _, group := range i.Groups {
 		h, g := group.NodeVars(node)
-		maps.Copy(hostVars, h)
-		maps.Copy(groupVars, g)
+		hostVars.Merge(h)
+		groupVars.Merge(g)
 	}
-	maps.Copy(groupVars, hostVars)
+	groupVars.Merge(hostVars)
 
 	return groupVars
 }
@@ -93,19 +93,19 @@ func (g Group) NodeVars(node string) (variables.Variables, variables.Variables) 
 	childrenVars := variables.Variables{}
 
 	if v, ok := g.Hosts[node]; ok {
-		maps.Copy(hostVars, v)
-		maps.Copy(groupVars, g.Vars)
+		hostVars.Merge(v)
+		groupVars.Merge(g.Vars)
 	}
 
 	for _, child := range g.Children {
 		hostInChildVars, childVars := child.NodeVars(node)
-		maps.Copy(hostVars, hostInChildVars)
-		maps.Copy(childrenVars, childVars)
+		hostVars.Merge(hostInChildVars)
+		childrenVars.Merge(childVars)
 	}
 
 	if len(childrenVars) > 0 {
-		maps.Copy(groupVars, g.Vars)
-		maps.Copy(groupVars, childrenVars)
+		groupVars.Merge(g.Vars)
+		groupVars.Merge(childrenVars)
 	}
 
 	return hostVars, groupVars

@@ -1,6 +1,9 @@
 package variables
 
-import "context"
+import (
+	"context"
+	"maps"
+)
 
 type Variables map[string]any
 
@@ -15,4 +18,8 @@ func FromContext(ctx context.Context) (Variables, bool) {
 
 func NewContext(ctx context.Context, vars Variables) context.Context {
 	return context.WithValue(ctx, varsKey, vars)
+}
+
+func (v Variables) Merge(other Variables) {
+	maps.Copy(v, other)
 }

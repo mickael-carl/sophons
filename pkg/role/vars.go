@@ -3,7 +3,6 @@ package role
 import (
 	"errors"
 	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
 
@@ -88,7 +87,7 @@ func processVars(fsys fs.FS, root string) (variables.Variables, error) {
 		// NOTE: Ansible's documentation does not say which level takes
 		// precedence: more nested over less, or the other way around? We'll
 		// just go with more nested wins.
-		maps.Copy(vars, fileVars)
+		vars.Merge(fileVars)
 
 		return nil
 	}); err != nil {
