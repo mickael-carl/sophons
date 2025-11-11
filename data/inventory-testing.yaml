@@ -12,3 +12,7 @@ all:
       "package_list":
         - "git"
         - "man-db"
+      "whentrue": true
+      "whenfalse": false
+      "whenanswer": 42
+      "whenfibo": 3
