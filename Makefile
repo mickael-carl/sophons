@@ -9,7 +9,7 @@ BINS = \
 
 SRCS := $(shell find cmd pkg -name '*.go') go.mod go.sum
 
-.PHONY: clean docker-testing docs fmt lint
+.PHONY: clean docker-testing docs fmt lint unit-tests mocks
 
 all: $(BINS)
 
@@ -48,3 +48,9 @@ fmt:
 
 lint:
 	golangci-lint run
+
+unit-tests:
+	go test ./...
+
+mocks:
+	go generate ./...
