@@ -39,32 +39,33 @@ const (
 //	  ]
 //	}
 type Apt struct {
-	AllowChangeHeldPackages bool    `yaml:"allow_change_held_packages"`
-	AllowDowngrade          bool    `yaml:"allow_downgrade"`
-	AllowUnauthenticated    bool    `yaml:"allow_unauthenticated"`
-	AutoInstallModuleDeps   *bool   `yaml:"auto_install_module_deps"`
-	AutoClean               bool    `yaml:"autoclean"`
-	AutoRemove              bool    `yaml:"autoremove"`
-	CacheValidTime          *uint64 `yaml:"cache_valid_time" sophons:"implemented"`
-	Clean                   bool    `sophons:"implemented"`
-	Deb                     string
-	DefaultRelease          string `yaml:"default_release"`
-	DpkgOptions             string `yaml:"dpkg_options"`
-	FailOnAutoremove        bool   `yaml:"fail_on_autoremove"`
-	Force                   bool
-	ForceAptGet             bool        `yaml:"force_apt_get"`
-	InstallRecommends       bool        `yaml:"install_recommends"`
-	LockTimeout             int64       `yaml:"lock_timeout"`
-	Name                    interface{} `sophons:"implemented"`
-
-	OnlyUpgrade              bool  `yaml:"only_upgrade"`
-	PolicyRCD                int64 `yaml:"policy_rc_d"`
+	AllowChangeHeldPackages  bool    `yaml:"allow_change_held_packages"`
+	AllowDowngrade           bool    `yaml:"allow_downgrade"`
+	AllowUnauthenticated     bool    `yaml:"allow_unauthenticated"`
+	AutoInstallModuleDeps    *bool   `yaml:"auto_install_module_deps"`
+	AutoClean                bool    `yaml:"autoclean"`
+	AutoRemove               bool    `yaml:"autoremove"`
+	CacheValidTime           *uint64 `yaml:"cache_valid_time" sophons:"implemented"`
+	Clean                    bool    `sophons:"implemented"`
+	Deb                      string
+	DefaultRelease           string `yaml:"default_release"`
+	DpkgOptions              string `yaml:"dpkg_options"`
+	FailOnAutoremove         bool   `yaml:"fail_on_autoremove"`
+	Force                    bool
+	ForceAptGet              bool        `yaml:"force_apt_get"`
+	InstallRecommends        bool        `yaml:"install_recommends"`
+	LockTimeout              int64       `yaml:"lock_timeout"`
+	Name                     interface{} `sophons:"implemented"`
+	OnlyUpgrade              bool        `yaml:"only_upgrade"`
+	PolicyRCD                int64       `yaml:"policy_rc_d"`
 	Purge                    bool
-	State                    string `sophons:"implemented"`
-	UpdateCache              *bool  `yaml:"update_cache" sophons:"implemented"`
-	UpdateCacheRetries       uint64 `yaml:"update_cache_retries"`
-	UpdateCacheRetryMaxDelay uint64 `yaml:"update_cache_retry_max_delay"`
-	Upgrade                  string `sophons:"implemented"`
+	State                    AptState `sophons:"implemented"`
+	UpdateCache              *bool    `yaml:"update_cache" sophons:"implemented"`
+	UpdateCacheRetries       uint64   `yaml:"update_cache_retries"`
+	UpdateCacheRetryMaxDelay uint64   `yaml:"update_cache_retry_max_delay"`
+	Upgrade                  string   `sophons:"implemented"`
+
+	apt aptClient
 }
 
 func init() {
@@ -151,13 +152,13 @@ func (a *Apt) handleUpdate() error {
 	}
 
 	if errors.Is(err, os.ErrNotExist) && a.UpdateCache != nil && *a.UpdateCache {
-		_, cacheErr := apt.CheckForUpdates()
+		_, cacheErr := a.apt.CheckForUpdates()
 		return cacheErr
 	}
 
 	if err == nil {
 		if a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil && time.Since(cacheInfo.ModTime()).Seconds() > float64(*a.CacheValidTime) {
-			_, cacheErr := apt.CheckForUpdates()
+			_, cacheErr := a.apt.CheckForUpdates()
 			return cacheErr
 		}
 	}
@@ -166,10 +167,13 @@ func (a *Apt) handleUpdate() error {
 }
 
 func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
+	if a.apt == nil {
+		a.apt = &realAptClient{}
+	}
 	name := util.GetStringSlice(a.Name)
 
 	if a.Clean {
-		if _, err := apt.Clean(); err != nil {
+		if _, err := a.apt.Clean(); err != nil {
 			return fmt.Errorf("failed to clean apt cache: %w", err)
 		}
 
@@ -193,11 +197,11 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 	if a.Upgrade != "" {
 		switch a.Upgrade {
 		case "yes", "safe":
-			if _, err := apt.UpgradeAll(); err != nil {
+			if _, err := a.apt.UpgradeAll(); err != nil {
 				return fmt.Errorf("failed to upgrade: %w", err)
 			}
 		case "dist", "full":
-			if _, err := apt.DistUpgrade(); err != nil {
+			if _, err := a.apt.DistUpgrade(); err != nil {
 				return fmt.Errorf("failed to dist-upgrade: %w", err)
 			}
 		default:
@@ -207,7 +211,7 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 
 	switch actualState {
 	case AptPresent:
-		installed, err := apt.ListInstalled()
+		installed, err := a.apt.ListInstalled()
 		if err != nil {
 			return fmt.Errorf("failed to list installed packages: %w", err)
 		}
@@ -227,7 +231,7 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		}
 
 		if len(toInstall) > 0 {
-			if out, err := apt.Install(toInstall...); err != nil {
+			if out, err := a.apt.Install(toInstall...); err != nil {
 				return fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
 			}
 		}
@@ -243,7 +247,7 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		// already installed package will upgrade it if a new version is
 		// available.
 		if len(toInstall) > 0 {
-			if out, err := apt.Install(toInstall...); err != nil {
+			if out, err := a.apt.Install(toInstall...); err != nil {
 				return fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
 			}
 		}
@@ -256,7 +260,7 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		}
 
 		if len(toRemove) > 0 {
-			if out, err := apt.Remove(toRemove...); err != nil {
+			if out, err := a.apt.Remove(toRemove...); err != nil {
 				return fmt.Errorf("failed to remove package list: %w. Output: %s", err, out)
 			}
 		}

@@ -1,10 +1,14 @@
 package exec
 
 import (
+	"context"
 	"testing"
 
+	"github.com/arduino/go-apt-client"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"go.uber.org/mock/gomock"
 )
 
 func TestAptValidateInvalidState(t *testing.T) {
@@ -76,12 +80,12 @@ upgrade: "full"`)
 			"foo",
 			"bar",
 		},
-		State:       string(AptPresent),
+		State:       AptPresent,
 		UpdateCache: &pTrue,
 		Upgrade:     AptUpgradeFull,
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
@@ -108,12 +112,56 @@ upgrade: "full"`)
 			"foo",
 			"bar",
 		},
-		State:       string(AptPresent),
+		State:       AptPresent,
 		UpdateCache: &pTrue,
 		Upgrade:     AptUpgradeFull,
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+}
+
+func TestAptApply(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := NewMockaptClient(ctrl)
+	a := &Apt{
+		Name: []string{
+			"foo",
+			"bar",
+		},
+		State: AptPresent,
+		apt:   m,
+	}
+
+	m.EXPECT().ListInstalled().Return([]*apt.Package{
+		{Name: "foo"},
+	}, nil)
+	m.EXPECT().Install(&apt.Package{Name: "bar"}).Return("", nil)
+
+	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestAptApplyLatest(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := NewMockaptClient(ctrl)
+	a := &Apt{
+		Name: []string{
+			"foo",
+		},
+		State: AptLatest,
+		apt:   m,
+	}
+
+	m.EXPECT().Install(&apt.Package{Name: "foo"}).Return("", nil)
+
+	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
 	}
 }

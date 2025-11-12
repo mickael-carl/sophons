@@ -113,6 +113,11 @@ func fileNodeToStructDoc(fileNode *ast.File, path string) (*structDoc, error) {
 				if len(field.Names) == 0 {
 					continue
 				}
+
+				if !field.Names[0].IsExported() {
+					continue
+				}
+
 				name := strings.ToLower(field.Names[0].Name)
 				if field.Tag != nil {
 					tags := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
