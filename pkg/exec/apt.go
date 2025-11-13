@@ -151,7 +151,7 @@ func (a *Apt) handleUpdate() error {
 		return fmt.Errorf("failed to check cache last refresh time: %w", err)
 	}
 
-	if errors.Is(err, os.ErrNotExist) && a.UpdateCache != nil && *a.UpdateCache {
+	if errors.Is(err, os.ErrNotExist) && (a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil) {
 		_, cacheErr := a.apt.CheckForUpdates()
 		return cacheErr
 	}
