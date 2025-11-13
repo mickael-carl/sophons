@@ -3,6 +3,8 @@ package exec
 import (
 	"context"
 	"testing"
+	"testing/fstest"
+	"time"
 
 	"github.com/arduino/go-apt-client"
 	"github.com/goccy/go-yaml"
@@ -134,6 +136,7 @@ func TestAptApply(t *testing.T) {
 		},
 		State: AptPresent,
 		apt:   m,
+		aptFS: fstest.MapFS{},
 	}
 
 	m.EXPECT().ListInstalled().Return([]*apt.Package{
@@ -157,11 +160,150 @@ func TestAptApplyLatest(t *testing.T) {
 		},
 		State: AptLatest,
 		apt:   m,
+		aptFS: fstest.MapFS{},
 	}
 
 	m.EXPECT().Install(&apt.Package{Name: "foo"}).Return("", nil)
 
 	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestHandleUpdate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := NewMockaptClient(ctrl)
+
+	listsFile := fstest.MapFile{
+		ModTime: time.Unix(0, 0),
+	}
+
+	cacheValidTime := uint64(1)
+
+	a := &Apt{
+		Name: []string{
+			"foo",
+		},
+		State:          AptLatest,
+		CacheValidTime: &cacheValidTime,
+		apt:            m,
+		aptFS: fstest.MapFS{
+			"lists": &listsFile,
+		},
+	}
+
+	m.EXPECT().CheckForUpdates().Return("", nil)
+
+	if err := a.handleUpdate(); err != nil {
+		t.Error(err)
+	}
+
+	listsFile = fstest.MapFile{
+		ModTime: time.Now(),
+	}
+
+	cacheValidTime = uint64(1000)
+
+	a = &Apt{
+		Name: []string{
+			"foo",
+		},
+		State:          AptLatest,
+		CacheValidTime: &cacheValidTime,
+		apt:            m,
+		aptFS: fstest.MapFS{
+			"lists": &listsFile,
+		},
+	}
+
+	if err := a.handleUpdate(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestHandleUpdateMissingLists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := NewMockaptClient(ctrl)
+
+	// Non-existing lists file with CacheValidTime set should update the cache.
+	cacheValidTime := uint64(1)
+
+	a := &Apt{
+		Name: []string{
+			"foo",
+		},
+		State:          AptLatest,
+		CacheValidTime: &cacheValidTime,
+		apt:            m,
+		aptFS:          fstest.MapFS{},
+	}
+
+	m.EXPECT().CheckForUpdates().Return("", nil)
+
+	if err := a.handleUpdate(); err != nil {
+		t.Error(err)
+	}
+
+	// Non-existing lists file with UpdateCache set should also update the
+	// cache.
+	updateCache := true
+	a = &Apt{
+		Name: []string{
+			"foo",
+		},
+		State:       AptLatest,
+		UpdateCache: &updateCache,
+		apt:         m,
+		aptFS:       fstest.MapFS{},
+	}
+
+	m.EXPECT().CheckForUpdates().Return("", nil)
+
+	if err := a.handleUpdate(); err != nil {
+		t.Error(err)
+	}
+
+	// Finally not lists file and nothing set means we shouldn't update.
+	a = &Apt{
+		Name: []string{
+			"foo",
+		},
+		State: AptLatest,
+		apt:   m,
+		aptFS: fstest.MapFS{},
+	}
+
+	if err := a.handleUpdate(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestHandleUpdateExplicit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := NewMockaptClient(ctrl)
+
+	listsFile := fstest.MapFile{}
+
+	updateCache := true
+
+	a := &Apt{
+		Name: []string{
+			"foo",
+		},
+		State:       AptLatest,
+		UpdateCache: &updateCache,
+		apt:         m,
+		aptFS: fstest.MapFS{
+			"lists": &listsFile,
+		},
+	}
+
+	m.EXPECT().CheckForUpdates().Return("", nil)
+
+	if err := a.handleUpdate(); err != nil {
 		t.Error(err)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"time"
 
@@ -65,7 +66,8 @@ type Apt struct {
 	UpdateCacheRetryMaxDelay uint64   `yaml:"update_cache_retry_max_delay"`
 	Upgrade                  string   `sophons:"implemented"`
 
-	apt aptClient
+	apt   aptClient
+	aptFS fs.FS
 }
 
 func init() {
@@ -146,7 +148,7 @@ func (a *Apt) Validate() error {
 }
 
 func (a *Apt) handleUpdate() error {
-	cacheInfo, err := os.Stat("/var/lib/apt/lists")
+	cacheInfo, err := fs.Stat(a.aptFS, "lists")
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to check cache last refresh time: %w", err)
 	}
@@ -170,6 +172,10 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 	if a.apt == nil {
 		a.apt = &realAptClient{}
 	}
+	if a.aptFS == nil {
+		a.aptFS = os.DirFS("/var/lib/apt")
+	}
+
 	name := util.GetStringSlice(a.Name)
 
 	if a.Clean {
