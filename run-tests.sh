@@ -10,6 +10,7 @@ ssh-keygen -f "${dir}/testing" -N "" > /dev/null
 HOST="127.0.0.1"
 PORT="2222"
 KNOWN_HOSTS="${HOME}/.ssh/known_hosts"
+SOPHONS_TESTING_IMAGE=${SOPHONS_TESTING_IMAGE:-"sophons-testing:latest"}
 
 mkdir -p "${HOME}/.ssh"
 touch "${KNOWN_HOSTS}"
@@ -23,7 +24,7 @@ setup_known_hosts() {
 for playbook in data/playbooks/playbook*.yaml; do
     echo "running ${playbook}"
 
-    sha=$(docker run -d -p "127.0.0.1:${PORT}:22" sophons-testing:latest)
+    sha=$(docker run -d -p "127.0.0.1:${PORT}:22" "${SOPHONS_TESTING_IMAGE}")
     setup_known_hosts
     docker cp "${dir}/testing.pub" "${sha}:/root/.ssh/authorized_keys" > /dev/null
     docker exec "${sha}" chown root:root /root/.ssh/authorized_keys
@@ -32,7 +33,7 @@ for playbook in data/playbooks/playbook*.yaml; do
     docker export -o "${dir}/sophons.tar" "${sha}"
     docker rm "${sha}" > /dev/null
 
-    sha=$(docker run -d -p "127.0.0.1:${PORT}:22" sophons-testing:latest)
+    sha=$(docker run -d -p "127.0.0.1:${PORT}:22" "${SOPHONS_TESTING_IMAGE}")
     setup_known_hosts
     docker cp "${dir}/testing.pub" "${sha}:/root/.ssh/authorized_keys" > /dev/null
     docker exec "${sha}" chown root:root /root/.ssh/authorized_keys
