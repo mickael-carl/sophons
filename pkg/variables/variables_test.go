@@ -49,6 +49,28 @@ func TestLoadFromInexistantFile(t *testing.T) {
 	}
 }
 
+func TestLoadFromInvalidYAMLFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	testContent := `
+[something]
+key1 = "foo"
+
+[something.subkey]
+subkey1 = subvalue1
+subkey2 = 123`
+
+	testFilePath := filepath.Join(tmpDir, "invalid.yaml")
+	err := os.WriteFile(testFilePath, []byte(testContent), 0o644)
+	if err != nil {
+		t.Fatalf("failed to write test YAML file: %v", err)
+	}
+
+	if _, err := LoadFromFile(filepath.Join(tmpDir, "invalid.yaml")); err == nil {
+		t.Error("LoadFromFile did not return an error for an invalid YAML file")
+	}
+}
+
 func TestMerge(t *testing.T) {
 	baseVars := Variables{
 		"key1": "value1",

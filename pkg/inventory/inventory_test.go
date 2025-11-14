@@ -277,6 +277,48 @@ func TestGroupAllNested(t *testing.T) {
 	}
 }
 
+func TestInventoryAll(t *testing.T) {
+	i := Inventory{
+		Groups: map[string]Group{
+			"myGroup": {
+				Hosts: map[string]variables.Variables{
+					"foo": {},
+				},
+				Children: map[string]Group{
+					"fruit": {
+						Hosts: map[string]variables.Variables{
+							"myBanana": {},
+						},
+						Children: map[string]Group{
+							"apple": {
+								Hosts: map[string]variables.Variables{
+									"myGala": {},
+								},
+							},
+						},
+					},
+					"party": {
+						Hosts: map[string]variables.Variables{
+							"myGala": {},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := i.All()
+	expected := map[string]struct{}{
+		"foo":      {},
+		"myBanana": {},
+		"myGala":   {},
+	}
+
+	if !cmp.Equal(got, expected) {
+		t.Errorf("expected %#v but got %#v", expected, got)
+	}
+}
+
 func TestGroupNodeVars(t *testing.T) {
 	g := Group{
 		Hosts: map[string]variables.Variables{
