@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
@@ -19,13 +18,12 @@ type Role struct {
 	tasks    []exec.Task
 }
 
-func DiscoverRoles(ctx context.Context, rolesPath string) (map[string]Role, error) {
+func DiscoverRoles(fsys fs.FS) (map[string]Role, error) {
 	roles := map[string]Role{}
 
-	fsys := os.DirFS(rolesPath)
 	entries, err := fs.ReadDir(fsys, ".")
 	if err != nil {
-		return map[string]Role{}, fmt.Errorf("failed to read entries for %s: %w", rolesPath, err)
+		return map[string]Role{}, fmt.Errorf("failed to discover roles: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -33,7 +31,7 @@ func DiscoverRoles(ctx context.Context, rolesPath string) (map[string]Role, erro
 			continue
 		}
 
-		role, ok, err := maybeRole(ctx, fsys, entry.Name())
+		role, ok, err := maybeRole(fsys, entry.Name())
 		if err != nil {
 			return map[string]Role{}, err
 		}
@@ -48,7 +46,7 @@ func DiscoverRoles(ctx context.Context, rolesPath string) (map[string]Role, erro
 // maybeRole checks if a given directory is indeed an Ansible role or not by
 // checking for known directories that are a role may contain. It does so in
 // the order required to preserve variables precedence rules.
-func maybeRole(ctx context.Context, fsys fs.FS, name string) (Role, bool, error) {
+func maybeRole(fsys fs.FS, name string) (Role, bool, error) {
 	isARole := false
 	var role Role
 
