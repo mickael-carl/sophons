@@ -132,8 +132,9 @@ func main() {
 	}
 
 	rolesDir := filepath.Join(playbookDir, "roles")
+	fsys := os.DirFS(rolesDir)
 
-	roles, err := role.DiscoverRoles(ctx, rolesDir)
+	roles, err := role.DiscoverRoles(fsys)
 	if err != nil {
 		log.Fatalf("failed to discover roles: %v", err)
 	}
