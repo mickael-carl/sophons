@@ -162,6 +162,10 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 				// https://github.com/nikolalohinski/gonja/blob/v2.4.0/nodes/nodes.go#L12-L27.
 				value := renderer.Eval(renderer.RootNode.Nodes[0].(*nodes.Output).Expression)
 
+				if value.IsNil() {
+					return nil
+				}
+
 				// If it's a list, `value` contains effectively a
 				// `[]interface{}` so we need to make a `[]string` out of that.
 				if value.IsList() {
