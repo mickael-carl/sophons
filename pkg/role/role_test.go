@@ -6,6 +6,7 @@ import (
 	"testing/fstest"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/variables"
@@ -40,7 +41,7 @@ fruit: "banana"
 		},
 	}
 
-	got, ok, err := maybeRole(context.Background(), fsys, "somerole")
+	got, ok, err := maybeRole(fsys, "somerole")
 	if err != nil {
 		t.Error(err)
 	}
@@ -108,7 +109,7 @@ fruit: "banana"
 		},
 	}
 
-	got, ok, err := maybeRole(context.Background(), fsys, "somerole")
+	got, ok, err := maybeRole(fsys, "somerole")
 	if err != nil {
 		t.Error(err)
 	}
@@ -166,7 +167,7 @@ This is just some test content.
 		},
 	}
 
-	_, ok, err := maybeRole(context.Background(), fsys, "somerole")
+	_, ok, err := maybeRole(fsys, "somerole")
 	if err != nil {
 		t.Error(err)
 	}
@@ -176,7 +177,7 @@ This is just some test content.
 	}
 }
 
-func TestDiscoverRoleMinimal(t *testing.T) {
+func TestMaybeRoleMinimal(t *testing.T) {
 	file := []byte(`
 This is a very minimal role.
 `)
@@ -187,7 +188,7 @@ This is a very minimal role.
 		},
 	}
 
-	got, ok, err := maybeRole(context.Background(), fsys, "somerole")
+	got, ok, err := maybeRole(fsys, "somerole")
 	if err != nil {
 		t.Error(err)
 	}
@@ -204,5 +205,130 @@ This is a very minimal role.
 
 	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
+	}
+}
+
+func TestDiscoverRole(t *testing.T) {
+	tasks1 := []byte(`
+- name: "Hello World!"
+  ansible.builtin.file:
+    path: "/hello"
+    state: "touch"`)
+
+	tasks2 := []byte(`
+- name: "The Answer"
+  ansible.builtin.shell:
+    cmd: "echo {{ the_answer }}"`)
+
+	vars := []byte(`the_answer: 42`)
+
+	handler := []byte(`
+    - name: Restart myservice
+      ansible.builtin.service:
+        name: myservice
+        state: restarted`)
+
+	fsys := fstest.MapFS{
+		"hello/tasks/main.yml":    &fstest.MapFile{Data: tasks1},
+		"answer/tasks/main.yaml":  &fstest.MapFile{Data: tasks2},
+		"answer/vars/main.yml":    &fstest.MapFile{Data: vars},
+		"other/handlers/main.yml": &fstest.MapFile{Data: handler},
+	}
+
+	got, err := DiscoverRoles(fsys)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := map[string]Role{
+		"hello": {
+			tasks: []exec.Task{
+				{
+					Name: "Hello World!",
+					Content: &exec.File{
+						Path:  "hello",
+						State: exec.FileTouch,
+					},
+				},
+			},
+		},
+		"answer": {
+			vars: variables.Variables{
+				"the_answer": uint64(42),
+			},
+			tasks: []exec.Task{
+				{
+					Name: "The Answer",
+					Content: &exec.Shell{
+						Cmd: "echo {{ the_answer }}",
+					},
+				},
+			},
+		},
+		"other": {},
+	}
+
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Role{})) {
+		t.Errorf("expected %#v but got %#v", expected, got)
+	}
+}
+
+func TestRoleApply(t *testing.T) {
+	role := Role{
+		defaults: variables.Variables{
+			"hello": "world!",
+			"foos": []string{
+				"foo",
+				"bar",
+				"baz",
+			},
+		},
+		vars: variables.Variables{
+			"answer": uint64(42),
+		},
+		tasks: []exec.Task{
+			{
+				Name: "testing1",
+				Content: &exec.Shell{
+					Cmd: "echo {{ hello }}",
+				},
+			},
+			{
+				Name: "testing2",
+				Loop: "{{ foos }}",
+				Content: &exec.Shell{
+					Cmd: "echo {{ item }}",
+				},
+			},
+			{
+				Name: "testing3",
+				Content: &exec.Shell{
+					Cmd: "echo {{ answer }}",
+				},
+			},
+		},
+	}
+
+	ctx := variables.NewContext(context.Background(), variables.Variables{
+		"hello": "tests!",
+	})
+
+	if err := role.Apply(ctx, ""); err != nil {
+		t.Error(err)
+	}
+
+	// Ensure role variables are available in subsequent plays.
+	got, ok := variables.FromContext(ctx)
+	if !ok {
+		t.Error("failed to get variables from context after roles apply")
+	}
+
+	expected := variables.Variables{
+		"hello":  "tests!",
+		"answer": uint64(42),
+	}
+
+	if !cmp.Equal(expected, got) {
+		t.Errorf("expected %#v but got %#v", expected, got)
 	}
 }
