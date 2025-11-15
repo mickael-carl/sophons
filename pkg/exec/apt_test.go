@@ -127,8 +127,8 @@ upgrade: "full"`)
 func TestAptApply(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
 	m := NewMockaptClient(ctrl)
+
 	a := &Apt{
 		Name: []string{
 			"foo",
@@ -152,8 +152,8 @@ func TestAptApply(t *testing.T) {
 func TestAptApplyLatest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
 	m := NewMockaptClient(ctrl)
+
 	a := &Apt{
 		Name: []string{
 			"foo",
@@ -304,6 +304,102 @@ func TestHandleUpdateExplicit(t *testing.T) {
 	m.EXPECT().CheckForUpdates().Return("", nil)
 
 	if err := a.handleUpdate(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestAptApplyAbsent(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := NewMockaptClient(ctrl)
+
+	a := &Apt{
+		Name: []string{
+			"foo",
+			"bar",
+		},
+		State: AptAbsent,
+		apt:   m,
+		aptFS: fstest.MapFS{},
+	}
+
+	m.EXPECT().Remove(&apt.Package{Name: "foo"}, &apt.Package{Name: "bar"}).Return("", nil)
+
+	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
+	}
+
+	a = &Apt{
+		State: AptAbsent,
+		apt:   m,
+		aptFS: fstest.MapFS{},
+	}
+
+	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestAptApplyUpgrade(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := NewMockaptClient(ctrl)
+
+	a := &Apt{
+		Upgrade: AptUpgradeFull,
+		apt:     m,
+		aptFS:   fstest.MapFS{},
+	}
+
+	m.EXPECT().DistUpgrade().Return("", nil)
+
+	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
+	}
+
+	a = &Apt{
+		Upgrade: AptUpgradeSafe,
+		apt:     m,
+		aptFS:   fstest.MapFS{},
+	}
+
+	m.EXPECT().UpgradeAll().Return("", nil)
+	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestAptApplyClean(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	m := NewMockaptClient(ctrl)
+
+	a := &Apt{
+		Clean: true,
+		apt:   m,
+		aptFS: fstest.MapFS{},
+	}
+
+	m.EXPECT().Clean().Return("", nil)
+
+	if err := a.Apply(context.Background(), "", false); err != nil {
+		t.Error(err)
+	}
+
+	a = &Apt{
+		Clean: true,
+		Name: []string{
+			"foo",
+		},
+		apt:   m,
+		aptFS: fstest.MapFS{},
+	}
+
+	m.EXPECT().Clean().Return("", nil)
+	m.EXPECT().ListInstalled().Return(nil, nil)
+	m.EXPECT().Install(&apt.Package{Name: "foo"}).Return("", nil)
+
+	if err := a.Apply(context.Background(), "", false); err != nil {
 		t.Error(err)
 	}
 }

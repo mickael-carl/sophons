@@ -40,6 +40,20 @@ func (m *MockaptClient) EXPECT() *MockaptClientMockRecorder {
 	return m.recorder
 }
 
+// AddRepository mocks base method.
+func (m *MockaptClient) AddRepository(repo *apt.Repository, path, filename string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddRepository", repo, path, filename)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddRepository indicates an expected call of AddRepository.
+func (mr *MockaptClientMockRecorder) AddRepository(repo, path, filename any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRepository", reflect.TypeOf((*MockaptClient)(nil).AddRepository), repo, path, filename)
+}
+
 // CheckForUpdates mocks base method.
 func (m *MockaptClient) CheckForUpdates() (string, error) {
 	m.ctrl.T.Helper()
@@ -119,6 +133,35 @@ func (mr *MockaptClientMockRecorder) ListInstalled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstalled", reflect.TypeOf((*MockaptClient)(nil).ListInstalled))
 }
 
+// ParseAPTConfigFolder mocks base method.
+func (m *MockaptClient) ParseAPTConfigFolder(path string) (apt.RepositoryList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ParseAPTConfigFolder", path)
+	ret0, _ := ret[0].(apt.RepositoryList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ParseAPTConfigFolder indicates an expected call of ParseAPTConfigFolder.
+func (mr *MockaptClientMockRecorder) ParseAPTConfigFolder(path any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseAPTConfigFolder", reflect.TypeOf((*MockaptClient)(nil).ParseAPTConfigFolder), path)
+}
+
+// ParseAPTConfigLine mocks base method.
+func (m *MockaptClient) ParseAPTConfigLine(line string) *apt.Repository {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ParseAPTConfigLine", line)
+	ret0, _ := ret[0].(*apt.Repository)
+	return ret0
+}
+
+// ParseAPTConfigLine indicates an expected call of ParseAPTConfigLine.
+func (mr *MockaptClientMockRecorder) ParseAPTConfigLine(line any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseAPTConfigLine", reflect.TypeOf((*MockaptClient)(nil).ParseAPTConfigLine), line)
+}
+
 // Remove mocks base method.
 func (m *MockaptClient) Remove(pkgs ...*apt.Package) (string, error) {
 	m.ctrl.T.Helper()
@@ -136,6 +179,20 @@ func (m *MockaptClient) Remove(pkgs ...*apt.Package) (string, error) {
 func (mr *MockaptClientMockRecorder) Remove(pkgs ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockaptClient)(nil).Remove), pkgs...)
+}
+
+// RemoveRepository mocks base method.
+func (m *MockaptClient) RemoveRepository(repo *apt.Repository, path string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveRepository", repo, path)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveRepository indicates an expected call of RemoveRepository.
+func (mr *MockaptClientMockRecorder) RemoveRepository(repo, path any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRepository", reflect.TypeOf((*MockaptClient)(nil).RemoveRepository), repo, path)
 }
 
 // UpgradeAll mocks base method.

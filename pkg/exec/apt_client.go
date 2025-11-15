@@ -12,6 +12,10 @@ type aptClient interface {
 	ListInstalled() ([]*apt.Package, error)
 	Remove(pkgs ...*apt.Package) (string, error)
 	UpgradeAll() (string, error)
+	ParseAPTConfigFolder(path string) (apt.RepositoryList, error)
+	ParseAPTConfigLine(line string) *apt.Repository
+	AddRepository(repo *apt.Repository, path, filename string) error
+	RemoveRepository(repo *apt.Repository, path string) error
 }
 
 type realAptClient struct{}
@@ -48,4 +52,20 @@ func (c *realAptClient) Remove(pkgs ...*apt.Package) (string, error) {
 func (c *realAptClient) UpgradeAll() (string, error) {
 	out, err := apt.UpgradeAll()
 	return string(out), err
+}
+
+func (c *realAptClient) ParseAPTConfigFolder(path string) (apt.RepositoryList, error) {
+	return apt.ParseAPTConfigFolder(path)
+}
+
+func (c *realAptClient) ParseAPTConfigLine(line string) *apt.Repository {
+	return apt.ParseAPTConfigLine(line)
+}
+
+func (c *realAptClient) AddRepository(repo *apt.Repository, path, filename string) error {
+	return apt.AddRepository(repo, path, filename)
+}
+
+func (c *realAptClient) RemoveRepository(repo *apt.Repository, path string) error {
+	return apt.RemoveRepository(repo, path)
 }
