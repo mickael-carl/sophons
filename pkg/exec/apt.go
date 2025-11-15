@@ -202,17 +202,21 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 
 	if a.Upgrade != "" {
 		switch a.Upgrade {
-		case "yes", "safe":
+		case AptUpgradeYes, AptUpgradeSafe:
 			if _, err := a.apt.UpgradeAll(); err != nil {
 				return fmt.Errorf("failed to upgrade: %w", err)
 			}
-		case "dist", "full":
+		case AptUpgradeDist, AptUpgradeFull:
 			if _, err := a.apt.DistUpgrade(); err != nil {
 				return fmt.Errorf("failed to dist-upgrade: %w", err)
 			}
 		default:
 			return fmt.Errorf("unsupported value of upgrade: %s", a.Upgrade)
 		}
+	}
+
+	if len(name) == 0 {
+		return nil
 	}
 
 	switch actualState {

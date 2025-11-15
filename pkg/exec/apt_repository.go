@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/arduino/go-apt-client"
 	"github.com/goccy/go-yaml"
 )
 
@@ -32,6 +31,8 @@ type AptRepository struct {
 	UpdateCacheRetries       uint64             `yaml:"update_cache_retries"`
 	UpdateCacheRetryMaxDelay uint64             `yaml:"update_cache_retry_max_delay"`
 	ValidateCerts            *bool              `yaml:"validate_certs"`
+
+	apt aptClient
 }
 
 func init() {
@@ -83,12 +84,16 @@ func (ar *AptRepository) Validate() error {
 }
 
 func (ar *AptRepository) Apply(_ context.Context, _ string, _ bool) error {
-	repos, err := apt.ParseAPTConfigFolder("/etc/apt")
+	if ar.apt == nil {
+		ar.apt = &realAptClient{}
+	}
+
+	repos, err := ar.apt.ParseAPTConfigFolder("/etc/apt")
 	if err != nil {
 		return fmt.Errorf("failed to parse existing repositories: %w", err)
 	}
 
-	repo := apt.ParseAPTConfigLine(ar.Repo)
+	repo := ar.apt.ParseAPTConfigLine(ar.Repo)
 	if repo == nil {
 		return errors.New("failed to parse repo line")
 	}
@@ -96,7 +101,7 @@ func (ar *AptRepository) Apply(_ context.Context, _ string, _ bool) error {
 	if ar.State == AptRepositoryAbsent {
 		toRemove := repos.Find(repo)
 		if toRemove != nil {
-			if err := apt.RemoveRepository(toRemove, "/etc/apt"); err != nil {
+			if err := ar.apt.RemoveRepository(toRemove, "/etc/apt"); err != nil {
 				return fmt.Errorf("failed to remove repository: %w", err)
 			}
 		}
@@ -107,14 +112,14 @@ func (ar *AptRepository) Apply(_ context.Context, _ string, _ bool) error {
 			if err != nil {
 				return fmt.Errorf("failed to infer filename from repo: %w", err)
 			}
-			if err := apt.AddRepository(repo, "/etc/apt", filename); err != nil {
+			if err := ar.apt.AddRepository(repo, "/etc/apt", filename); err != nil {
 				return fmt.Errorf("failed to add repository: %w", err)
 			}
 		}
 	}
 
 	if ar.UpdateCache == nil || ar.UpdateCache != nil && *ar.UpdateCache {
-		if _, err := apt.CheckForUpdates(); err != nil {
+		if _, err := ar.apt.CheckForUpdates(); err != nil {
 			return fmt.Errorf("failed to update apt cache: %w", err)
 		}
 	}
