@@ -92,7 +92,6 @@ func playbookApply(ctx context.Context, logger *zap.Logger, playbookPath, node s
 
 func main() {
 	gonja.DefaultConfig.StrictUndefined = true
-
 	flag.Parse()
 
 	logger, err := zap.NewProduction()

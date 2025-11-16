@@ -53,6 +53,10 @@ type File struct {
 	UnsafeWrites           bool `yaml:"unsafe_writes"`
 }
 
+type FileResult struct {
+	CommonResult `yaml:",inline"`
+}
+
 func init() {
 	RegisterTaskType("file", func() TaskContent { return &File{} })
 	RegisterTaskType("ansible.builtin.file", func() TaskContent { return &File{} })
@@ -115,7 +119,7 @@ func (f *File) Validate() error {
 	return nil
 }
 
-func (f *File) Apply(_ context.Context, _ string, _ bool) error {
+func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 	var follow bool
 	// The default for `follow` is true.
 	if f.Follow == nil {
@@ -132,7 +136,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 		exists = true
 	} else {
 		if !errors.Is(err, fs.ErrNotExist) {
-			return err
+			return &FileResult{}, err
 		}
 	}
 
@@ -148,17 +152,17 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 
 	uid, err := util.GetUid(f.Owner)
 	if err != nil {
-		return err
+		return &FileResult{}, err
 	}
 
 	gid, err := util.GetGid(f.Owner)
 	if err != nil {
-		return err
+		return &FileResult{}, err
 	}
 
 	switch actualState {
 	case FileAbsent:
-		return os.RemoveAll(f.Path)
+		return &FileResult{}, os.RemoveAll(f.Path)
 
 	case FileDirectory:
 		// If f.Mode is not specified, i.e. we don't specify a mode, Ansible
@@ -166,7 +170,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 		// anything on existing files/directories, we call MkdirAll, which
 		// won't alter existing things as expected.
 		if err := os.MkdirAll(f.Path, os.FileMode(0o755)); err != nil {
-			return err
+			return &FileResult{}, err
 		}
 
 		if f.Recurse {
@@ -195,63 +199,63 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 
 				return nil
 			}); err != nil {
-				return err
+				return &FileResult{}, err
 			}
 		} else {
 			if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
-				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
+				return &FileResult{}, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
 
 	case FileFile:
 		if !exists {
-			return errors.New("file does not exist")
+			return &FileResult{}, errors.New("file does not exist")
 		}
 
 		// Per Ansible docs: if no property are set, state=file does nothing.
 		if f.Mode == nil && f.Owner == "" && f.Group == "" {
-			return nil
+			return &FileResult{}, nil
 		}
 
 		if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
-			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
+			return &FileResult{}, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 
 	case FileHard:
-		return errors.New("not implemented")
+		return &FileResult{}, errors.New("not implemented")
 
 	case FileLink:
 		if !exists {
 			if err := os.Symlink(f.Src, f.Path); err != nil {
-				return err
+				return &FileResult{}, err
 			}
 		} else {
 			existingSrc, err := os.Readlink(f.Path)
 			if err != nil {
-				return err
+				return &FileResult{}, err
 			}
 
 			if existingSrc != f.Src {
 				if err := os.Remove(f.Path); err != nil {
-					return err
+					return &FileResult{}, err
 				}
 
 				if err := os.Symlink(f.Src, f.Path); err != nil {
-					return err
+					return &FileResult{}, err
 				}
 			}
 		}
 
 		if follow {
 			if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
-				return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
+				return &FileResult{}, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
 		}
 
 	case FileTouch:
 		if !exists {
 			if _, err := os.Create(f.Path); err != nil {
-				return fmt.Errorf("failed to create %s: %w", f.Path, err)
+				return &FileResult{}, fmt.Errorf("failed to create %s: %w", f.Path, err)
 			}
 		}
 
@@ -259,12 +263,12 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) error {
 		// be updated but not more. That proves to not be accurate:
 		// permissions, uid and gid will be updated too.
 		if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
-			return fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
+			return &FileResult{}, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 		}
 
 	default:
-		return errors.New("unsupported state parameter")
+		return &FileResult{}, errors.New("unsupported state parameter")
 	}
 
-	return nil
+	return &FileResult{}, nil
 }

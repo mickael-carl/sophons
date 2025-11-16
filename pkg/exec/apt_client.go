@@ -4,6 +4,11 @@ import "github.com/arduino/go-apt-client"
 
 //go:generate mockgen -source=$GOFILE -destination=mock_apt_client_test.go -package=exec
 
+var (
+	aptClientContextKey = &struct{ name string }{"apt-client"}
+	aptFSContextKey     = &struct{ name string }{"apt-fs"}
+)
+
 type aptClient interface {
 	CheckForUpdates() (string, error)
 	Clean() (string, error)

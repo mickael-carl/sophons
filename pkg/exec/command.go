@@ -26,6 +26,10 @@ type Command struct {
 	StripEmptyEnds     *bool    `yaml:"strip_empty_ends"`
 }
 
+type CommandResult struct {
+	CommonResult `yaml:",inline"`
+}
+
 func init() {
 	RegisterTaskType("command", func() TaskContent { return &Command{} })
 	RegisterTaskType("ansible.builtin.command", func() TaskContent { return &Command{} })
@@ -35,7 +39,7 @@ func (c *Command) Validate() error {
 	return util.ValidateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
 }
 
-func (c *Command) Apply(_ context.Context, _ string, _ bool) error {
+func (c *Command) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
 		if c.Cmd != "" {
@@ -72,7 +76,7 @@ func (c *Command) Apply(_ context.Context, _ string, _ bool) error {
 
 	out, err := util.ApplyCmd(cmdFunc, c.Creates, c.Removes, c.Chdir, c.Stdin, c.StdinAddNewline)
 	if err != nil {
-		return fmt.Errorf("failed to execute command: %s", string(out))
+		return &CommandResult{}, fmt.Errorf("failed to execute command: %s", string(out))
 	}
 
 	// TODO: Debug.
@@ -80,5 +84,5 @@ func (c *Command) Apply(_ context.Context, _ string, _ bool) error {
 		log.Print(string(out))
 	}
 
-	return nil
+	return &CommandResult{}, nil
 }

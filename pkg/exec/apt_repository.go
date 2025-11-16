@@ -35,6 +35,10 @@ type AptRepository struct {
 	apt aptClient
 }
 
+type AptRepositoryResult struct {
+	CommonResult `yaml:",inline"`
+}
+
 func init() {
 	RegisterTaskType("apt_repository", func() TaskContent { return &AptRepository{} })
 	RegisterTaskType("ansible.builtin.apt_repository", func() TaskContent { return &AptRepository{} })
@@ -83,26 +87,33 @@ func (ar *AptRepository) Validate() error {
 	return nil
 }
 
-func (ar *AptRepository) Apply(_ context.Context, _ string, _ bool) error {
-	if ar.apt == nil {
+func (ar *AptRepository) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
+	if clientFromCtx, ok := ctx.Value(aptClientContextKey).(aptClient); ok {
+		ar.apt = clientFromCtx
+	} else {
 		ar.apt = &realAptClient{}
 	}
 
+	result := AptRepositoryResult{}
 	repos, err := ar.apt.ParseAPTConfigFolder("/etc/apt")
 	if err != nil {
-		return fmt.Errorf("failed to parse existing repositories: %w", err)
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to parse existing repositories: %w", err)
 	}
 
 	repo := ar.apt.ParseAPTConfigLine(ar.Repo)
 	if repo == nil {
-		return errors.New("failed to parse repo line")
+		result.TaskFailed()
+		return &result, errors.New("failed to parse repo line")
 	}
 
 	if ar.State == AptRepositoryAbsent {
 		toRemove := repos.Find(repo)
 		if toRemove != nil {
+			result.TaskChanged()
 			if err := ar.apt.RemoveRepository(toRemove, "/etc/apt"); err != nil {
-				return fmt.Errorf("failed to remove repository: %w", err)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to remove repository: %w", err)
 			}
 		}
 	} else {
@@ -110,19 +121,24 @@ func (ar *AptRepository) Apply(_ context.Context, _ string, _ bool) error {
 		if existing == nil {
 			filename, err := uriToFilename(repo.URI)
 			if err != nil {
-				return fmt.Errorf("failed to infer filename from repo: %w", err)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to infer filename from repo: %w", err)
 			}
+			result.TaskChanged()
 			if err := ar.apt.AddRepository(repo, "/etc/apt", filename); err != nil {
-				return fmt.Errorf("failed to add repository: %w", err)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to add repository: %w", err)
 			}
 		}
 	}
 
 	if ar.UpdateCache == nil || ar.UpdateCache != nil && *ar.UpdateCache {
+		result.TaskChanged()
 		if _, err := ar.apt.CheckForUpdates(); err != nil {
-			return fmt.Errorf("failed to update apt cache: %w", err)
+			result.TaskFailed()
+			return &result, fmt.Errorf("failed to update apt cache: %w", err)
 		}
 	}
 
-	return nil
+	return &result, nil
 }

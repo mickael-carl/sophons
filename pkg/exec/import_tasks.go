@@ -19,6 +19,10 @@ type ImportTasks struct {
 	File string `sophons:"implemented"`
 }
 
+type ImportTasksResult struct {
+	CommonResult `yaml:",inline"`
+}
+
 func init() {
 	RegisterTaskType("import_tasks", func() TaskContent { return &ImportTasks{} })
 	RegisterTaskType("ansible.builtin.import_tasks", func() TaskContent { return &ImportTasks{} })
@@ -32,7 +36,7 @@ func (it *ImportTasks) Validate() error {
 	return nil
 }
 
-func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool) error {
+func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool) (Result, error) {
 	// This is Ansible madness: import_tasks' File is relative to where the
 	// task is defined. If the task is within a role, then it can be found in
 	// the same directory as other tasks (i.e. in `tasks/`); but if the task is
@@ -46,27 +50,31 @@ func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool
 
 	taskData, err := os.ReadFile(taskPath)
 	if err != nil {
-		return fmt.Errorf("failed to read tasks from %s: %w", taskPath, err)
+		return &ImportTasksResult{}, fmt.Errorf("failed to read tasks from %s: %w", taskPath, err)
 	}
 
 	var tasks []Task
 	if err := yaml.Unmarshal(taskData, &tasks); err != nil {
-		return fmt.Errorf("failed to parse tasks from %s: %w", taskPath, err)
+		return &ImportTasksResult{}, fmt.Errorf("failed to parse tasks from %s: %w", taskPath, err)
 	}
 
 	for _, task := range tasks {
 		if err := util.ProcessJinjaTemplates(ctx, &task); err != nil {
-			return fmt.Errorf("failed to render Jinja templating from %s: %w", taskPath, err)
+			return &ImportTasksResult{}, fmt.Errorf("failed to render Jinja templating from %s: %w", taskPath, err)
 		}
 
 		if err := task.Validate(); err != nil {
-			return fmt.Errorf("failed to validate task from %s: %w", taskPath, err)
+			return &ImportTasksResult{}, fmt.Errorf("failed to validate task from %s: %w", taskPath, err)
 		}
 
-		if err := task.Apply(ctx, parentPath, isRole); err != nil {
-			return fmt.Errorf("failed to apply task from %s: %w", taskPath, err)
+		// TODO: handle result values. It's likely not possible to do register
+		// on this, and because it's import_tasks, we can't (well Ansible
+		// can't) loop.
+		_, err := task.Apply(ctx, parentPath, isRole)
+		if err != nil {
+			return &ImportTasksResult{}, fmt.Errorf("failed to apply task from %s: %w", taskPath, err)
 		}
 	}
 
-	return nil
+	return &ImportTasksResult{}, nil
 }

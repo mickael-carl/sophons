@@ -39,6 +39,10 @@ type Copy struct {
 	AValidate     string `yaml:"validate"`
 }
 
+type CopyResult struct {
+	CommonResult `yaml:",inline"`
+}
+
 func init() {
 	RegisterTaskType("copy", func() TaskContent { return &Copy{} })
 	RegisterTaskType("ansible.builtin.copy", func() TaskContent { return &Copy{} })
@@ -152,15 +156,15 @@ func (c *Copy) copyFile(actualSrc string) error {
 	return copySingleFile(actualSrc, c.Dest)
 }
 
-func (c *Copy) Apply(_ context.Context, parentPath string, _ bool) error {
+func (c *Copy) Apply(_ context.Context, parentPath string, _ bool) (Result, error) {
 	if c.Content != "" {
-		return c.copyContent()
+		return &CopyResult{}, c.copyContent()
 	}
 
 	srcPath := filepath.Join(parentPath, "files", c.Src)
 	f, err := os.Stat(srcPath)
 	if err != nil {
-		return fmt.Errorf("failed to read %s: %w", c.Src, err)
+		return &CopyResult{}, fmt.Errorf("failed to read %s: %w", c.Src, err)
 	}
 
 	if f.IsDir() {
@@ -170,8 +174,8 @@ func (c *Copy) Apply(_ context.Context, parentPath string, _ bool) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %w", c.Src, c.Dest, err)
+		return &CopyResult{}, fmt.Errorf("failed to copy %s to %s: %w", c.Src, c.Dest, err)
 	}
 
-	return nil
+	return &CopyResult{}, nil
 }
