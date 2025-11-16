@@ -45,6 +45,10 @@ type Template struct {
 	VariableStartString string `yaml:"variable_start_string"`
 }
 
+type TemplateResult struct {
+	CommonResult `yaml:",inline"`
+}
+
 func init() {
 	RegisterTaskType("template", func() TaskContent { return &Template{} })
 	RegisterTaskType("ansible.builtin.template", func() TaskContent { return &Template{} })
@@ -69,17 +73,17 @@ func (c *Template) Validate() error {
 	return nil
 }
 
-func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) error {
+func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) (Result, error) {
 	f, err := os.Create(c.Dest)
 	if err != nil {
-		return fmt.Errorf("failed to create destination %s: %w", c.Dest, err)
+		return &TemplateResult{}, fmt.Errorf("failed to create destination %s: %w", c.Dest, err)
 	}
 
 	srcPath := filepath.Join(parentPath, "templates", c.Src)
 	template, err := gonja.FromFile(srcPath)
 	if err != nil {
 		f.Close()
-		return fmt.Errorf("failed to read template file %s: %w", srcPath, err)
+		return &TemplateResult{}, fmt.Errorf("failed to read template file %s: %w", srcPath, err)
 	}
 
 	vars, ok := variables.FromContext(ctx)
@@ -90,30 +94,30 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) er
 
 	if err := template.Execute(f, varsCtx); err != nil {
 		f.Close()
-		return fmt.Errorf("failed to template file %s to %s: %w", srcPath, c.Dest, err)
+		return &TemplateResult{}, fmt.Errorf("failed to template file %s to %s: %w", srcPath, c.Dest, err)
 	}
 
 	if err := f.Close(); err != nil {
-		return err
+		return &TemplateResult{}, err
 	}
 
 	if c.Mode == nil && c.Owner == "" && c.Group == "" {
-		return nil
+		return &TemplateResult{}, nil
 	}
 
 	uid, err := util.GetUid(c.Owner)
 	if err != nil {
-		return err
+		return &TemplateResult{}, err
 	}
 
 	gid, err := util.GetGid(c.Group)
 	if err != nil {
-		return err
+		return &TemplateResult{}, err
 	}
 
 	if err := util.ApplyModeAndIDs(c.Dest, c.Mode, uid, gid); err != nil {
-		return fmt.Errorf("failed to apply mode and IDs to %s: %w", c.Dest, err)
+		return &TemplateResult{}, fmt.Errorf("failed to apply mode and IDs to %s: %w", c.Dest, err)
 	}
 
-	return nil
+	return &TemplateResult{}, nil
 }

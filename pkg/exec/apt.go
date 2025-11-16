@@ -70,6 +70,13 @@ type Apt struct {
 	aptFS fs.FS
 }
 
+type AptResult struct {
+	CommonResult `yaml:",inline"`
+
+	CacheUpdateTime time.Time `yaml:"cache_update_time"`
+	CacheUpdated    bool      `yaml:"cache_updated"`
+}
+
 func init() {
 	RegisterTaskType("apt", func() TaskContent { return &Apt{} })
 	RegisterTaskType("ansible.builtin.apt", func() TaskContent { return &Apt{} })
@@ -147,47 +154,59 @@ func (a *Apt) Validate() error {
 	return nil
 }
 
-func (a *Apt) handleUpdate() error {
+func (a *Apt) handleUpdate() (bool, time.Time, error) {
 	cacheInfo, err := fs.Stat(a.aptFS, "lists")
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("failed to check cache last refresh time: %w", err)
+		return false, time.UnixMilli(0).UTC(), fmt.Errorf("failed to check cache last refresh time: %w", err)
 	}
 
 	if errors.Is(err, os.ErrNotExist) && (a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil) {
 		_, cacheErr := a.apt.CheckForUpdates()
-		return cacheErr
+		return true, time.Now().UTC(), cacheErr
 	}
 
+	if a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil && time.Since(cacheInfo.ModTime()).Seconds() > float64(*a.CacheValidTime) {
+		_, cacheErr := a.apt.CheckForUpdates()
+		return true, time.Now().UTC(), cacheErr
+	}
+
+	cacheUpdateTime := time.UnixMilli(0)
 	if err == nil {
-		if a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil && time.Since(cacheInfo.ModTime()).Seconds() > float64(*a.CacheValidTime) {
-			_, cacheErr := a.apt.CheckForUpdates()
-			return cacheErr
-		}
+		cacheUpdateTime = cacheInfo.ModTime()
 	}
 
-	return nil
+	return false, cacheUpdateTime.UTC(), nil
 }
 
-func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
-	if a.apt == nil {
+func (a *Apt) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
+	if clientFromCtx, ok := ctx.Value(aptClientContextKey).(aptClient); ok {
+		a.apt = clientFromCtx
+	} else {
 		a.apt = &realAptClient{}
 	}
-	if a.aptFS == nil {
+
+	if fsFromCtx, ok := ctx.Value(aptFSContextKey).(fs.FS); ok {
+		a.aptFS = fsFromCtx
+	} else {
 		a.aptFS = os.DirFS("/var/lib/apt")
 	}
 
 	name := util.GetStringSlice(a.Name)
+	result := AptResult{}
 
 	if a.Clean {
 		if _, err := a.apt.Clean(); err != nil {
-			return fmt.Errorf("failed to clean apt cache: %w", err)
+			result.TaskFailed()
+			return &result, fmt.Errorf("failed to clean apt cache: %w", err)
 		}
+
+		result.TaskChanged()
 
 		// This is similar to Ansible's implementation. See
 		// https://github.com/ansible/ansible/issues/82611 and
 		// https://github.com/ansible/ansible/pull/82800 for some context.
 		if len(name) == 0 && (a.Upgrade == "no" || a.Upgrade == "") && a.Deb == "" {
-			return nil
+			return &result, nil
 		}
 	}
 
@@ -196,34 +215,48 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		actualState = AptPresent
 	}
 
-	if err := a.handleUpdate(); err != nil {
-		return fmt.Errorf("failed to update apt cache: %w", err)
+	cacheUpdated, cacheUpdateTime, err := a.handleUpdate()
+	if err != nil {
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to update apt cache: %w", err)
+	}
+
+	result.CacheUpdated = cacheUpdated
+	result.CacheUpdateTime = cacheUpdateTime
+
+	if cacheUpdated {
+		result.TaskChanged()
 	}
 
 	if a.Upgrade != "" {
 		switch a.Upgrade {
 		case AptUpgradeYes, AptUpgradeSafe:
 			if _, err := a.apt.UpgradeAll(); err != nil {
-				return fmt.Errorf("failed to upgrade: %w", err)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to upgrade: %w", err)
 			}
 		case AptUpgradeDist, AptUpgradeFull:
 			if _, err := a.apt.DistUpgrade(); err != nil {
-				return fmt.Errorf("failed to dist-upgrade: %w", err)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to dist-upgrade: %w", err)
 			}
 		default:
-			return fmt.Errorf("unsupported value of upgrade: %s", a.Upgrade)
+			result.TaskFailed()
+			return &result, fmt.Errorf("unsupported value of upgrade: %s", a.Upgrade)
 		}
+		result.TaskChanged()
 	}
 
 	if len(name) == 0 {
-		return nil
+		return &result, nil
 	}
 
 	switch actualState {
 	case AptPresent:
 		installed, err := a.apt.ListInstalled()
 		if err != nil {
-			return fmt.Errorf("failed to list installed packages: %w", err)
+			result.TaskFailed()
+			return &result, fmt.Errorf("failed to list installed packages: %w", err)
 		}
 
 		toInstall := []*apt.Package{}
@@ -242,8 +275,10 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 
 		if len(toInstall) > 0 {
 			if out, err := a.apt.Install(toInstall...); err != nil {
-				return fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
 			}
+			result.TaskChanged()
 		}
 	case AptLatest:
 		toInstall := []*apt.Package{}
@@ -258,8 +293,10 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 		// available.
 		if len(toInstall) > 0 {
 			if out, err := a.apt.Install(toInstall...); err != nil {
-				return fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to install package list: %w. Output: %s", err, out)
 			}
+			result.TaskChanged()
 		}
 	case AptAbsent:
 		toRemove := []*apt.Package{}
@@ -271,12 +308,15 @@ func (a *Apt) Apply(_ context.Context, _ string, _ bool) error {
 
 		if len(toRemove) > 0 {
 			if out, err := a.apt.Remove(toRemove...); err != nil {
-				return fmt.Errorf("failed to remove package list: %w. Output: %s", err, out)
+				result.TaskFailed()
+				return &result, fmt.Errorf("failed to remove package list: %w. Output: %s", err, out)
 			}
+			result.TaskChanged()
 		}
 	default:
-		return fmt.Errorf("state %s is not implemented for apt", actualState)
+		result.TaskFailed()
+		return &result, fmt.Errorf("state %s is not implemented for apt", actualState)
 	}
 
-	return nil
+	return &result, nil
 }

@@ -24,6 +24,10 @@ type Shell struct {
 	StdinAddNewline *bool    `yaml:"stdin_add_newline" sophons:"implemented"`
 }
 
+type ShellResult struct {
+	CommonResult `yaml:",inline"`
+}
+
 func init() {
 	RegisterTaskType("shell", func() TaskContent { return &Shell{} })
 	RegisterTaskType("ansible.builtin.shell", func() TaskContent { return &Shell{} })
@@ -33,7 +37,7 @@ func (s *Shell) Validate() error {
 	return util.ValidateCmd(s.Argv, s.Cmd, s.Stdin, s.StdinAddNewline)
 }
 
-func (s *Shell) Apply(_ context.Context, _ string, _ bool) error {
+func (s *Shell) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 	cmdFunc := func() *exec.Cmd {
 		var cmd *exec.Cmd
 		exe := "/bin/sh"
@@ -52,7 +56,7 @@ func (s *Shell) Apply(_ context.Context, _ string, _ bool) error {
 
 	out, err := util.ApplyCmd(cmdFunc, s.Creates, s.Removes, s.Chdir, s.Stdin, s.StdinAddNewline)
 	if err != nil {
-		return fmt.Errorf("failed to execute command: %s", string(out))
+		return &ShellResult{}, fmt.Errorf("failed to execute command: %s", string(out))
 	}
 
 	// TODO: Debug.
@@ -60,5 +64,5 @@ func (s *Shell) Apply(_ context.Context, _ string, _ bool) error {
 		log.Print(string(out))
 	}
 
-	return nil
+	return &ShellResult{}, nil
 }

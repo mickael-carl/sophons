@@ -124,7 +124,6 @@ func TestAptRepositoryApply(t *testing.T) {
 	a := &AptRepository{
 		Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
 		State: AptRepositoryPresent,
-		apt:   m,
 	}
 
 	repo := &apt.Repository{
@@ -142,7 +141,8 @@ func TestAptRepositoryApply(t *testing.T) {
 	m.EXPECT().AddRepository(repo, "/etc/apt", "download_docker_com_linux_debian.list").Return(nil)
 	m.EXPECT().CheckForUpdates().Return("", nil)
 
-	if err := a.Apply(context.Background(), "", false); err != nil {
+	ctx := context.WithValue(context.Background(), aptClientContextKey, m)
+	if _, err := a.Apply(ctx, "", false); err != nil {
 		t.Error(err)
 	}
 
@@ -154,7 +154,7 @@ func TestAptRepositoryApply(t *testing.T) {
 	m.EXPECT().ParseAPTConfigLine("deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable").Return(repo)
 	m.EXPECT().RemoveRepository(repo, "/etc/apt").Return(nil)
 
-	if err := a.Apply(context.Background(), "", false); err != nil {
+	if _, err := a.Apply(ctx, "", false); err != nil {
 		t.Error(err)
 	}
 }
