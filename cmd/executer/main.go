@@ -4,12 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
 	"github.com/nikolalohinski/gonja/v2"
+
+	"go.uber.org/zap"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/inventory"
@@ -26,7 +27,7 @@ var (
 	node             = flag.String("n", "localhost", "name of the node to run the playbook against")
 )
 
-func playbookApply(ctx context.Context, playbookPath, node string, groups map[string]struct{}, roles map[string]role.Role, rolesDir string) error {
+func playbookApply(ctx context.Context, logger *zap.Logger, playbookPath, node string, groups map[string]struct{}, roles map[string]role.Role, rolesDir string) error {
 	playbookData, err := os.ReadFile(playbookPath)
 	if err != nil {
 		return fmt.Errorf("failed to read playbook from %s: %w", playbookPath, err)
@@ -63,8 +64,7 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 			// Ansible executes roles first, then tasks. See
 			// https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#using-roles-at-the-play-level.
 			for _, roleName := range play.Roles {
-				// TODO: debug.
-				log.Printf("executing %s", roleName)
+				logger.Debug("executing role", zap.String("role", roleName))
 
 				role, ok := roles[roleName]
 				if !ok {
@@ -76,12 +76,12 @@ func playbookApply(ctx context.Context, playbookPath, node string, groups map[st
 				// playCtx, so that variables defined in a role can be used in
 				// subsequent ones as well as the rest of the play. Sorry
 				// Ansible but this is STUPID.
-				if err := role.Apply(playCtx, filepath.Join(rolesDir, roleName)); err != nil {
+				if err := role.Apply(playCtx, logger, filepath.Join(rolesDir, roleName)); err != nil {
 					return fmt.Errorf("failed to apply role %s: %w", roleName, err)
 				}
 			}
 			for _, task := range play.Tasks {
-				if err := exec.ExecuteTask(playCtx, task, filepath.Dir(playbookPath), false); err != nil { // use playCtx
+				if err := exec.ExecuteTask(playCtx, logger, task, filepath.Dir(playbookPath), false); err != nil { // use playCtx
 					return fmt.Errorf("failed to execute task: %w", err)
 				}
 			}
@@ -95,12 +95,18 @@ func main() {
 
 	flag.Parse()
 
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(fmt.Sprintf("failed to create logger: %v", err))
+	}
+	defer logger.Sync() //nolint:errcheck
+
 	if len(flag.Args()) != 1 {
-		log.Fatal("usage: executer spec.yaml")
+		logger.Fatal("usage: executer spec.yaml")
 	}
 
 	if *dataArchive != "" && *playbooksDirName == "" || *dataArchive == "" && *playbooksDirName != "" {
-		log.Fatal("when either -d or -p is set, both flags must be set")
+		logger.Fatal("when either -d or -p is set, both flags must be set")
 	}
 
 	groups := map[string]struct{}{"all": {}}
@@ -109,12 +115,12 @@ func main() {
 	if *inventoryPath != "" {
 		inventoryData, err := os.ReadFile(*inventoryPath)
 		if err != nil {
-			log.Fatalf("failed to read inventory from %s: %v", *inventoryPath, err)
+			logger.Fatal("failed to read inventory", zap.String("path", *inventoryPath), zap.Error(err))
 		}
 
 		var inventory inventory.Inventory
 		if err := yaml.Unmarshal(inventoryData, &inventory); err != nil {
-			log.Fatalf("failed to unmarshal inventory from %s: %v", *inventoryPath, err)
+			logger.Fatal("failed to unmarshal inventory", zap.String("path", *inventoryPath), zap.Error(err))
 		}
 
 		groups = inventory.Find(*node)
@@ -126,7 +132,7 @@ func main() {
 	playbookDir := filepath.Dir(flag.Args()[0])
 	if *dataArchive != "" {
 		if err := util.Untar(*dataArchive, filepath.Dir(*dataArchive)); err != nil {
-			log.Fatalf("failed to untar archive at %s: %v", *dataArchive, err)
+			logger.Fatal("failed to untar archive", zap.String("path", *dataArchive), zap.Error(err))
 		}
 		playbookDir = filepath.Join(filepath.Dir(*dataArchive), *playbooksDirName)
 	}
@@ -136,11 +142,11 @@ func main() {
 
 	roles, err := role.DiscoverRoles(fsys)
 	if err != nil {
-		log.Fatalf("failed to discover roles: %v", err)
+		logger.Fatal("failed to discover roles", zap.Error(err))
 	}
 
 	playbookPath := flag.Args()[0]
-	if err := playbookApply(ctx, playbookPath, *node, groups, roles, rolesDir); err != nil {
-		log.Fatal(err)
+	if err := playbookApply(ctx, logger, playbookPath, *node, groups, roles, rolesDir); err != nil {
+		logger.Fatal("failed to run playbook", zap.String("path", playbookPath), zap.Error(err))
 	}
 }

@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	"github.com/goccy/go-yaml"
+
+	"go.uber.org/zap"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -59,38 +60,44 @@ func sshConfig(u, k string) (*ssh.ClientConfig, error) {
 func main() {
 	flag.Parse()
 
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(fmt.Sprintf("failed to create logger: %v", err))
+	}
+	defer logger.Sync() //nolint:errcheck
+
 	if len(flag.Args()) != 1 {
-		log.Fatal("missing playbook path. Usage: dialer -b binary-directory -i inventory.yaml playbook.yaml")
+		logger.Fatal("missing playbook path. Usage: dialer -b binary-directory -i inventory.yaml playbook.yaml")
 	}
 
 	if *binDir == "" {
-		log.Fatal("`-b` flag is required")
+		logger.Fatal("`-b` flag is required")
 	}
 
 	if *inventoryPath == "" {
-		log.Fatal("`-i` flag is required")
+		logger.Fatal("`-i` flag is required")
 	}
 
 	inventoryData, err := os.ReadFile(*inventoryPath)
 	if err != nil {
-		log.Fatalf("failed to read inventory from %s: %v", *inventoryPath, err)
+		logger.Fatal("failed to read inventory", zap.String("path", *inventoryPath), zap.Error(err))
 	}
 
 	var inventory inventory.Inventory
 	if err := yaml.Unmarshal(inventoryData, &inventory); err != nil {
-		log.Fatalf("failed to unmarshal inventory from %s: %v", *inventoryPath, err)
+		logger.Fatal("failed to unmarshal inventory", zap.String("path", *inventoryPath), zap.Error(err))
 	}
 	hosts := inventory.All()
 
 	config, err := sshConfig(*username, *keyPath)
 	if err != nil {
-		log.Fatalf("failed to create SSH config with username %s and key from %s: %v", *username, *keyPath, err)
+		logger.Fatal("failed to create SSH config", zap.String("username", *username), zap.String("key_path", *keyPath), zap.Error(err))
 	}
 
 	for host := range hosts {
 		dialer, err := dialer.NewDialer(host, *sshPort, config)
 		if err != nil {
-			log.Fatalf("failed to create dialer for %s:%s: %v", host, *sshPort, err)
+			logger.Fatal("failed to create dialer", zap.String("endpoint", fmt.Sprintf("%s:%s", host, *sshPort)), zap.Error(err))
 		}
 
 		out, err := dialer.Execute(host, *binDir, *inventoryPath, flag.Args()[0])
@@ -99,7 +106,7 @@ func main() {
 		fmt.Println(string(out))
 		dialer.Close()
 		if err != nil {
-			log.Fatalf("running sophons against %s failed: %v", host, err)
+			logger.Fatal("running sophons against host failed", zap.String("host", host), zap.Error(err))
 		}
 	}
 }
