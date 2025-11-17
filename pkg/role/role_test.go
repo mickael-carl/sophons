@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"go.uber.org/zap"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/variables"
@@ -313,7 +314,7 @@ func TestRoleApply(t *testing.T) {
 		"hello": "tests!",
 	})
 
-	if err := role.Apply(ctx, ""); err != nil {
+	if err := role.Apply(ctx, zap.NewNop(), ""); err != nil {
 		t.Error(err)
 	}
 

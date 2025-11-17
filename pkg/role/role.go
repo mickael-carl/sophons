@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"path"
 
+	"go.uber.org/zap"
+
 	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
@@ -120,7 +122,7 @@ func maybeRole(fsys fs.FS, name string) (Role, bool, error) {
 	return role, isARole, nil
 }
 
-func (r *Role) Apply(ctx context.Context, parentPath string) error {
+func (r *Role) Apply(ctx context.Context, logger *zap.Logger, parentPath string) error {
 	inventoryAndPlayVars, ok := variables.FromContext(ctx)
 	if !ok {
 		inventoryAndPlayVars = variables.Variables{}
@@ -133,7 +135,7 @@ func (r *Role) Apply(ctx context.Context, parentPath string) error {
 
 	roleCtx := variables.NewContext(ctx, roleCtxVars)
 	for _, task := range r.tasks {
-		if err := exec.ExecuteTask(roleCtx, task, parentPath, true); err != nil {
+		if err := exec.ExecuteTask(roleCtx, logger, task, parentPath, true); err != nil {
 			return fmt.Errorf("failed to execute task: %w", err)
 		}
 	}

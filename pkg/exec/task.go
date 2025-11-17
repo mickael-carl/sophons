@@ -3,11 +3,12 @@ package exec
 import (
 	"context"
 	"fmt"
-	"log"
 	"reflect"
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
+
+	"go.uber.org/zap"
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
 	"github.com/mickael-carl/sophons/pkg/variables"
@@ -117,7 +118,7 @@ func deepCopyContent(content TaskContent) (TaskContent, error) {
 	return newContent, nil
 }
 
-func processAndRunTask(ctx context.Context, task Task, parentPath string, isRole bool) error {
+func processAndRunTask(ctx context.Context, logger *zap.Logger, task Task, parentPath string, isRole bool) error {
 	if err := util.ProcessJinjaTemplates(ctx, &task); err != nil {
 		return fmt.Errorf("failed to process Jinja templating: %w", err)
 	}
@@ -128,11 +129,11 @@ func processAndRunTask(ctx context.Context, task Task, parentPath string, isRole
 	}
 
 	if !whenResult {
-		log.Printf("Skipping task %q due to when condition", task.Name)
+		logger.Debug("skipping task due to when condition", zap.String("task", task.Name))
 		return nil
 	}
 
-	log.Printf("%+v", task)
+	logger.Debug("executing task", zap.Any("task", task))
 	if err := task.Validate(); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
@@ -144,7 +145,7 @@ func processAndRunTask(ctx context.Context, task Task, parentPath string, isRole
 
 // ExecuteTask executes a single task, processing any loop items and rendering
 // Jinja templates.
-func ExecuteTask(ctx context.Context, task Task, parentPath string, isRole bool) error {
+func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath string, isRole bool) error {
 	if task.Loop != nil {
 		tempLoopHolder := struct{ Loop interface{} }{Loop: task.Loop}
 		if err := util.ProcessJinjaTemplates(ctx, &tempLoopHolder); err != nil {
@@ -154,7 +155,7 @@ func ExecuteTask(ctx context.Context, task Task, parentPath string, isRole bool)
 	}
 
 	if task.Loop == nil {
-		if err := processAndRunTask(ctx, task, parentPath, isRole); err != nil {
+		if err := processAndRunTask(ctx, logger, task, parentPath, isRole); err != nil {
 			return fmt.Errorf("failed to execute task: %w", err)
 		}
 		return nil
@@ -192,7 +193,7 @@ func ExecuteTask(ctx context.Context, task Task, parentPath string, isRole bool)
 		currentVars["item"] = item
 		loopCtx := variables.NewContext(ctx, currentVars)
 
-		if err := processAndRunTask(loopCtx, iterTask, parentPath, isRole); err != nil {
+		if err := processAndRunTask(loopCtx, logger, iterTask, parentPath, isRole); err != nil {
 			return fmt.Errorf("failed to execute task: %w", err)
 		}
 	}
