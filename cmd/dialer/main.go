@@ -25,10 +25,11 @@ var (
 	// might make the dialer extremely large though: each executer binary is
 	// about 4.5MB right now, meaning a ~30MB binary total. It's not horrible
 	// but it's worth keeping in mind as binary size increases.
-	binDir = flag.String("b", "", "dir containing executer binaries")
+	binDir         = flag.String("b", "", "dir containing executer binaries")
+	knownHostsPath = flag.String("known-hosts", os.ExpandEnv("$HOME/.ssh/known_hosts"), "path to the known hosts file")
 )
 
-func sshConfig(u, k string) (*ssh.ClientConfig, error) {
+func sshConfig(u, k, knownHosts string) (*ssh.ClientConfig, error) {
 	key, err := os.ReadFile(k)
 	if err != nil {
 		return &ssh.ClientConfig{}, fmt.Errorf("failed reading private key %q: %v", k, err)
@@ -39,11 +40,9 @@ func sshConfig(u, k string) (*ssh.ClientConfig, error) {
 		return &ssh.ClientConfig{}, fmt.Errorf("failed parsing private key: %v", err)
 	}
 
-	// TODO: better way to do that?
-	knownHostsPath := os.ExpandEnv("$HOME/.ssh/known_hosts")
-	hostKeyCallback, err := knownhosts.New(knownHostsPath)
+	hostKeyCallback, err := knownhosts.New(knownHosts)
 	if err != nil {
-		return &ssh.ClientConfig{}, fmt.Errorf("could not create hostkey callback from %s: %v", knownHostsPath, err)
+		return &ssh.ClientConfig{}, fmt.Errorf("could not create hostkey callback from %s: %v", knownHosts, err)
 	}
 
 	return &ssh.ClientConfig{
@@ -82,7 +81,7 @@ func main() {
 	}
 	hosts := inventory.All()
 
-	config, err := sshConfig(*username, *keyPath)
+	config, err := sshConfig(*username, *keyPath, *knownHostsPath)
 	if err != nil {
 		log.Fatalf("failed to create SSH config with username %s and key from %s: %v", *username, *keyPath, err)
 	}

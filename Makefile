@@ -5,11 +5,12 @@ BINS = \
 	bin/executer-linux-x86_64 \
 	bin/dialer \
 	bin/tardiff \
-	bin/docgen
+	bin/docgen \
+	bin/conformance
 
 SRCS := $(shell find cmd pkg -name '*.go') go.mod go.sum
 
-.PHONY: clean docker-testing docs fmt lint unit-tests mocks
+.PHONY: clean docker-testing docs fmt lint unit-tests conformance-tests mocks
 
 all: $(BINS)
 
@@ -34,6 +35,9 @@ bin/tardiff: $(SRCS)
 bin/docgen: $(SRCS)
 	go build -o $@ ./cmd/docgen
 
+bin/conformance: $(SRCS)
+	go build -o $@ ./cmd/conformance
+
 clean:
 	-rm -f $(BINS)
 
@@ -51,6 +55,9 @@ lint:
 
 unit-tests:
 	go test ./...
+
+conformance-tests: bin/conformance
+	./bin/conformance $(ARGS)
 
 mocks:
 	go generate ./...
