@@ -28,6 +28,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
   conformance:
     name: Conformance Tests
     needs: golangci
@@ -60,9 +61,8 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Conformance tests
-        env:
-          SOPHONS_TESTING_IMAGE: ghcr.io/${{ github.repository_owner }}/sophons-testing:${{ github.sha }}
-        run: ./run-tests.sh
+        run: ./bin/conformance -testing-image ghcr.io/${{ github.repository_owner }}/sophons-testing:${{ github.sha }}
+
   docs:
     name: Documentation
     runs-on: ubuntu-latest

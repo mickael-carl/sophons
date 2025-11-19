@@ -1,14 +1,14 @@
 package dialer
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/big"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/sftp"
@@ -18,8 +18,12 @@ import (
 	"github.com/mickael-carl/sophons/pkg/util"
 )
 
-func tempDirName() string {
-	return "sophons-" + strconv.Itoa(rand.Intn(10000))
+func tempDirName() (string, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(100000))
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random number for temp dir: %w", err)
+	}
+	return "sophons-" + n.String(), nil
 }
 
 type dialer struct {
@@ -133,7 +137,11 @@ func (d *dialer) copyExecuterBinary(localDir, remoteDir string) error {
 }
 
 func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, error) {
-	dirPath := path.Join("/tmp", tempDirName())
+	td, err := tempDirName()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate temporary directory name for execution: %w", err)
+	}
+	dirPath := path.Join("/tmp", td)
 	if err := d.sftpClient.Mkdir(dirPath); err != nil {
 		// TODO: don't crash mid-run, throw a warning.
 		return "", fmt.Errorf("failed to create temporary directory on target host: %w", err)
