@@ -28,7 +28,7 @@ func shouldApply(creates, removes string) (bool, error) {
 	return true, nil
 }
 
-func GetStringSlice(i interface{}) []string {
+func GetStringSlice(i any) []string {
 	if i == nil {
 		return nil
 	}

@@ -17,7 +17,7 @@ import (
 type Task struct {
 	Name     string
 	When     string
-	Loop     interface{}
+	Loop     any
 	Content  TaskContent
 	Register string
 }
@@ -164,13 +164,13 @@ func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath 
 		return nil
 	}
 
-	tempLoopHolder := struct{ Loop interface{} }{Loop: task.Loop}
+	tempLoopHolder := struct{ Loop any }{Loop: task.Loop}
 	if err := util.ProcessJinjaTemplates(ctx, &tempLoopHolder); err != nil {
 		return fmt.Errorf("failed to process Jinja templating for loop: %w", err)
 	}
 	task.Loop = tempLoopHolder.Loop
 
-	loopValues, ok := task.Loop.([]interface{})
+	loopValues, ok := task.Loop.([]any)
 	if !ok {
 		// It might be a slice of strings if the Jinja processing resulted in
 		// that.
@@ -178,7 +178,7 @@ func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath 
 		if !okStr {
 			return fmt.Errorf("loop variable is not a list: %T", task.Loop)
 		}
-		loopValues = make([]interface{}, len(loopStrValues))
+		loopValues = make([]any, len(loopStrValues))
 		for i, v := range loopStrValues {
 			loopValues[i] = v
 		}
@@ -288,15 +288,15 @@ type LoopResult struct {
 	Results      []Result `yaml:"results" json:"results"`
 }
 
-// resultToMap converts a Result interface to a map[string]interface{} by
+// resultToMap converts a Result interface to a map[string]any by
 // marshalling it to YAML and then unmarshalling it. This is to make sure that
 // the registered variables have snake_case keys.
-func resultToMap(result Result) (map[string]interface{}, error) {
+func resultToMap(result Result) (map[string]any, error) {
 	data, err := yaml.Marshal(result)
 	if err != nil {
 		return nil, err
 	}
-	var resultMap map[string]interface{}
+	var resultMap map[string]any
 	err = yaml.Unmarshal(data, &resultMap)
 	if err != nil {
 		return nil, err

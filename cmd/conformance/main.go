@@ -182,7 +182,7 @@ func startContainer(port string) (string, error) {
 		Timeout:         1 * time.Second,
 	}
 
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		client, err := ssh.Dial("tcp", address, config)
 		if err != nil {
 			// An error containing "unable to authenticate" means the server is up

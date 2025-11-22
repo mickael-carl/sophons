@@ -26,7 +26,7 @@ key2:
 
 	expectedVars := Variables{
 		"key1": "value1",
-		"key2": map[string]interface{}{
+		"key2": map[string]any{
 			"subkey1": "subvalue1",
 			"subkey2": uint64(123),
 		},
@@ -75,14 +75,14 @@ func TestMerge(t *testing.T) {
 	baseVars := Variables{
 		"key1": "value1",
 		"key2": "value2",
-		"key3": map[string]interface{}{
+		"key3": map[string]any{
 			"subkey1": "subvalue1",
 		},
 	}
 
 	overrideVars := Variables{
 		"key2": "new_value2",
-		"key3": map[string]interface{}{
+		"key3": map[string]any{
 			"subkey2": "subvalue2",
 		},
 		"key4": "value4",
@@ -91,7 +91,7 @@ func TestMerge(t *testing.T) {
 	expectedMergedVars := Variables{
 		"key1": "value1",
 		"key2": "new_value2",
-		"key3": map[string]interface{}{
+		"key3": map[string]any{
 			"subkey2": "subvalue2",
 		},
 		"key4": "value4",
@@ -108,7 +108,7 @@ func TestMergeEmpty(t *testing.T) {
 	emptyVars := Variables{}
 	overrideVars := Variables{
 		"key2": "new_value2",
-		"key3": map[string]interface{}{
+		"key3": map[string]any{
 			"subkey2": "subvalue2",
 		},
 		"key4": "value4",

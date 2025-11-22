@@ -37,7 +37,7 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 	expected := []Task{
 		{
 			Name: "testing",
-			Loop: []interface{}{"foo", "bar"},
+			Loop: []any{"foo", "bar"},
 			Content: &File{
 				Path:  "{{ foo }}",
 				State: FileTouch,
@@ -204,7 +204,7 @@ func TestTaskApplyLoop(t *testing.T) {
 		t.Error("result is not registered in variables")
 	}
 
-	expected := map[string]interface{}{
+	expected := map[string]any{
 		"changed": bool(true),
 		"failed":  bool(false),
 		"msg":     string(""),

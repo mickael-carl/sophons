@@ -134,10 +134,8 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 	_, err := os.Lstat(f.Path)
 	if err == nil {
 		exists = true
-	} else {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return &FileResult{}, err
-		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return &FileResult{}, err
 	}
 
 	if f.State == "" {

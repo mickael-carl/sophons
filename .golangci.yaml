@@ -1,5 +1,10 @@
 version: "2"
 linters:
+  enable:
+    - gocritic
+    - godot
+    - loggercheck
+    - modernize
   exclusions:
     presets:
       # A lot of calls to `Close()` will be deferred without error checking.

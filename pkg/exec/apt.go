@@ -53,12 +53,12 @@ type Apt struct {
 	DpkgOptions              string `yaml:"dpkg_options"`
 	FailOnAutoremove         bool   `yaml:"fail_on_autoremove"`
 	Force                    bool
-	ForceAptGet              bool        `yaml:"force_apt_get"`
-	InstallRecommends        bool        `yaml:"install_recommends"`
-	LockTimeout              int64       `yaml:"lock_timeout"`
-	Name                     interface{} `sophons:"implemented"`
-	OnlyUpgrade              bool        `yaml:"only_upgrade"`
-	PolicyRCD                int64       `yaml:"policy_rc_d"`
+	ForceAptGet              bool  `yaml:"force_apt_get"`
+	InstallRecommends        bool  `yaml:"install_recommends"`
+	LockTimeout              int64 `yaml:"lock_timeout"`
+	Name                     any   `sophons:"implemented"`
+	OnlyUpgrade              bool  `yaml:"only_upgrade"`
+	PolicyRCD                int64 `yaml:"policy_rc_d"`
 	Purge                    bool
 	State                    AptState `sophons:"implemented"`
 	UpdateCache              *bool    `yaml:"update_cache" sophons:"implemented"`
@@ -89,8 +89,8 @@ func (a *Apt) UnmarshalYAML(b []byte) error {
 	}
 
 	type apt struct {
-		Pkg         interface{}
-		Package     interface{}
+		Pkg         any
+		Package     any
 		UpdateCache bool `yaml:"update-cache"`
 	}
 
@@ -107,7 +107,7 @@ func (a *Apt) UnmarshalYAML(b []byte) error {
 		}
 	}
 
-	if name, ok := a.Name.([]interface{}); ok {
+	if name, ok := a.Name.([]any); ok {
 		s := []string{}
 		for _, v := range name {
 			vStr, ok := v.(string)

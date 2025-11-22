@@ -34,7 +34,7 @@ func (i Inventory) All() map[string]struct{} {
 	return all
 }
 
-// TODO: this may need special handling for `all`
+// TODO: this may need special handling for `all`.
 func (i Inventory) NodeVars(node string) variables.Variables {
 	hostVars := variables.Variables{}
 	groupVars := variables.Variables{}

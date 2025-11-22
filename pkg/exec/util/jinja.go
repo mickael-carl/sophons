@@ -55,7 +55,7 @@ func JinjaProcessWhen(ctx context.Context, when string) (bool, error) {
 	return false, nil
 }
 
-func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
+func ProcessJinjaTemplates(ctx context.Context, taskContent any) error {
 	v := reflect.ValueOf(taskContent)
 	for v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -170,7 +170,7 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent interface{}) error {
 				// `[]interface{}` so we need to make a `[]string` out of that.
 				if value.IsList() {
 					outSlice := []string{}
-					for _, i := range value.ToGoSimpleType(false).([]interface{}) {
+					for _, i := range value.ToGoSimpleType(false).([]any) {
 						s, ok := i.(string)
 						if !ok {
 							return fmt.Errorf("found a non-string value in a jinja list, which is not supported")

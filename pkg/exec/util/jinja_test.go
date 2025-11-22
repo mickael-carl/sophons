@@ -54,7 +54,7 @@ func TestProcessJinjaTemplates(t *testing.T) {
 
 func TestProcessJinjaTemplatesInterface(t *testing.T) {
 	type interfaceStruct struct {
-		Content interface{}
+		Content any
 	}
 
 	type contentStruct struct {
@@ -88,7 +88,7 @@ func TestProcessJinjaTemplatesInterface(t *testing.T) {
 
 func TestProcessJinjaTemplatesInterfaceExpressionList(t *testing.T) {
 	type interfaceStruct struct {
-		Content interface{}
+		Content any
 	}
 
 	interfaceCtx := variables.NewContext(context.Background(), variables.Variables{
@@ -118,7 +118,7 @@ func TestProcessJinjaTemplatesInterfaceExpressionList(t *testing.T) {
 
 func TestProcessJinjaTemplatesInterfaceSlice(t *testing.T) {
 	type interfaceStruct struct {
-		Content interface{}
+		Content any
 	}
 
 	interfaceCtx := variables.NewContext(context.Background(), variables.Variables{

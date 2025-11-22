@@ -37,7 +37,7 @@ func NewModeFromSpec(fsys fs.FS, path, spec string) (os.FileMode, error) {
 	}
 	mode := info.Mode().Perm()
 
-	for _, part := range strings.Split(spec, ",") {
+	for part := range strings.SplitSeq(spec, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
