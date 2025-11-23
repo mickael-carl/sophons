@@ -41,7 +41,7 @@ jobs:
           go-version: stable
 
       - name: Build binaries
-        run: make all
+        run: make bin/conformance bin/dialer bin/tardiff bin/executer-linux-x86_64
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
