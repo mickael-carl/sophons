@@ -243,6 +243,7 @@ type CommonResult struct {
 	// TODO: add diff.
 	Failed      bool     `yaml:"failed" json:"failed"`
 	Msg         string   `yaml:"msg" json:"msg"`
+	RC          int      `yaml:"rc"`
 	Skipped     bool     `yaml:"skipped" json:"skipped"`
 	Stderr      string   `yaml:"stderr" json:"stderr"`
 	StderrLines []string `yaml:"stderr_lines" json:"stderr_lines"`

@@ -4,29 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/user"
-	"path/filepath"
 	"strconv"
 )
-
-func shouldApply(creates, removes string) (bool, error) {
-	if creates != "" {
-		matches, err := filepath.Glob(creates)
-		if err != nil {
-			return false, err
-		}
-		return len(matches) == 0, nil
-	}
-
-	if removes != "" {
-		matches, err := filepath.Glob(removes)
-		if err != nil {
-			return false, err
-		}
-		return len(matches) > 0, nil
-	}
-
-	return true, nil
-}
 
 func GetStringSlice(i any) []string {
 	if i == nil {

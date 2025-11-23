@@ -5,6 +5,7 @@ import (
 	"testing/fstest"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
 )
@@ -34,7 +35,7 @@ func TestProcessTasks(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(exec.Command{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 
@@ -57,7 +58,7 @@ func TestProcessTasks(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(exec.Command{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/variables"
@@ -120,8 +121,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Log(cmp.Diff(got, expected))
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(exec.Command{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }

@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
-
-	"github.com/mickael-carl/sophons/pkg/exec/util"
+	"time"
 )
 
 //	@meta {
@@ -24,10 +22,17 @@ type Command struct {
 	Stdin              string   `sophons:"implemented"`
 	StdinAddNewline    *bool    `yaml:"stdin_add_newline" sophons:"implemented"`
 	StripEmptyEnds     *bool    `yaml:"strip_empty_ends"`
+
+	cmdFactory cmdFactory
 }
 
 type CommandResult struct {
 	CommonResult `yaml:",inline"`
+
+	Cmd   []string
+	Delta time.Duration
+	End   time.Time
+	Start time.Time
 }
 
 func init() {
@@ -36,53 +41,81 @@ func init() {
 }
 
 func (c *Command) Validate() error {
-	return util.ValidateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
+	return validateCmd(c.Argv, c.Cmd, c.Stdin, c.StdinAddNewline)
 }
 
-func (c *Command) Apply(_ context.Context, _ string, _ bool) (Result, error) {
-	cmdFunc := func() *exec.Cmd {
-		var cmd *exec.Cmd
-		if c.Cmd != "" {
-			var splitCmd []string
-			if c.ExpandArgumentVars {
-				splitCmd = strings.Split(os.ExpandEnv(c.Cmd), " ")
-			} else {
-				splitCmd = strings.Split(c.Cmd, " ")
-			}
-			var args []string
+func (c *Command) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
+	if ctxCmdFactory, ok := ctx.Value(commandFactoryContextKey).(cmdFactory); ok {
+		c.cmdFactory = ctxCmdFactory
+	} else {
+		c.cmdFactory = realCmdFactory
+	}
+
+	result := CommandResult{}
+	var name string
+	var args []string
+	if c.Cmd != "" {
+		if c.ExpandArgumentVars {
+			splitCmd := strings.Fields(os.ExpandEnv(c.Cmd))
+			name = splitCmd[0]
 			if len(splitCmd) > 1 {
 				args = splitCmd[1:]
 			}
-			cmd = exec.Command(splitCmd[0], args...)
-		}
-		if len(c.Argv) != 0 {
-			var argv []string
-			if c.ExpandArgumentVars {
-				for _, arg := range c.Argv {
-					argv = append(argv, os.ExpandEnv(arg))
-				}
-			} else {
-				argv = c.Argv
-			}
-
-			if len(argv) > 1 {
-				cmd = exec.Command(argv[0], argv[1:]...)
-			} else {
-				cmd = exec.Command(argv[0])
+		} else {
+			splitCmd := strings.Fields(c.Cmd)
+			name = splitCmd[0]
+			if len(splitCmd) > 1 {
+				args = splitCmd[1:]
 			}
 		}
-		return cmd
+	} else if len(c.Argv) != 0 {
+		if c.ExpandArgumentVars {
+			var expandedArgs []string
+			for _, arg := range c.Argv {
+				expandedArgs = append(expandedArgs, os.ExpandEnv(arg))
+			}
+			name = expandedArgs[0]
+			if len(expandedArgs) > 1 {
+				args = expandedArgs[1:]
+			}
+		} else {
+			name = c.Argv[0]
+			if len(c.Argv) > 1 {
+				args = c.Argv[1:]
+			}
+		}
 	}
 
-	out, err := util.ApplyCmd(cmdFunc, c.Creates, c.Removes, c.Chdir, c.Stdin, c.StdinAddNewline)
+	if ok, err := shouldApply(c.Creates, c.Removes); err != nil {
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to check creates/removes: %w", err)
+	} else if !ok {
+		result.TaskSkipped()
+		return &result, nil
+	}
+
+	start := time.Now()
+	stdout, stderr, rc, err := ApplyCommand(c.cmdFactory, c.Chdir, c.Stdin, c.StdinAddNewline, name, args)
+	end := time.Now()
+
+	result.Start = start
+	result.End = end
+	result.Delta = end.Sub(start)
+	result.Cmd = append([]string{name}, args...)
+	result.Stdout = stdout
+	result.Stderr = stderr
+	result.RC = rc
+
 	if err != nil {
-		return &CommandResult{}, fmt.Errorf("failed to execute command: %s", string(out))
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to execute command: %w", err)
 	}
 
 	// TODO: Debug.
-	if len(out) > 0 {
-		log.Print(string(out))
+	if stdout != "" {
+		log.Print(stdout)
 	}
 
-	return &CommandResult{}, nil
+	result.TaskChanged()
+	return &result, nil
 }
