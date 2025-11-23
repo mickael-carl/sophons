@@ -7,6 +7,7 @@ import (
 
 	"github.com/arduino/go-apt-client"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
@@ -51,7 +52,7 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(got, expected) {
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Command{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
@@ -72,7 +73,7 @@ func TestDeepCopyContent(t *testing.T) {
 		t.Error("copied content is the same instance as original")
 	}
 
-	if !cmp.Equal(originalContent, copiedContent) {
+	if !cmp.Equal(originalContent, copiedContent, cmpopts.IgnoreUnexported(Command{})) {
 		t.Errorf("copied content %#v is not equal to original %#v initially", copiedContent, originalContent)
 	}
 
@@ -145,13 +146,14 @@ func TestTaskApply(t *testing.T) {
 	}
 
 	expected := map[string]any{
-		"changed":      bool(true),
-		"failed":       bool(false),
-		"msg":          string(""),
-		"skipped":      bool(false),
-		"stderr":       string(""),
+		"changed":      true,
+		"failed":       false,
+		"msg":          "",
+		"rc":           uint64(0),
+		"skipped":      false,
+		"stderr":       "",
 		"stderr_lines": []any{},
-		"stdout":       string(""),
+		"stdout":       "",
 		"stdout_lines": []any{},
 	}
 
@@ -210,34 +212,37 @@ func TestTaskApplyLoop(t *testing.T) {
 		"msg":     string(""),
 		"results": []any{
 			map[string]any{
-				"cache_update_time": string("1970-01-01T00:00:00Z"),
-				"cache_updated":     bool(false),
-				"changed":           bool(true),
-				"failed":            bool(false),
-				"msg":               string(""),
-				"skipped":           bool(false),
-				"stderr":            string(""),
+				"cache_update_time": "1970-01-01T00:00:00Z",
+				"cache_updated":     false,
+				"changed":           true,
+				"failed":            false,
+				"msg":               "",
+				"rc":                uint64(0),
+				"skipped":           false,
+				"stderr":            "",
 				"stderr_lines":      []any{},
-				"stdout":            string(""),
+				"stdout":            "",
 				"stdout_lines":      []any{},
 			},
 			map[string]any{
-				"cache_update_time": string("1970-01-01T00:00:00Z"),
-				"cache_updated":     bool(false),
-				"changed":           bool(true),
-				"failed":            bool(false),
-				"msg":               string(""),
-				"skipped":           bool(false),
-				"stderr":            string(""),
+				"cache_update_time": "1970-01-01T00:00:00Z",
+				"cache_updated":     false,
+				"changed":           true,
+				"failed":            false,
+				"msg":               "",
+				"rc":                uint64(0),
+				"skipped":           false,
+				"stderr":            "",
 				"stderr_lines":      []any{},
-				"stdout":            string(""),
+				"stdout":            "",
 				"stdout_lines":      []any{},
 			},
 		},
-		"skipped":      bool(false),
-		"stderr":       string(""),
+		"rc":           uint64(0),
+		"skipped":      false,
+		"stderr":       "",
 		"stderr_lines": []any{},
-		"stdout":       string(""),
+		"stdout":       "",
 		"stdout_lines": []any{},
 	}
 

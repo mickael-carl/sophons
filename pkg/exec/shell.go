@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os/exec"
 	"strings"
-
-	"github.com/mickael-carl/sophons/pkg/exec/util"
 )
 
 //	@meta{
@@ -22,6 +19,8 @@ type Shell struct {
 	Removes         string   `sophons:"implemented"`
 	Stdin           string   `sophons:"implemented"`
 	StdinAddNewline *bool    `yaml:"stdin_add_newline" sophons:"implemented"`
+
+	cmdFactory cmdFactory
 }
 
 type ShellResult struct {
@@ -34,35 +33,50 @@ func init() {
 }
 
 func (s *Shell) Validate() error {
-	return util.ValidateCmd(s.Argv, s.Cmd, s.Stdin, s.StdinAddNewline)
+	return validateCmd(s.Argv, s.Cmd, s.Stdin, s.StdinAddNewline)
 }
 
 func (s *Shell) Apply(_ context.Context, _ string, _ bool) (Result, error) {
-	cmdFunc := func() *exec.Cmd {
-		var cmd *exec.Cmd
-		exe := "/bin/sh"
-		if s.Executable != "" {
-			exe = s.Executable
-		}
-
-		if s.Cmd != "" {
-			cmd = exec.Command(exe, "-c", s.Cmd)
-		}
-		if len(s.Argv) != 0 {
-			cmd = exec.Command(exe, "-c", strings.Join(s.Argv, " "))
-		}
-		return cmd
+	if s.cmdFactory == nil {
+		s.cmdFactory = realCmdFactory
 	}
 
-	out, err := util.ApplyCmd(cmdFunc, s.Creates, s.Removes, s.Chdir, s.Stdin, s.StdinAddNewline)
+	result := ShellResult{}
+
+	if ok, err := shouldApply(s.Creates, s.Removes); err != nil {
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to check creates/removes: %w", err)
+	} else if !ok {
+		result.TaskSkipped()
+		return &result, nil
+	}
+
+	var args []string
+	name := "/bin/sh"
+	if s.Executable != "" {
+		name = s.Executable
+	}
+
+	var cmdStr string
+	if s.Cmd != "" {
+		cmdStr = s.Cmd
+	} else if len(s.Argv) != 0 {
+		cmdStr = strings.Join(s.Argv, " ")
+	}
+	args = []string{"-c", cmdStr}
+
+	stdout, _, _, err := ApplyCommand(s.cmdFactory, s.Chdir, s.Stdin, s.StdinAddNewline, name, args)
 	if err != nil {
-		return &ShellResult{}, fmt.Errorf("failed to execute command: %s", string(out))
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to execute command: %w", err)
 	}
 
 	// TODO: Debug.
-	if len(out) > 0 {
-		log.Print(string(out))
+	if stdout != "" {
+		log.Print(stdout)
 	}
 
-	return &ShellResult{}, nil
+	result.TaskChanged()
+
+	return &result, nil
 }
