@@ -12,13 +12,11 @@
         state: "touch"
       when: "whenfalse"
 
-    # TODO: enable once https://github.com/NikolaLohinski/gonja/pull/64 is
-    # merged and released.
-    #- name: "This task should run because whenanswer is 42"
-    #  ansible.builtin.file:
-    #    path: "/whenanswer"
-    #    state: "touch"
-    #  when: "whenanswer is eq 42"
+    - name: "This task should run because whenanswer is 42"
+      ansible.builtin.file:
+        path: "/whenanswer"
+        state: "touch"
+      when: "whenanswer is eq 42"
 
     - name: "This task should run because whenfibo is 3"
       ansible.builtin.file:
