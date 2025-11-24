@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 )
 
 //	@meta{
@@ -25,6 +26,11 @@ type Shell struct {
 
 type ShellResult struct {
 	CommonResult `yaml:",inline"`
+
+	Cmd   string
+	Delta time.Duration
+	End   time.Time
+	Start time.Time
 }
 
 func init() {
@@ -36,20 +42,14 @@ func (s *Shell) Validate() error {
 	return validateCmd(s.Argv, s.Cmd, s.Stdin, s.StdinAddNewline)
 }
 
-func (s *Shell) Apply(_ context.Context, _ string, _ bool) (Result, error) {
-	if s.cmdFactory == nil {
+func (s *Shell) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
+	if ctxCmdFactory, ok := ctx.Value(commandFactoryContextKey).(cmdFactory); ok {
+		s.cmdFactory = ctxCmdFactory
+	} else {
 		s.cmdFactory = realCmdFactory
 	}
 
 	result := ShellResult{}
-
-	if ok, err := shouldApply(s.Creates, s.Removes); err != nil {
-		result.TaskFailed()
-		return &result, fmt.Errorf("failed to check creates/removes: %w", err)
-	} else if !ok {
-		result.TaskSkipped()
-		return &result, nil
-	}
 
 	var args []string
 	name := "/bin/sh"
@@ -65,7 +65,29 @@ func (s *Shell) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 	}
 	args = []string{"-c", cmdStr}
 
-	stdout, _, _, err := ApplyCommand(s.cmdFactory, s.Chdir, s.Stdin, s.StdinAddNewline, name, args)
+	// This is silly: shell uses a string cmd in its return values, where
+	// command has a list of strings.
+	result.Cmd = cmdStr
+
+	if ok, err := shouldApply(s.Creates, s.Removes); err != nil {
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to check creates/removes: %w", err)
+	} else if !ok {
+		result.TaskSkipped()
+		return &result, nil
+	}
+
+	start := time.Now()
+	stdout, stderr, rc, err := ApplyCommand(s.cmdFactory, s.Chdir, s.Stdin, s.StdinAddNewline, name, args)
+	end := time.Now()
+
+	result.Start = start
+	result.End = end
+	result.Delta = end.Sub(start)
+	result.Stdout = stdout
+	result.Stderr = stderr
+	result.RC = rc
+
 	if err != nil {
 		result.TaskFailed()
 		return &result, fmt.Errorf("failed to execute command: %w", err)
