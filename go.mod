@@ -11,7 +11,7 @@ require (
 	github.com/nikolalohinski/gonja/v2 v2.4.1
 	github.com/pkg/sftp v1.13.10
 	go.uber.org/mock v0.6.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.45.0
 )
 
