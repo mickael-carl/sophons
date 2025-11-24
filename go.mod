@@ -8,7 +8,7 @@ require (
 	github.com/arduino/go-apt-client v0.0.0-20250612150138-0d7233b455eb
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-cmp v0.7.0
-	github.com/nikolalohinski/gonja/v2 v2.4.1
+	github.com/nikolalohinski/gonja/v2 v2.4.2
 	github.com/pkg/sftp v1.13.10
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.0
