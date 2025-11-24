@@ -151,3 +151,36 @@ func TestCommandApplyChdir(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+func TestCommandApplySkipped(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockExecutor := NewMockcommandExecutor(ctrl)
+	mockCmdFactory := cmdFactory(func(name string, args ...string) commandExecutor {
+		return mockExecutor
+	})
+
+	cmd := &Command{
+		Cmd:     "rm /foo",
+		Removes: "/foo",
+	}
+
+	ctx := context.WithValue(context.Background(), commandFactoryContextKey, mockCmdFactory)
+
+	got, err := cmd.Apply(ctx, "", false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := &CommandResult{
+		CommonResult: CommonResult{
+			Skipped: true,
+		},
+		Cmd: []string{"rm", "/foo"},
+	}
+
+	if !cmp.Equal(expected, got) {
+		t.Errorf("expected %#v but got %#v", expected, got)
+	}
+}

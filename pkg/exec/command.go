@@ -86,6 +86,8 @@ func (c *Command) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 		}
 	}
 
+	result.Cmd = append([]string{name}, args...)
+
 	if ok, err := shouldApply(c.Creates, c.Removes); err != nil {
 		result.TaskFailed()
 		return &result, fmt.Errorf("failed to check creates/removes: %w", err)
@@ -101,7 +103,6 @@ func (c *Command) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 	result.Start = start
 	result.End = end
 	result.Delta = end.Sub(start)
-	result.Cmd = append([]string{name}, args...)
 	result.Stdout = stdout
 	result.Stderr = stderr
 	result.RC = rc
