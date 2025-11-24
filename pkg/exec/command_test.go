@@ -74,6 +74,132 @@ func TestCommandApplySuccess(t *testing.T) {
 	})
 }
 
+func TestCommandApplyArgv(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockExecutor := NewMockcommandExecutor(ctrl)
+		mockCmdFactory := cmdFactory(func(name string, args ...string) commandExecutor {
+			return mockExecutor
+		})
+
+		cmd := &Command{
+			Argv: []string{"/bin/ls", "/"},
+		}
+
+		var stdout io.Writer
+		mockExecutor.EXPECT().SetStdout(gomock.Any()).Do(func(w io.Writer) { stdout = w })
+		mockExecutor.EXPECT().SetStderr(gomock.Any())
+		mockExecutor.EXPECT().Run().DoAndReturn(func() error {
+			stdout.Write([]byte("bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var"))
+			return nil
+		})
+
+		ctx := context.WithValue(context.Background(), commandFactoryContextKey, mockCmdFactory)
+
+		got, err := cmd.Apply(ctx, "", false)
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected := &CommandResult{
+			CommonResult: CommonResult{
+				Changed: true,
+				Stdout:  "bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var",
+			},
+			Cmd:   []string{"/bin/ls", "/"},
+			End:   time.Now(),
+			Start: time.Now(),
+		}
+
+		if !cmp.Equal(expected, got) {
+			t.Errorf("expected %#v but got %#v", expected, got)
+		}
+	})
+}
+
+func TestCommandApplyExpandArgumentVars(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockExecutor := NewMockcommandExecutor(ctrl)
+		mockCmdFactory := cmdFactory(func(name string, args ...string) commandExecutor {
+			return mockExecutor
+		})
+
+		t.Setenv("ROOT", "/")
+
+		cmd := &Command{
+			Argv:               []string{"/bin/ls", "$ROOT"},
+			ExpandArgumentVars: true,
+		}
+
+		var stdout io.Writer
+		mockExecutor.EXPECT().SetStdout(gomock.Any()).Do(func(w io.Writer) { stdout = w })
+		mockExecutor.EXPECT().SetStderr(gomock.Any())
+		mockExecutor.EXPECT().Run().DoAndReturn(func() error {
+			stdout.Write([]byte("bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var"))
+			return nil
+		})
+
+		ctx := context.WithValue(context.Background(), commandFactoryContextKey, mockCmdFactory)
+
+		got, err := cmd.Apply(ctx, "", false)
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected := &CommandResult{
+			CommonResult: CommonResult{
+				Changed: true,
+				Stdout:  "bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var",
+			},
+			Cmd:   []string{"/bin/ls", "/"},
+			End:   time.Now(),
+			Start: time.Now(),
+		}
+
+		if !cmp.Equal(expected, got) {
+			t.Errorf("expected %#v but got %#v", expected, got)
+		}
+
+		cmd = &Command{
+			Cmd:                "/bin/ls $ROOT",
+			ExpandArgumentVars: true,
+		}
+
+		mockExecutor.EXPECT().SetStdout(gomock.Any()).Do(func(w io.Writer) { stdout = w })
+		mockExecutor.EXPECT().SetStderr(gomock.Any())
+		mockExecutor.EXPECT().Run().DoAndReturn(func() error {
+			stdout.Write([]byte("bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var"))
+			return nil
+		})
+
+		ctx = context.WithValue(context.Background(), commandFactoryContextKey, mockCmdFactory)
+
+		got, err = cmd.Apply(ctx, "", false)
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected = &CommandResult{
+			CommonResult: CommonResult{
+				Changed: true,
+				Stdout:  "bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var",
+			},
+			Cmd:   []string{"/bin/ls", "/"},
+			End:   time.Now(),
+			Start: time.Now(),
+		}
+
+		if !cmp.Equal(expected, got) {
+			t.Errorf("expected %#v but got %#v", expected, got)
+		}
+	})
+}
+
 func TestCommandApplyError(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctrl := gomock.NewController(t)
