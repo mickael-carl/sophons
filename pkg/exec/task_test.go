@@ -12,6 +12,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
+	"github.com/mickael-carl/sophons/pkg/proto"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -175,7 +176,11 @@ func TestTaskApplyLoop(t *testing.T) {
 			"{{ bar }}",
 		},
 		Content: &Apt{
-			Name: "{{ item }}",
+			Apt: proto.Apt{
+				Name: &proto.PackageList{
+					Items: []string{"{{ item }}"},
+				},
+			},
 		},
 		Register: "out",
 	}

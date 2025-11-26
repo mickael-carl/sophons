@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+// Apt manages packages with the apt package manager.
+//	@meta{
+//	  "deviations": [
+//	    "`state` only supports `present`, `latest` and `absent`",
+//	    "version strings in package names are not supported",
+//	  ]
+//	}
+message Apt {
+  // @inject_tag: yaml:"allow_change_held_packages"
+  bool allow_change_held_packages = 1;
+  // @inject_tag: yaml:"allow_downgrade"
+  bool allow_downgrade = 2;
+  // @inject_tag: yaml:"allow_unauthenticated"
+  bool allow_unauthenticated = 3;
+  // @inject_tag: yaml:"auto_install_module_deps"
+  optional bool auto_install_module_deps = 4;
+  // @inject_tag: yaml:"autoclean"
+  bool autoclean = 5;
+  // @inject_tag: yaml:"autoremove"
+  bool autoremove = 6;
+  // @inject_tag: yaml:"cache_valid_time" sophons:"implemented"
+  optional uint64 cache_valid_time = 7;
+  // @inject_tag: yaml:"clean" sophons:"implemented"
+  bool clean = 8;
+  // @inject_tag: yaml:"deb"
+  string deb = 9;
+  // @inject_tag: yaml:"default_release"
+  string default_release = 10;
+  // @inject_tag: yaml:"dpkg_options"
+  string dpkg_options = 11;
+  // @inject_tag: yaml:"fail_on_autoremove"
+  bool fail_on_autoremove = 12;
+  // @inject_tag: yaml:"force"
+  bool force = 13;
+  // @inject_tag: yaml:"force_apt_get"
+  bool force_apt_get = 14;
+  // @inject_tag: yaml:"install_recommends"
+  bool install_recommends = 15;
+  // @inject_tag: yaml:"lock_timeout"
+  int64 lock_timeout = 16;
+  // @inject_tag: yaml:"name" sophons:"implemented"
+  PackageList name = 17;
+  // @inject_tag: yaml:"only_upgrade"
+  bool only_upgrade = 18;
+  // @inject_tag: yaml:"policy_rc_d"
+  int64 policy_rc_d = 19;
+  // @inject_tag: yaml:"purge"
+  bool purge = 20;
+  // @inject_tag: yaml:"state" sophons:"implemented"
+  string state = 21;
+  // @inject_tag: yaml:"update_cache" sophons:"implemented"
+  optional bool update_cache = 22;
+  // @inject_tag: yaml:"update_cache_retries"
+  uint64 update_cache_retries = 23;
+  // @inject_tag: yaml:"update_cache_retry_max_delay"
+  uint64 update_cache_retry_max_delay = 24;
+  // @inject_tag: yaml:"upgrade" sophons:"implemented"
+  string upgrade = 25;
+}
+
+message PackageList {
+  // @inject_tag: yaml:"items"
+  repeated string items = 1;
+}

@@ -11,12 +11,17 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"go.uber.org/mock/gomock"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 func TestAptValidateInvalidState(t *testing.T) {
 	a := &Apt{
-		State: "banana",
+		Apt: proto.Apt{
+			State: "banana",
+		},
 	}
 
 	err := a.Validate()
@@ -31,7 +36,9 @@ func TestAptValidateInvalidState(t *testing.T) {
 
 func TestAptValidateInvalidUpgrade(t *testing.T) {
 	a := &Apt{
-		Upgrade: "banana",
+		Apt: proto.Apt{
+			Upgrade: "banana",
+		},
 	}
 
 	err := a.Validate()
@@ -48,12 +55,14 @@ func TestAptValidate(t *testing.T) {
 	cacheValidTime := uint64(360)
 	pTrue := true
 	a := &Apt{
-		Name: []string{
-			"curl",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{"curl"},
+			},
+			CacheValidTime: &cacheValidTime,
+			UpdateCache:    &pTrue,
+			Upgrade:        "dist",
 		},
-		CacheValidTime: &cacheValidTime,
-		UpdateCache:    &pTrue,
-		Upgrade:        "dist",
 	}
 
 	if err := a.Validate(); err != nil {
@@ -78,17 +87,21 @@ upgrade: "full"`)
 
 	pTrue := true
 	expected := Apt{
-		Clean: false,
-		Name: []string{
-			"foo",
-			"bar",
+		Apt: proto.Apt{
+			Clean: false,
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+					"bar",
+				},
+			},
+			State:       AptPresent,
+			UpdateCache: &pTrue,
+			Upgrade:     AptUpgradeFull,
 		},
-		State:       AptPresent,
-		UpdateCache: &pTrue,
-		Upgrade:     AptUpgradeFull,
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{})) {
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
@@ -110,17 +123,21 @@ upgrade: "full"`)
 
 	pTrue := true
 	expected := Apt{
-		Clean: false,
-		Name: []string{
-			"foo",
-			"bar",
+		Apt: proto.Apt{
+			Clean: false,
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+					"bar",
+				},
+			},
+			State:       AptPresent,
+			UpdateCache: &pTrue,
+			Upgrade:     AptUpgradeFull,
 		},
-		State:       AptPresent,
-		UpdateCache: &pTrue,
-		Upgrade:     AptUpgradeFull,
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{})) {
+	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})) {
 		t.Errorf("got %#v but expected %#v", got, expected)
 	}
 }
@@ -131,11 +148,15 @@ func TestAptApply(t *testing.T) {
 	m := NewMockaptClient(ctrl)
 
 	a := &Apt{
-		Name: []string{
-			"foo",
-			"bar",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+					"bar",
+				},
+			},
+			State: AptPresent,
 		},
-		State: AptPresent,
 	}
 
 	m.EXPECT().ListInstalled().Return([]*apt.Package{
@@ -172,10 +193,14 @@ func TestAptApplyLatest(t *testing.T) {
 	m := NewMockaptClient(ctrl)
 
 	a := &Apt{
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
+			State: AptLatest,
 		},
-		State: AptLatest,
 	}
 
 	m.EXPECT().Install(&apt.Package{Name: "foo"}).Return("", nil)
@@ -200,12 +225,16 @@ func TestHandleUpdate(t *testing.T) {
 	cacheValidTime := uint64(1)
 
 	a := &Apt{
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
+			State:          AptLatest,
+			CacheValidTime: &cacheValidTime,
 		},
-		State:          AptLatest,
-		CacheValidTime: &cacheValidTime,
-		apt:            m,
+		apt: m,
 		aptFS: fstest.MapFS{
 			"lists": &listsFile,
 		},
@@ -224,12 +253,16 @@ func TestHandleUpdate(t *testing.T) {
 	cacheValidTime = uint64(1000)
 
 	a = &Apt{
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
+			State:          AptLatest,
+			CacheValidTime: &cacheValidTime,
 		},
-		State:          AptLatest,
-		CacheValidTime: &cacheValidTime,
-		apt:            m,
+		apt: m,
 		aptFS: fstest.MapFS{
 			"lists": &listsFile,
 		},
@@ -249,13 +282,17 @@ func TestHandleUpdateMissingLists(t *testing.T) {
 	cacheValidTime := uint64(1)
 
 	a := &Apt{
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
+			State:          AptLatest,
+			CacheValidTime: &cacheValidTime,
 		},
-		State:          AptLatest,
-		CacheValidTime: &cacheValidTime,
-		apt:            m,
-		aptFS:          fstest.MapFS{},
+		apt:   m,
+		aptFS: fstest.MapFS{},
 	}
 
 	m.EXPECT().CheckForUpdates().Return("", nil)
@@ -268,13 +305,17 @@ func TestHandleUpdateMissingLists(t *testing.T) {
 	// cache.
 	updateCache := true
 	a = &Apt{
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
+			State:       AptLatest,
+			UpdateCache: &updateCache,
 		},
-		State:       AptLatest,
-		UpdateCache: &updateCache,
-		apt:         m,
-		aptFS:       fstest.MapFS{},
+		apt:   m,
+		aptFS: fstest.MapFS{},
 	}
 
 	m.EXPECT().CheckForUpdates().Return("", nil)
@@ -285,10 +326,14 @@ func TestHandleUpdateMissingLists(t *testing.T) {
 
 	// Finally not lists file and nothing set means we shouldn't update.
 	a = &Apt{
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
+			State: AptLatest,
 		},
-		State: AptLatest,
 		apt:   m,
 		aptFS: fstest.MapFS{},
 	}
@@ -308,12 +353,16 @@ func TestHandleUpdateExplicit(t *testing.T) {
 	updateCache := true
 
 	a := &Apt{
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
+			State:       AptLatest,
+			UpdateCache: &updateCache,
 		},
-		State:       AptLatest,
-		UpdateCache: &updateCache,
-		apt:         m,
+		apt: m,
 		aptFS: fstest.MapFS{
 			"lists": &listsFile,
 		},
@@ -332,11 +381,15 @@ func TestAptApplyAbsent(t *testing.T) {
 	m := NewMockaptClient(ctrl)
 
 	a := &Apt{
-		Name: []string{
-			"foo",
-			"bar",
+		Apt: proto.Apt{
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+					"bar",
+				},
+			},
+			State: AptAbsent,
 		},
-		State: AptAbsent,
 	}
 
 	m.EXPECT().Remove(&apt.Package{Name: "foo"}, &apt.Package{Name: "bar"}).Return("", nil)
@@ -348,7 +401,9 @@ func TestAptApplyAbsent(t *testing.T) {
 	}
 
 	a = &Apt{
-		State: AptAbsent,
+		Apt: proto.Apt{
+			State: AptAbsent,
+		},
 	}
 
 	if _, err := a.Apply(ctx, "", false); err != nil {
@@ -362,7 +417,9 @@ func TestAptApplyUpgrade(t *testing.T) {
 	m := NewMockaptClient(ctrl)
 
 	a := &Apt{
-		Upgrade: AptUpgradeFull,
+		Apt: proto.Apt{
+			Upgrade: AptUpgradeFull,
+		},
 	}
 
 	m.EXPECT().DistUpgrade().Return("", nil)
@@ -375,7 +432,9 @@ func TestAptApplyUpgrade(t *testing.T) {
 	}
 
 	a = &Apt{
-		Upgrade: AptUpgradeSafe,
+		Apt: proto.Apt{
+			Upgrade: AptUpgradeSafe,
+		},
 	}
 
 	m.EXPECT().UpgradeAll().Return("", nil)
@@ -390,7 +449,9 @@ func TestAptApplyClean(t *testing.T) {
 	m := NewMockaptClient(ctrl)
 
 	a := &Apt{
-		Clean: true,
+		Apt: proto.Apt{
+			Clean: true,
+		},
 	}
 
 	m.EXPECT().Clean().Return("", nil)
@@ -403,9 +464,13 @@ func TestAptApplyClean(t *testing.T) {
 	}
 
 	a = &Apt{
-		Clean: true,
-		Name: []string{
-			"foo",
+		Apt: proto.Apt{
+			Clean: true,
+			Name: &proto.PackageList{
+				Items: []string{
+					"foo",
+				},
+			},
 		},
 	}
 
@@ -426,7 +491,9 @@ func TestAptApplyUpdateCache(t *testing.T) {
 
 		pTrue := true
 		a := &Apt{
-			UpdateCache: &pTrue,
+			Apt: proto.Apt{
+				UpdateCache: &pTrue,
+			},
 		}
 
 		m.EXPECT().CheckForUpdates().Return("", nil)

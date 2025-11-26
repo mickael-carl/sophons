@@ -13,15 +13,13 @@ import (
 	"github.com/mickael-carl/sophons/pkg/exec/util"
 )
 
-type FileState State
-
 const (
-	FileAbsent    FileState = FileState(Absent)
-	FileDirectory FileState = "directory"
-	FileFile      FileState = "file"
-	FileHard      FileState = "hard"
-	FileLink      FileState = "link"
-	FileTouch     FileState = "touch"
+	FileAbsent    string = Absent
+	FileDirectory string = "directory"
+	FileFile      string = "file"
+	FileHard      string = "hard"
+	FileLink      string = "link"
+	FileTouch     string = "touch"
 )
 
 //	@meta{
@@ -31,14 +29,14 @@ const (
 //	  ]
 //	}
 type File struct {
-	Path    string    `sophons:"implemented"`
-	Follow  *bool     `sophons:"implemented"`
-	Group   string    `sophons:"implemented"`
-	Mode    any       `sophons:"implemented"`
-	Owner   string    `sophons:"implemented"`
-	Recurse bool      `sophons:"implemented"`
-	Src     string    `sophons:"implemented"`
-	State   FileState `sophons:"implemented"`
+	Path    string `sophons:"implemented"`
+	Follow  *bool  `sophons:"implemented"`
+	Group   string `sophons:"implemented"`
+	Mode    any    `sophons:"implemented"`
+	Owner   string `sophons:"implemented"`
+	Recurse bool   `sophons:"implemented"`
+	Src     string `sophons:"implemented"`
+	State   string `sophons:"implemented"`
 
 	AccessTime             string `yaml:"access_time"`
 	AccessTimeFormat       string `yaml:"access_time_format"`
@@ -90,7 +88,7 @@ func (f *File) UnmarshalYAML(b []byte) error {
 }
 
 func (f *File) Validate() error {
-	validStates := map[FileState]struct{}{
+	validStates := map[string]struct{}{
 		FileAbsent:    {},
 		FileDirectory: {},
 		FileFile:      {},

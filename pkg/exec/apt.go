@@ -11,17 +11,15 @@ import (
 	"github.com/arduino/go-apt-client"
 	"github.com/goccy/go-yaml"
 
-	"github.com/mickael-carl/sophons/pkg/exec/util"
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
-type AptState State
-
 const (
-	AptAbsent   AptState = AptState(Absent)
-	AptBuildDep AptState = "build-dep"
-	AptLatest   AptState = "latest"
-	AptPresent  AptState = "present"
-	AptFixed    AptState = "fixed"
+	AptAbsent   string = Absent
+	AptBuildDep string = "build-dep"
+	AptLatest   string = "latest"
+	AptPresent  string = "present"
+	AptFixed    string = "fixed"
 )
 
 const (
@@ -36,35 +34,10 @@ const (
 //	  "deviations": [
 //	    "`state` only supports `present`, `latest` and `absent`",
 //	    "version strings in package names are not supported",
-//	    "`name` needs to be a list (one element is ok), a single string is not supported"
 //	  ]
 //	}
 type Apt struct {
-	AllowChangeHeldPackages  bool    `yaml:"allow_change_held_packages"`
-	AllowDowngrade           bool    `yaml:"allow_downgrade"`
-	AllowUnauthenticated     bool    `yaml:"allow_unauthenticated"`
-	AutoInstallModuleDeps    *bool   `yaml:"auto_install_module_deps"`
-	AutoClean                bool    `yaml:"autoclean"`
-	AutoRemove               bool    `yaml:"autoremove"`
-	CacheValidTime           *uint64 `yaml:"cache_valid_time" sophons:"implemented"`
-	Clean                    bool    `sophons:"implemented"`
-	Deb                      string
-	DefaultRelease           string `yaml:"default_release"`
-	DpkgOptions              string `yaml:"dpkg_options"`
-	FailOnAutoremove         bool   `yaml:"fail_on_autoremove"`
-	Force                    bool
-	ForceAptGet              bool  `yaml:"force_apt_get"`
-	InstallRecommends        bool  `yaml:"install_recommends"`
-	LockTimeout              int64 `yaml:"lock_timeout"`
-	Name                     any   `sophons:"implemented"`
-	OnlyUpgrade              bool  `yaml:"only_upgrade"`
-	PolicyRCD                int64 `yaml:"policy_rc_d"`
-	Purge                    bool
-	State                    AptState `sophons:"implemented"`
-	UpdateCache              *bool    `yaml:"update_cache" sophons:"implemented"`
-	UpdateCacheRetries       uint64   `yaml:"update_cache_retries"`
-	UpdateCacheRetryMaxDelay uint64   `yaml:"update_cache_retry_max_delay"`
-	Upgrade                  string   `sophons:"implemented"`
+	proto.Apt `yaml:",inline"`
 
 	apt   aptClient
 	aptFS fs.FS
@@ -89,8 +62,8 @@ func (a *Apt) UnmarshalYAML(b []byte) error {
 	}
 
 	type apt struct {
-		Pkg         any
-		Package     any
+		Pkg         proto.PackageList
+		Package     proto.PackageList
 		UpdateCache bool `yaml:"update-cache"`
 	}
 
@@ -99,24 +72,12 @@ func (a *Apt) UnmarshalYAML(b []byte) error {
 		return err
 	}
 
-	if a.Name == nil {
-		if aux.Package != nil {
-			a.Name = aux.Package
-		} else if aux.Pkg != nil {
-			a.Name = aux.Pkg
+	if a.Name == nil || len(a.Name.Items) == 0 {
+		if len(aux.Package.Items) != 0 {
+			a.Name = &aux.Package
+		} else if len(aux.Pkg.Items) != 0 {
+			a.Name = &aux.Pkg
 		}
-	}
-
-	if name, ok := a.Name.([]any); ok {
-		s := []string{}
-		for _, v := range name {
-			vStr, ok := v.(string)
-			if !ok {
-				return fmt.Errorf("package name is not a string: %v", v)
-			}
-			s = append(s, vStr)
-		}
-		a.Name = s
 	}
 
 	if a.UpdateCache == nil {
@@ -140,14 +101,14 @@ func (a *Apt) Validate() error {
 		return fmt.Errorf("unsupported upgrade mode: %s", a.Upgrade)
 	}
 
-	supportedState := map[AptState]struct{}{
+	supportedState := map[string]struct{}{
 		AptAbsent:  {},
 		AptPresent: {},
 		AptLatest:  {},
 		"":         {},
 	}
 
-	if _, ok := supportedState[AptState(a.State)]; !ok {
+	if _, ok := supportedState[string(a.State)]; !ok {
 		return fmt.Errorf("unsupported state: %s", a.State)
 	}
 
@@ -191,7 +152,6 @@ func (a *Apt) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 		a.aptFS = os.DirFS("/var/lib/apt")
 	}
 
-	name := util.GetStringSlice(a.Name)
 	result := AptResult{}
 
 	if a.Clean {
@@ -205,12 +165,12 @@ func (a *Apt) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 		// This is similar to Ansible's implementation. See
 		// https://github.com/ansible/ansible/issues/82611 and
 		// https://github.com/ansible/ansible/pull/82800 for some context.
-		if len(name) == 0 && (a.Upgrade == "no" || a.Upgrade == "") && a.Deb == "" {
+		if (a.Name == nil || len(a.Name.Items) == 0) && (a.Upgrade == "no" || a.Upgrade == "") && a.Deb == "" {
 			return &result, nil
 		}
 	}
 
-	actualState := AptState(a.State)
+	actualState := a.State
 	if a.State == "" {
 		actualState = AptPresent
 	}
@@ -247,7 +207,7 @@ func (a *Apt) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 		result.TaskChanged()
 	}
 
-	if len(name) == 0 {
+	if a.Name == nil || len(a.Name.Items) == 0 {
 		return &result, nil
 	}
 
@@ -260,7 +220,7 @@ func (a *Apt) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 		}
 
 		toInstall := []*apt.Package{}
-		for _, wanted := range name {
+		for _, wanted := range a.Name.Items {
 			found := false
 			for _, p := range installed {
 				if p.Name == wanted {
@@ -282,7 +242,7 @@ func (a *Apt) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 		}
 	case AptLatest:
 		toInstall := []*apt.Package{}
-		for _, p := range name {
+		for _, p := range a.Name.Items {
 			toInstall = append(toInstall, &apt.Package{
 				Name: p,
 			})
@@ -300,7 +260,7 @@ func (a *Apt) Apply(ctx context.Context, _ string, _ bool) (Result, error) {
 		}
 	case AptAbsent:
 		toRemove := []*apt.Package{}
-		for _, p := range name {
+		for _, p := range a.Name.Items {
 			toRemove = append(toRemove, &apt.Package{
 				Name: p,
 			})

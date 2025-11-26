@@ -10,11 +10,9 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-type AptRepositoryState State
-
 const (
-	AptRepositoryAbsent  AptRepositoryState = AptRepositoryState(Absent)
-	AptRepositoryPresent AptRepositoryState = "present"
+	AptRepositoryAbsent  string = Absent
+	AptRepositoryPresent string = "present"
 )
 
 //	@meta{
@@ -25,12 +23,12 @@ type AptRepository struct {
 	Filename                 string
 	InstallPythonApt         bool `yaml:"install_python_apt"`
 	Mode                     string
-	Repo                     string             `sophons:"implemented"`
-	State                    AptRepositoryState `sophons:"implemented"`
-	UpdateCache              *bool              `yaml:"update_cache" sophons:"implemented"`
-	UpdateCacheRetries       uint64             `yaml:"update_cache_retries"`
-	UpdateCacheRetryMaxDelay uint64             `yaml:"update_cache_retry_max_delay"`
-	ValidateCerts            *bool              `yaml:"validate_certs"`
+	Repo                     string `sophons:"implemented"`
+	State                    string `sophons:"implemented"`
+	UpdateCache              *bool  `yaml:"update_cache" sophons:"implemented"`
+	UpdateCacheRetries       uint64 `yaml:"update_cache_retries"`
+	UpdateCacheRetryMaxDelay uint64 `yaml:"update_cache_retry_max_delay"`
+	ValidateCerts            *bool  `yaml:"validate_certs"`
 
 	apt aptClient
 }
