@@ -55,6 +55,71 @@ func JinjaProcessWhen(ctx context.Context, when string) (bool, error) {
 	return false, nil
 }
 
+// renderJinjaStringToSlice renders a Jinja template string and returns a []string.
+// If the template evaluates to a list, all elements are returned.
+// If the template evaluates to a single value, a single-element slice is returned.
+// If the string is empty or doesn't contain "{{", it returns the original string.
+func renderJinjaStringToSlice(jinjaString string, varsCtx *gonjaexec.Context) ([]string, error) {
+	if jinjaString == "" {
+		return []string{""}, nil
+	}
+
+	// Not a Jinja template, return as-is
+	if !strings.Contains(jinjaString, "{{") {
+		return []string{jinjaString}, nil
+	}
+
+	template, err := gonja.FromString(jinjaString)
+	if err != nil {
+		return nil, err
+	}
+
+	loader, err := loaders.NewMemoryLoader(map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+
+	env := gonja.DefaultEnvironment
+	env.Context = varsCtx
+
+	var buf bytes.Buffer
+	renderer := gonjaexec.NewRenderer(env, &buf, gonja.DefaultConfig, loader, template)
+
+	// Special case: if the template is ONLY a variable reference (e.g., "{{ foo }}")
+	// and it evaluates to a list, we want to expand it. Otherwise, we just render
+	// the template as a string.
+	if len(renderer.RootNode.Nodes) == 1 {
+		if outputNode, ok := renderer.RootNode.Nodes[0].(*nodes.Output); ok {
+			value := renderer.Eval(outputNode.Expression)
+
+			if value.IsNil() {
+				return nil, nil
+			}
+
+			// If it's a list, convert to []string
+			if value.IsList() {
+				outSlice := []string{}
+				for _, i := range value.ToGoSimpleType(false).([]any) {
+					s, ok := i.(string)
+					if !ok {
+						return nil, fmt.Errorf("found a non-string value in a jinja list, which is not supported")
+					}
+					outSlice = append(outSlice, s)
+				}
+				return outSlice, nil
+			}
+		}
+	}
+
+	// For mixed templates (e.g., "prefix-{{ var }}"), just render as a string
+	rendered, err := template.ExecuteToString(varsCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{rendered}, nil
+}
+
 func ProcessJinjaTemplates(ctx context.Context, taskContent any) error {
 	v := reflect.ValueOf(taskContent)
 	for v.Kind() == reflect.Ptr {
@@ -101,8 +166,68 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent any) error {
 
 		case reflect.Slice:
 			if field.Type().Elem().Kind() == reflect.String {
+				// Need to handle the case where a template might expand to a list
+				newSlice := []string{}
 				for j := 0; j < field.Len(); j++ {
 					jinjaString := field.Index(j).String()
+
+					rendered, err := renderJinjaStringToSlice(jinjaString, varsCtx)
+					if err != nil {
+						return err
+					}
+
+					// rendered is nil when the value is nil, skip it
+					if rendered != nil {
+						newSlice = append(newSlice, rendered...)
+					}
+				}
+
+				// Replace the slice with the new one
+				field.Set(reflect.ValueOf(newSlice))
+			}
+
+		case reflect.Struct:
+			if err := ProcessJinjaTemplates(ctx, field.Addr().Interface()); err != nil {
+				return err
+			}
+
+		case reflect.Ptr:
+			if field.IsNil() {
+				continue
+			}
+			// Get the element the pointer points to.
+			elem := field.Elem()
+
+			// Recursively process the element pointed to by the pointer.
+			switch elem.Kind() {
+			case reflect.Struct:
+				// Pass a pointer to the element to `ProcessJinjaTemplates` for struct processing.
+				if err := ProcessJinjaTemplates(ctx, elem.Addr().Interface()); err != nil {
+					return err
+				}
+			case reflect.Slice:
+				if elem.Type().Elem().Kind() == reflect.String {
+					// Need to handle the case where a template might expand to a list
+					newSlice := []string{}
+					for j := 0; j < elem.Len(); j++ {
+						stringElem := elem.Index(j)
+						jinjaString := stringElem.String()
+
+						rendered, err := renderJinjaStringToSlice(jinjaString, varsCtx)
+						if err != nil {
+							return err
+						}
+
+						if rendered != nil {
+							newSlice = append(newSlice, rendered...)
+						}
+					}
+
+					elem.Set(reflect.ValueOf(newSlice))
+				}
+			case reflect.String:
+				if elem.CanSet() {
+					jinjaString := elem.String()
 					if jinjaString == "" {
 						continue
 					}
@@ -114,13 +239,8 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent any) error {
 					if err != nil {
 						return err
 					}
-					field.Index(j).SetString(expanded)
+					elem.SetString(expanded)
 				}
-			}
-
-		case reflect.Struct:
-			if err := ProcessJinjaTemplates(ctx, field.Addr().Interface()); err != nil {
-				return err
 			}
 
 		case reflect.Interface:
@@ -134,58 +254,27 @@ func ProcessJinjaTemplates(ctx context.Context, taskContent any) error {
 			// output could be a list so let's support that by parsing the
 			// actual output.
 			if str, ok := field.Interface().(string); ok {
-				// Ignore anything that's not a Jinja template.
-				if !strings.Contains(str, "{{") {
-					continue
-				}
-
-				template, err := gonja.FromString(str)
+				rendered, err := renderJinjaStringToSlice(str, varsCtx)
 				if err != nil {
 					return err
 				}
 
-				loader, err := loaders.NewMemoryLoader(map[string]string{})
-				if err != nil {
-					return err
-				}
-
-				env := gonja.DefaultEnvironment
-				env.Context = varsCtx
-
-				var buf bytes.Buffer
-				renderer := gonjaexec.NewRenderer(env, &buf, gonja.DefaultConfig, loader, template)
-				// This is the slightly complex part: we want to evaluate the
-				// template node, which is the first one under the root node.
-				// To do that we need an expression, which is a field in output
-				// nodes, so we cast our first node (basically the jinja
-				// variable) into such a node. See
-				// https://github.com/nikolalohinski/gonja/blob/v2.4.0/nodes/nodes.go#L12-L27.
-				value := renderer.Eval(renderer.RootNode.Nodes[0].(*nodes.Output).Expression)
-
-				if value.IsNil() {
-					return nil
-				}
-
-				// If it's a list, `value` contains effectively a
-				// `[]interface{}` so we need to make a `[]string` out of that.
-				if value.IsList() {
-					outSlice := []string{}
-					for _, i := range value.ToGoSimpleType(false).([]any) {
-						s, ok := i.(string)
-						if !ok {
-							return fmt.Errorf("found a non-string value in a jinja list, which is not supported")
-						}
-						outSlice = append(outSlice, s)
-					}
-
-					field.Set(reflect.ValueOf(outSlice))
+				// rendered is nil when the value is nil
+				if rendered == nil {
 					continue
 				}
 
-				// Not a list means we can assume it's a simple type and
-				// doesn't need special handling.
-				field.Set(reflect.ValueOf(value.ToGoSimpleType(false)))
-				continue
+				// If it's a list (more than one element), set as []string
+				if len(rendered) > 1 {
+					field.Set(reflect.ValueOf(rendered))
+					continue
+				}
+
+				// Single element - set as the unwrapped string
+				if len(rendered) == 1 {
+					field.Set(reflect.ValueOf(rendered[0]))
+					continue
+				}
 			}
 
 			// If we're dealing with a slice, we need to iterate over its

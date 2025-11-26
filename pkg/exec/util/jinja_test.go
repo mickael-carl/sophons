@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	gonjaexec "github.com/nikolalohinski/gonja/v2/exec"
 
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
@@ -139,5 +140,54 @@ func TestProcessJinjaTemplatesInterfaceSlice(t *testing.T) {
 
 	if !cmp.Equal(is, expectedInterface) {
 		t.Errorf("got %#v but expected %#v", is, expectedInterface)
+	}
+}
+
+func TestRenderJinjaStringToSlice(t *testing.T) {
+	vars := variables.Variables{
+		"package_list":  []any{"git", "man-db"},
+		"postgres_type": "client",
+	}
+	varsCtx := gonjaexec.NewContext(vars)
+
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+		wantErr  bool
+	}{
+		{
+			name:     "plain string",
+			input:    "htop",
+			expected: []string{"htop"},
+		},
+		{
+			name:     "template to list",
+			input:    "{{ package_list }}",
+			expected: []string{"git", "man-db"},
+		},
+		{
+			name:     "template in string",
+			input:    "postgresql-{{ postgres_type }}",
+			expected: []string{"postgresql-client"},
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: []string{""},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := renderJinjaStringToSlice(tt.input, varsCtx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("renderJinjaStringToSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.expected, got); diff != "" {
+				t.Errorf("renderJinjaStringToSlice() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
