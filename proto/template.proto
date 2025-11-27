@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+// Template copies a file from the controller to the target host and substitutes variables in it.
+message Template {
+  // @inject_tag: yaml:"dest" sophons:"implemented"
+  string dest = 1;
+  // @inject_tag: yaml:"group" sophons:"implemented"
+  string group = 2;
+  // @inject_tag: yaml:"mode" sophons:"implemented"
+  Mode mode = 3;
+  // @inject_tag: yaml:"owner" sophons:"implemented"
+  string owner = 4;
+  // @inject_tag: yaml:"src" sophons:"implemented"
+  string src = 5;
+  // @inject_tag: yaml:"attributes"
+  string attributes = 6;
+  // @inject_tag: yaml:"backup"
+  bool backup = 7;
+  // @inject_tag: yaml:"block_end_string"
+  string block_end_string = 8;
+  // @inject_tag: yaml:"block_start_string"
+  string block_start_string = 9;
+  // @inject_tag: yaml:"comment_end_string"
+  string comment_end_string = 10;
+  // @inject_tag: yaml:"comment_start_string"
+  string comment_start_string = 11;
+  // @inject_tag: yaml:"follow"
+  bool follow = 12;
+  // @inject_tag: yaml:"force"
+  optional bool force = 13;
+  // @inject_tag: yaml:"lstrip_blocks"
+  bool lstrip_blocks = 14;
+  // @inject_tag: yaml:"newline_sequence"
+  string newline_sequence = 15;
+  // @inject_tag: yaml:"output_encoding"
+  string output_encoding = 16;
+  // @inject_tag: yaml:"selevel"
+  string selevel = 17;
+  // @inject_tag: yaml:"serole"
+  string serole = 18;
+  // @inject_tag: yaml:"setype"
+  string setype = 19;
+  // @inject_tag: yaml:"seuser"
+  string seuser = 20;
+  // @inject_tag: yaml:"trim_blocks"
+  optional bool trim_blocks = 21;
+  // @inject_tag: yaml:"unsafe_writes"
+  bool unsafe_writes = 22;
+  // @inject_tag: yaml:"validate"
+  string validate = 23;
+  // @inject_tag: yaml:"variable_end_string"
+  string variable_end_string = 24;
+  // @inject_tag: yaml:"variable_start_string"
+  string variable_start_string = 25;
+}
+
+// Mode represents file permissions, supporting both string and numeric formats.
+message Mode {
+  // @inject_tag: yaml:"value"
+  string value = 1;
+}
+

@@ -14,46 +14,56 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 func TestTemplateValidate(t *testing.T) {
 	tests := []struct {
 		name     string
-		template Template
+		template *Template
 		wantErr  bool
 		errMsg   string
 	}{
 		{
 			name: "absolute path",
-			template: Template{
-				Src:  "/etc/shadow",
-				Dest: "/hacking-passwords",
+			template: &Template{
+				Template: proto.Template{
+					Src:  "/etc/shadow",
+					Dest: "/hacking-passwords",
+				},
 			},
 			wantErr: true,
 			errMsg:  "template from an absolute path is not supported",
 		},
 		{
 			name: "missing src",
-			template: Template{
-				Dest: "/something",
+			template: &Template{
+				Template: proto.Template{
+					Dest: "/something",
+				},
 			},
 			wantErr: true,
 			errMsg:  "src is required",
 		},
 		{
 			name: "missing dest",
-			template: Template{
-				Src: "foo",
+			template: &Template{
+				Template: proto.Template{
+					Src: "foo",
+				},
 			},
 			wantErr: true,
 			errMsg:  "dest is required",
 		},
 		{
 			name: "valid",
-			template: Template{
-				Src:  "foo",
-				Dest: "bar",
+			template: &Template{
+				Template: proto.Template{
+					Src:  "foo",
+					Dest: "bar",
+				},
 			},
 			wantErr: false,
 		},
@@ -128,8 +138,10 @@ func TestTemplateApply(t *testing.T) {
 				createDestFile(t, destFile, content)
 
 				return &Template{
-					Src:  "test.j2",
-					Dest: destFile,
+					Template: proto.Template{
+						Src:  "test.j2",
+						Dest: destFile,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -155,8 +167,10 @@ func TestTemplateApply(t *testing.T) {
 				createDestFile(t, destFile, "Old Content")
 
 				return &Template{
-					Src:  "test.j2",
-					Dest: destFile,
+					Template: proto.Template{
+						Src:  "test.j2",
+						Dest: destFile,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -188,8 +202,10 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Src:  "test.j2",
-					Dest: destFile,
+					Template: proto.Template{
+						Src:  "test.j2",
+						Dest: destFile,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -223,8 +239,10 @@ func TestTemplateApply(t *testing.T) {
 				ctx := variables.NewContext(context.Background(), vars)
 
 				return &Template{
-					Src:  "test.j2",
-					Dest: destFile,
+					Template: proto.Template{
+						Src:  "test.j2",
+						Dest: destFile,
+					},
 				}, ctx
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -254,8 +272,10 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Src:  "nonexistent.j2",
-					Dest: destFile,
+					Template: proto.Template{
+						Src:  "nonexistent.j2",
+						Dest: destFile,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -284,8 +304,10 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Src:  "test.j2",
-					Dest: destFile,
+					Template: proto.Template{
+						Src:  "test.j2",
+						Dest: destFile,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -313,9 +335,11 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Src:  "test.j2",
-					Dest: destFile,
-					Mode: "0600",
+					Template: proto.Template{
+						Src:  "test.j2",
+						Dest: destFile,
+						Mode: &proto.Mode{Value: "0600"},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -367,10 +391,12 @@ func TestTemplateApply(t *testing.T) {
 				}
 
 				return &Template{
-					Src:   "test.j2",
-					Dest:  destFile,
-					Owner: currentUser.Username,
-					Group: group.Name,
+					Template: proto.Template{
+						Src:   "test.j2",
+						Dest:  destFile,
+						Owner: currentUser.Username,
+						Group: group.Name,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {
@@ -423,11 +449,13 @@ func TestTemplateApply(t *testing.T) {
 				}
 
 				return &Template{
-					Src:   "test.j2",
-					Dest:  destFile,
-					Mode:  "0640",
-					Owner: currentUser.Username,
-					Group: group.Name,
+					Template: proto.Template{
+						Src:   "test.j2",
+						Dest:  destFile,
+						Mode:  &proto.Mode{Value: "0640"},
+						Owner: currentUser.Username,
+						Group: group.Name,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *TemplateResult, tempDir string) {

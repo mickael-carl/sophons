@@ -11,42 +11,19 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mickael-carl/sophons/pkg/exec/util"
-	"github.com/mickael-carl/sophons/pkg/variables"
 	"github.com/nikolalohinski/gonja/v2"
 	gonjaexec "github.com/nikolalohinski/gonja/v2/exec"
+
+	"github.com/mickael-carl/sophons/pkg/exec/util"
+	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
 //	@meta {
 //	  "deviations": ["`src` doesn't support absolute paths."]
 //	}
 type Template struct {
-	Dest  string `sophons:"implemented"`
-	Group string `sophons:"implemented"`
-	Mode  any    `sophons:"implemented"`
-	Owner string `sophons:"implemented"`
-	Src   string `sophons:"implemented"`
-
-	Attributes          string
-	Backup              bool
-	BlockEndString      string `yaml:"block_end_string"`
-	BlockStartString    string `yaml:"block_start_string"`
-	CommentEndString    string `yaml:"comment_end_string"`
-	CommentStartString  string `yaml:"comment_start_string"`
-	Follow              bool
-	Force               *bool
-	LStripBlocks        bool   `yaml:"lstrip_blocks"`
-	NewlineSequence     string `yaml:"newline_sequence"`
-	OutputEncoding      string `yaml:"output_encoding"`
-	Selevel             string
-	Serole              string
-	Setype              string
-	Seuser              string
-	TrimBlocks          *bool  `yaml:"trim_blocks"`
-	UnsafeWrites        bool   `yaml:"unsafe_writes"`
-	AValidate           string `yaml:"validate"`
-	VariableEndString   string `yaml:"variable_end_string"`
-	VariableStartString string `yaml:"variable_start_string"`
+	proto.Template `yaml:",inline"`
 }
 
 type TemplateResult struct {
@@ -150,7 +127,7 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) (R
 	// MD5Sum is only populated when changed.
 	result.MD5Sum = renderedMD5
 
-	if c.Mode != nil || c.Owner != "" || c.Group != "" {
+	if c.Mode != nil && c.Mode.Value != "" || c.Owner != "" || c.Group != "" {
 		uid, err := util.GetUid(c.Owner)
 		if err != nil {
 			result.TaskFailed()
@@ -163,7 +140,11 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) (R
 			return &result, err
 		}
 
-		if err := util.ApplyModeAndIDs(c.Dest, c.Mode, uid, gid); err != nil {
+		var modeValue any
+		if c.Mode != nil {
+			modeValue = c.Mode.Value
+		}
+		if err := util.ApplyModeAndIDs(c.Dest, modeValue, uid, gid); err != nil {
 			result.TaskFailed()
 			return &result, fmt.Errorf("failed to apply mode and IDs to %s: %w", c.Dest, err)
 		}
@@ -194,7 +175,7 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) (R
 	result.Size = uint64(stat.Size())
 
 	// Only populate mode if it was explicitly set.
-	if c.Mode != nil {
+	if c.Mode != nil && c.Mode.Value != "" {
 		result.Mode = fmt.Sprintf("%04o", stat.Mode().Perm())
 	}
 
