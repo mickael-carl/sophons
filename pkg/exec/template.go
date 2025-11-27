@@ -1,7 +1,11 @@
 package exec
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -46,6 +50,20 @@ type Template struct {
 }
 
 type TemplateResult struct {
+	Checksum string
+	Dest     string
+	Gid      uint64
+	Group    string
+	MD5Sum   string
+	Mode     string
+	Owner    string
+	Size     uint64
+	// We can't support this: Ansible fills it in with the copied template file
+	// on the target node but our execution model is fundamentally not working
+	// like that.
+	// Src      string
+	Uid uint64
+
 	CommonResult `yaml:",inline"`
 }
 
@@ -74,16 +92,13 @@ func (c *Template) Validate() error {
 }
 
 func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) (Result, error) {
-	f, err := os.Create(c.Dest)
-	if err != nil {
-		return &TemplateResult{}, fmt.Errorf("failed to create destination %s: %w", c.Dest, err)
-	}
+	result := TemplateResult{}
 
 	srcPath := filepath.Join(parentPath, "templates", c.Src)
 	template, err := gonja.FromFile(srcPath)
 	if err != nil {
-		f.Close()
-		return &TemplateResult{}, fmt.Errorf("failed to read template file %s: %w", srcPath, err)
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to read template file %s: %w", srcPath, err)
 	}
 
 	vars, ok := variables.FromContext(ctx)
@@ -92,32 +107,96 @@ func (c *Template) Apply(ctx context.Context, parentPath string, isRole bool) (R
 	}
 	varsCtx := gonjaexec.NewContext(vars)
 
-	if err := template.Execute(f, varsCtx); err != nil {
-		f.Close()
-		return &TemplateResult{}, fmt.Errorf("failed to template file %s to %s: %w", srcPath, c.Dest, err)
+	var buf bytes.Buffer
+	if err := template.Execute(&buf, varsCtx); err != nil {
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to template file %s: %w", srcPath, err)
+	}
+	renderedContent := buf.Bytes()
+
+	checksum := sha1.Sum(renderedContent)
+	result.Checksum = hex.EncodeToString(checksum[:])
+
+	md5sum := md5.Sum(renderedContent)
+	renderedMD5 := hex.EncodeToString(md5sum[:])
+
+	stat, err := os.Stat(c.Dest)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to state %s: %w", srcPath, err)
 	}
 
-	if err := f.Close(); err != nil {
-		return &TemplateResult{}, err
+	if err == nil && stat.Mode().IsRegular() {
+		existingContent, err := os.ReadFile(c.Dest)
+		if err != nil {
+			result.TaskFailed()
+			return &result, fmt.Errorf("failed to read from %s: %w", srcPath, err)
+		}
+		existingmd5sum := md5.Sum(existingContent)
+		existingMD5 := hex.EncodeToString(existingmd5sum[:])
+
+		if existingMD5 == renderedMD5 {
+			result.TaskSkipped()
+			return &result, nil
+		}
 	}
 
-	if c.Mode == nil && c.Owner == "" && c.Group == "" {
-		return &TemplateResult{}, nil
+	if err := os.WriteFile(c.Dest, renderedContent, 0o644); err != nil {
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to write destination %s: %w", c.Dest, err)
+	}
+	result.TaskChanged()
+
+	// MD5Sum is only populated when changed.
+	result.MD5Sum = renderedMD5
+
+	if c.Mode != nil || c.Owner != "" || c.Group != "" {
+		uid, err := util.GetUid(c.Owner)
+		if err != nil {
+			result.TaskFailed()
+			return &result, err
+		}
+
+		gid, err := util.GetGid(c.Group)
+		if err != nil {
+			result.TaskFailed()
+			return &result, err
+		}
+
+		if err := util.ApplyModeAndIDs(c.Dest, c.Mode, uid, gid); err != nil {
+			result.TaskFailed()
+			return &result, fmt.Errorf("failed to apply mode and IDs to %s: %w", c.Dest, err)
+		}
+
+		// Populate result fields with explicitly set values.
+		if c.Owner != "" {
+			result.Owner = c.Owner
+			if uid != -1 {
+				result.Uid = uint64(uid)
+			}
+		}
+		if c.Group != "" {
+			result.Group = c.Group
+			if gid != -1 {
+				result.Gid = uint64(gid)
+			}
+		}
 	}
 
-	uid, err := util.GetUid(c.Owner)
+	stat, err = os.Stat(c.Dest)
 	if err != nil {
-		return &TemplateResult{}, err
+		result.TaskFailed()
+		return &result, fmt.Errorf("failed to stat %s: %w", c.Dest, err)
 	}
 
-	gid, err := util.GetGid(c.Group)
-	if err != nil {
-		return &TemplateResult{}, err
+	// Populate common fields only on success.
+	result.Dest = c.Dest
+	result.Size = uint64(stat.Size())
+
+	// Only populate mode if it was explicitly set.
+	if c.Mode != nil {
+		result.Mode = fmt.Sprintf("%04o", stat.Mode().Perm())
 	}
 
-	if err := util.ApplyModeAndIDs(c.Dest, c.Mode, uid, gid); err != nil {
-		return &TemplateResult{}, fmt.Errorf("failed to apply mode and IDs to %s: %w", c.Dest, err)
-	}
-
-	return &TemplateResult{}, nil
+	return &result, nil
 }
