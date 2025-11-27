@@ -2,48 +2,50 @@ package exec
 
 import "testing"
 
-func TestGetURLValidateMissingURL(t *testing.T) {
-	g := &GetURL{
-		Dest: "/somewhere",
+func TestGetURLValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		getURL  GetURL
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "missing url",
+			getURL: GetURL{
+				Dest: "/somewhere",
+			},
+			wantErr: true,
+			errMsg:  "url is required",
+		},
+		{
+			name: "missing dest",
+			getURL: GetURL{
+				URL: "https://example.com",
+			},
+			wantErr: true,
+			errMsg:  "dest is required",
+		},
+		{
+			name: "invalid url",
+			getURL: GetURL{
+				URL:  "foo_bar:baz",
+				Dest: "/somewhere",
+			},
+			wantErr: true,
+			errMsg:  "invalid URL provided",
+		},
 	}
 
-	err := g.Validate()
-	if err == nil {
-		t.Error("url is required")
-	}
-
-	if err.Error() != "url is required" {
-		t.Error(err)
-	}
-}
-
-func TestGetURLValidateMissingDest(t *testing.T) {
-	g := &GetURL{
-		URL: "https://example.com",
-	}
-
-	err := g.Validate()
-	if err == nil {
-		t.Error("dest is required")
-	}
-
-	if err.Error() != "dest is required" {
-		t.Error(err)
-	}
-}
-
-func TestGetURLValidateInvalidURL(t *testing.T) {
-	g := &GetURL{
-		URL:  "foo_bar:baz",
-		Dest: "/somewhere",
-	}
-
-	err := g.Validate()
-	if err == nil {
-		t.Error("invalid URLs should be rejected")
-	}
-
-	if err.Error() != "invalid URL provided" {
-		t.Error(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.getURL.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.errMsg {
+				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
+			}
+		})
 	}
 }

@@ -13,162 +13,239 @@ import (
 	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
-func TestAptRepositoryValidateInvalidState(t *testing.T) {
-	a := &AptRepository{
-		AptRepository: proto.AptRepository{
-			Repo:  "foo",
-			State: "banana",
-		},
-	}
-
-	err := a.Validate()
-	if err == nil {
-		t.Error("banana is not a valid state")
-	}
-
-	if err.Error() != "unsupported state: banana" {
-		t.Error(err)
-	}
-}
-
-func TestAptRepositoryValidateMissingRepo(t *testing.T) {
-	a := &AptRepository{
-		AptRepository: proto.AptRepository{
-			State: "present",
-		},
-	}
-
-	err := a.Validate()
-	if err == nil {
-		t.Error("repo is required")
-	}
-
-	if err.Error() != "repo is required" {
-		t.Error(err)
-	}
-}
-
 func TestAptRepositoryValidate(t *testing.T) {
-	a := &AptRepository{
-		AptRepository: proto.AptRepository{
-			Repo:  "foo",
-			State: "present",
+	tests := []struct {
+		name    string
+		aptRepo AptRepository
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "invalid state",
+			aptRepo: AptRepository{
+				AptRepository: proto.AptRepository{
+					Repo:  "foo",
+					State: "banana",
+				},
+			},
+			wantErr: true,
+			errMsg:  "unsupported state: banana",
+		},
+		{
+			name: "missing repo",
+			aptRepo: AptRepository{
+				AptRepository: proto.AptRepository{
+					State: "present",
+				},
+			},
+			wantErr: true,
+			errMsg:  "repo is required",
+		},
+		{
+			name: "valid",
+			aptRepo: AptRepository{
+				AptRepository: proto.AptRepository{
+					Repo:  "foo",
+					State: "present",
+				},
+			},
+			wantErr: false,
 		},
 	}
 
-	if err := a.Validate(); err != nil {
-		t.Error(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.aptRepo.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.errMsg {
+				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
+			}
+		})
 	}
 }
 
 func TestAptRepositoryUnmarshalYAML(t *testing.T) {
-	b := []byte(`
+	pTrue := true
+
+	tests := []struct {
+		name string
+		yaml string
+		want AptRepository
+	}{
+		{
+			name: "unmarshal with update_cache",
+			yaml: `
 repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
 state: "present"
-update_cache: true`)
-
-	var got AptRepository
-	if err := yaml.Unmarshal(b, &got); err != nil {
-		t.Error(err)
-	}
-
-	pTrue := true
-	expected := AptRepository{
-		AptRepository: proto.AptRepository{
-			Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-			State:       AptRepositoryPresent,
-			UpdateCache: &pTrue,
+update_cache: true`,
+			want: AptRepository{
+				AptRepository: proto.AptRepository{
+					Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+					State:       AptRepositoryPresent,
+					UpdateCache: &pTrue,
+				},
+			},
+		},
+		{
+			name: "unmarshal with update-cache alias",
+			yaml: `
+repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
+state: "present"
+update-cache: true`,
+			want: AptRepository{
+				AptRepository: proto.AptRepository{
+					Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+					State:       AptRepositoryPresent,
+					UpdateCache: &pTrue,
+				},
+			},
 		},
 	}
 
-	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestAptRepositoryUnmarshalYAMLAliases(t *testing.T) {
-	b := []byte(`
-repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
-state: "present"
-update-cache: true`)
-
-	var got AptRepository
-	if err := yaml.Unmarshal(b, &got); err != nil {
-		t.Error(err)
-	}
-
-	pTrue := true
-	expected := AptRepository{
-		AptRepository: proto.AptRepository{
-			Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-			State:       AptRepositoryPresent,
-			UpdateCache: &pTrue,
-		},
-	}
-
-	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got AptRepository
+			if err := yaml.Unmarshal([]byte(tt.yaml), &got); err != nil {
+				t.Errorf("Unmarshal() error = %v", err)
+				return
+			}
+			if diff := cmp.Diff(&tt.want, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestURIToFilename(t *testing.T) {
-	got, err := uriToFilename("https://download.docker.com/linux/debian")
-	if err != nil {
-		t.Error(err)
+	tests := []struct {
+		name    string
+		uri     string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "valid URL",
+			uri:     "https://download.docker.com/linux/debian",
+			want:    "download_docker_com_linux_debian.list",
+			wantErr: false,
+		},
+		{
+			name:    "invalid URL",
+			uri:     "some_invalid:url",
+			want:    "",
+			wantErr: true,
+		},
 	}
 
-	expected := "download_docker_com_linux_debian.list"
-	if expected != got {
-		t.Errorf("expected %s but got %s", expected, got)
-	}
-
-	_, err = uriToFilename("some_invalid:url")
-	if err == nil {
-		t.Error("uriToFilename should return an error on invalid URLs")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := uriToFilename(tt.uri)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("uriToFilename() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("uriToFilename() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
 func TestAptRepositoryApply(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	m := NewMockaptClient(ctrl)
-
-	a := &AptRepository{
-		AptRepository: proto.AptRepository{
-			Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-			State: AptRepositoryPresent,
+	tests := []struct {
+		name     string
+		aptRepo  *AptRepository
+		mockFunc func(*MockaptClient)
+		want     *AptRepositoryResult
+	}{
+		{
+			name: "add repository",
+			aptRepo: &AptRepository{
+				AptRepository: proto.AptRepository{
+					Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+					State: AptRepositoryPresent,
+				},
+			},
+			mockFunc: func(m *MockaptClient) {
+				repo := &apt.Repository{
+					Enabled:      true,
+					SourceRepo:   false,
+					Options:      "signed-by=/etc/apt/keyrings/docker.asc",
+					URI:          "https://download.docker.com/linux/debian",
+					Distribution: "bookworm",
+					Components:   "stable",
+					Comment:      "",
+				}
+				m.EXPECT().ParseAPTConfigFolder("/etc/apt").Return(nil, nil)
+				m.EXPECT().ParseAPTConfigLine("deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable").Return(repo)
+				m.EXPECT().AddRepository(repo, "/etc/apt", "download_docker_com_linux_debian.list").Return(nil)
+				m.EXPECT().CheckForUpdates().Return("", nil)
+			},
+			want: &AptRepositoryResult{
+				CommonResult: CommonResult{
+					Changed: true,
+					Failed:  false,
+					Skipped: false,
+				},
+			},
+		},
+		{
+			name: "remove repository",
+			aptRepo: func() *AptRepository {
+				pFalse := false
+				return &AptRepository{
+					AptRepository: proto.AptRepository{
+						Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+						State:       AptRepositoryAbsent,
+						UpdateCache: &pFalse,
+					},
+				}
+			}(),
+			mockFunc: func(m *MockaptClient) {
+				repo := &apt.Repository{
+					Enabled:      true,
+					SourceRepo:   false,
+					Options:      "signed-by=/etc/apt/keyrings/docker.asc",
+					URI:          "https://download.docker.com/linux/debian",
+					Distribution: "bookworm",
+					Components:   "stable",
+					Comment:      "",
+				}
+				m.EXPECT().ParseAPTConfigFolder("/etc/apt").Return(apt.RepositoryList{repo}, nil)
+				m.EXPECT().ParseAPTConfigLine("deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable").Return(repo)
+				m.EXPECT().RemoveRepository(repo, "/etc/apt").Return(nil)
+			},
+			want: &AptRepositoryResult{
+				CommonResult: CommonResult{
+					Changed: true,
+					Failed:  false,
+					Skipped: false,
+				},
+			},
 		},
 	}
 
-	repo := &apt.Repository{
-		Enabled:      true,
-		SourceRepo:   false,
-		Options:      "signed-by=/etc/apt/keyrings/docker.asc",
-		URI:          "https://download.docker.com/linux/debian",
-		Distribution: "bookworm",
-		Components:   "stable",
-		Comment:      "",
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			m := NewMockaptClient(ctrl)
 
-	m.EXPECT().ParseAPTConfigFolder("/etc/apt").Return(nil, nil)
-	m.EXPECT().ParseAPTConfigLine("deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable").Return(repo)
-	m.EXPECT().AddRepository(repo, "/etc/apt", "download_docker_com_linux_debian.list").Return(nil)
-	m.EXPECT().CheckForUpdates().Return("", nil)
+			tt.mockFunc(m)
 
-	ctx := context.WithValue(context.Background(), aptClientContextKey, m)
-	if _, err := a.Apply(ctx, "", false); err != nil {
-		t.Error(err)
-	}
+			ctx := context.WithValue(context.Background(), aptClientContextKey, m)
+			got, err := tt.aptRepo.Apply(ctx, "", false)
+			if err != nil {
+				t.Errorf("Apply() error = %v", err)
+				return
+			}
 
-	pFalse := false
-	a.State = AptRepositoryAbsent
-	a.UpdateCache = &pFalse
-
-	m.EXPECT().ParseAPTConfigFolder("/etc/apt").Return(apt.RepositoryList{repo}, nil)
-	m.EXPECT().ParseAPTConfigLine("deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable").Return(repo)
-	m.EXPECT().RemoveRepository(repo, "/etc/apt").Return(nil)
-
-	if _, err := a.Apply(ctx, "", false); err != nil {
-		t.Error(err)
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreUnexported(AptRepositoryResult{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

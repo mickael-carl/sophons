@@ -2,48 +2,50 @@ package exec
 
 import "testing"
 
-func TestTemplateValidateAbsPath(t *testing.T) {
-	c := &Template{
-		Src:  "/etc/shadow",
-		Dest: "/hacking-passwords",
+func TestTemplateValidate(t *testing.T) {
+	tests := []struct {
+		name     string
+		template Template
+		wantErr  bool
+		errMsg   string
+	}{
+		{
+			name: "absolute path",
+			template: Template{
+				Src:  "/etc/shadow",
+				Dest: "/hacking-passwords",
+			},
+			wantErr: true,
+			errMsg:  "template from an absolute path is not supported",
+		},
+		{
+			name: "missing src",
+			template: Template{
+				Dest: "/something",
+			},
+			wantErr: true,
+			errMsg:  "src is required",
+		},
+		{
+			name: "missing dest",
+			template: Template{
+				Src: "foo",
+			},
+			wantErr: true,
+			errMsg:  "dest is required",
+		},
 	}
 
-	err := c.Validate()
-	if err == nil {
-		t.Error("templating from an absolute path from the control node is not supported and should fail")
-	}
-
-	if err.Error() != "template from an absolute path is not supported" {
-		t.Error(err)
-	}
-}
-
-func TestTemplateValidateMissingSrc(t *testing.T) {
-	c := &Template{
-		Dest: "/something",
-	}
-
-	err := c.Validate()
-	if err == nil {
-		t.Error("a template without src set is not valid")
-	}
-
-	if err.Error() != "src is required" {
-		t.Error(err)
-	}
-}
-
-func TestTemplateValidateMissingDest(t *testing.T) {
-	c := &Template{
-		Src: "foo",
-	}
-
-	err := c.Validate()
-	if err == nil {
-		t.Error("a template without dest set is not valid")
-	}
-
-	if err.Error() != "dest is required" {
-		t.Error(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.template.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.errMsg {
+				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
+			}
+		})
 	}
 }

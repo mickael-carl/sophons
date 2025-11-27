@@ -2,78 +2,70 @@ package exec
 
 import "testing"
 
-func TestCopyValidateAbsPath(t *testing.T) {
-	c := &Copy{
-		Src:  "/etc/shadow",
-		Dest: "/hacking-passwords",
+func TestCopyValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		copy    Copy
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "absolute path without remote_src",
+			copy: Copy{
+				Src:  "/etc/shadow",
+				Dest: "/hacking-passwords",
+			},
+			wantErr: true,
+			errMsg:  "copying from an absolute path without remote_src is not supported",
+		},
+		{
+			name: "absolute path with remote_src",
+			copy: Copy{
+				Src:       "/tmp/someconfig",
+				Dest:      "/etc/someconfig",
+				RemoteSrc: true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing src and content",
+			copy: Copy{
+				Dest: "/something",
+			},
+			wantErr: true,
+			errMsg:  "either src or content need to be specified",
+		},
+		{
+			name: "content with directory dest",
+			copy: Copy{
+				Content: "hello world",
+				Dest:    "/some/directory/",
+			},
+			wantErr: true,
+			errMsg:  "can't use content when dest is a directory",
+		},
+		{
+			name: "both src and content set",
+			copy: Copy{
+				Src:     "somefile",
+				Content: "hello world!",
+				Dest:    "/somefile",
+			},
+			wantErr: true,
+			errMsg:  "src and content can't both be specified",
+		},
 	}
 
-	err := c.Validate()
-	if err == nil {
-		t.Error("copying from an absolute path from the control node is not supported and should fail")
-	}
-
-	if err.Error() != "copying from an absolute path without remote_src is not supported" {
-		t.Error(err)
-	}
-}
-
-func TestCopyValidateAbsPathRemote(t *testing.T) {
-	c := &Copy{
-		Src:       "/tmp/someconfig",
-		Dest:      "/etc/someconfig",
-		RemoteSrc: true,
-	}
-
-	if err := c.Validate(); err != nil {
-		t.Error(err)
-	}
-}
-
-func TestCopyValidateMissingSrc(t *testing.T) {
-	c := &Copy{
-		Dest: "/something",
-	}
-
-	err := c.Validate()
-	if err == nil {
-		t.Error("a copy without src or content set is not valid")
-	}
-
-	if err.Error() != "either src or content need to be specified" {
-		t.Error(err)
-	}
-}
-
-func TestCopyValidateContentDestDirectory(t *testing.T) {
-	c := &Copy{
-		Content: "hello world",
-		Dest:    "/some/directory/",
-	}
-
-	err := c.Validate()
-	if err == nil {
-		t.Error("a copy task with content set and dest being a directory is invalid")
-	}
-
-	if err.Error() != "can't use content when dest is a directory" {
-		t.Error(err)
-	}
-}
-
-func TestCopyValidateSrcContentSet(t *testing.T) {
-	c := &Copy{
-		Src:     "somefile",
-		Content: "hello world!",
-		Dest:    "/somefile",
-	}
-
-	err := c.Validate()
-	if err == nil {
-		t.Error("a copy task with both content and src set is invalid")
-	}
-
-	if err.Error() != "src and content can't both be specified" {
-		t.Error(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.copy.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.errMsg {
+				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
+			}
+		})
 	}
 }
