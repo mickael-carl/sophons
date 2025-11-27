@@ -14,12 +14,12 @@ import (
 
 func TestShellApply(t *testing.T) {
 	tests := []struct {
-		name       string
+		name        string
 		useSyncTest bool
-		testFunc   func(*testing.T)
+		testFunc    func(*testing.T)
 	}{
 		{
-			name:       "success",
+			name:        "success",
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -69,7 +69,7 @@ func TestShellApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "error",
+			name:        "error",
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -122,7 +122,7 @@ func TestShellApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "full options",
+			name:        "full options",
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -174,7 +174,7 @@ func TestShellApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "skipped",
+			name:        "skipped",
 			useSyncTest: false,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)

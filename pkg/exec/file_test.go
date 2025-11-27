@@ -8,61 +8,104 @@ import (
 )
 
 func TestFileValidate(t *testing.T) {
-	tests := []struct {
-		name    string
-		file    File
-		wantErr bool
-		errMsg  string
-	}{
+	tests := []ValidationTestCase[*File]{
 		{
-			name: "invalid state",
-			file: File{
+			Name: "invalid state",
+			Input: &File{
 				State: "banana",
 			},
-			wantErr: true,
-			errMsg:  "invalid state",
+			WantErr: true,
+			ErrMsg:  "invalid state",
 		},
 		{
-			name: "missing path",
-			file: File{
+			Name: "missing path",
+			Input: &File{
 				State: "file",
 			},
-			wantErr: true,
-			errMsg:  "path is required",
+			WantErr: true,
+			ErrMsg:  "path is required",
 		},
 		{
-			name: "recurse without directory state",
-			file: File{
+			Name: "recurse without directory state",
+			Input: &File{
 				State:   "file",
 				Path:    "/foo",
 				Recurse: true,
 			},
-			wantErr: true,
-			errMsg:  "recurse option requires state to be 'directory'",
+			WantErr: true,
+			ErrMsg:  "recurse option requires state to be 'directory'",
 		},
 		{
-			name: "link without src",
-			file: File{
+			Name: "link without src",
+			Input: &File{
 				State: "link",
 				Path:  "/foo/bar",
 			},
-			wantErr: true,
-			errMsg:  "src option is required when state is 'link' or 'hard'",
+			WantErr: true,
+			ErrMsg:  "src option is required when state is 'link' or 'hard'",
+		},
+		{
+			Name: "valid file state",
+			Input: &File{
+				State: "file",
+				Path:  "/tmp/test.txt",
+			},
+			WantErr: false,
+		},
+		{
+			Name: "valid directory state",
+			Input: &File{
+				State: "directory",
+				Path:  "/tmp/testdir",
+			},
+			WantErr: false,
+		},
+		{
+			Name: "valid touch state",
+			Input: &File{
+				State: "touch",
+				Path:  "/tmp/touched",
+			},
+			WantErr: false,
+		},
+		{
+			Name: "valid absent state",
+			Input: &File{
+				State: "absent",
+				Path:  "/tmp/removed",
+			},
+			WantErr: false,
+		},
+		{
+			Name: "hard link without src",
+			Input: &File{
+				State: "hard",
+				Path:  "/foo/hardlink",
+			},
+			WantErr:     true,
+			ErrContains: "src",
+		},
+		{
+			Name: "valid link with src",
+			Input: &File{
+				State: "link",
+				Path:  "/foo/link",
+				Src:   "/foo/target",
+			},
+			WantErr: false,
+		},
+		{
+			Name: "recurse with directory state",
+			Input: &File{
+				State:   "directory",
+				Path:    "/foo",
+				Recurse: true,
+			},
+			WantErr: false,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.file.Validate()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.wantErr && err.Error() != tt.errMsg {
-				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
-			}
-		})
-	}
+	RunValidationTests(t, tests)
 }
 
 func TestFileUnmarshalYAML(t *testing.T) {

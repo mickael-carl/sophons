@@ -145,12 +145,12 @@ func TestMerge(t *testing.T) {
 
 func TestNewContextAndFromContext(t *testing.T) {
 	tests := []struct {
-		name         string
-		initialVars  Variables
-		useNewCtx    bool
-		wantOk       bool
-		wantSameCtx  bool
-		wantVars     Variables
+		name        string
+		initialVars Variables
+		useNewCtx   bool
+		wantOk      bool
+		wantSameCtx bool
+		wantVars    Variables
 	}{
 		{
 			name:        "new context with variables",
