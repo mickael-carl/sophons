@@ -8,6 +8,8 @@ import (
 	"regexp"
 
 	"github.com/goccy/go-yaml"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 const (
@@ -15,20 +17,8 @@ const (
 	AptRepositoryPresent string = "present"
 )
 
-//	@meta{
-//	  "deviations": []
-//	}
 type AptRepository struct {
-	Codename                 string
-	Filename                 string
-	InstallPythonApt         bool `yaml:"install_python_apt"`
-	Mode                     string
-	Repo                     string `sophons:"implemented"`
-	State                    string `sophons:"implemented"`
-	UpdateCache              *bool  `yaml:"update_cache" sophons:"implemented"`
-	UpdateCacheRetries       uint64 `yaml:"update_cache_retries"`
-	UpdateCacheRetryMaxDelay uint64 `yaml:"update_cache_retry_max_delay"`
-	ValidateCerts            *bool  `yaml:"validate_certs"`
+	proto.AptRepository `yaml:",inline"`
 
 	apt aptClient
 }

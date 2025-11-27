@@ -108,8 +108,10 @@ func TestTaskApply(t *testing.T) {
 	task := Task{
 		Name: "Add docker repo",
 		Content: &AptRepository{
-			Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-			State: AptRepositoryPresent,
+			AptRepository: proto.AptRepository{
+				Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+				State: AptRepositoryPresent,
+			},
 		},
 		Register: "out",
 	}

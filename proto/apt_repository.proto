@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+// AptRepository manages apt repositories.
+message AptRepository {
+  // @inject_tag: yaml:"codename"
+  string codename = 1;
+  // @inject_tag: yaml:"filename"
+  string filename = 2;
+  // @inject_tag: yaml:"install_python_apt"
+  bool install_python_apt = 3;
+  // @inject_tag: yaml:"mode"
+  string mode = 4;
+  // @inject_tag: yaml:"repo" sophons:"implemented"
+  string repo = 5;
+  // @inject_tag: yaml:"state" sophons:"implemented"
+  string state = 6;
+  // @inject_tag: yaml:"update_cache" sophons:"implemented"
+  optional bool update_cache = 7;
+  // @inject_tag: yaml:"update_cache_retries"
+  uint64 update_cache_retries = 8;
+  // @inject_tag: yaml:"update_cache_retry_max_delay"
+  uint64 update_cache_retry_max_delay = 9;
+  // @inject_tag: yaml:"validate_certs"
+  optional bool validate_certs = 10;
+}
+
