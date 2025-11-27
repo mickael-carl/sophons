@@ -9,136 +9,109 @@ import (
 )
 
 func TestProcessVars(t *testing.T) {
-	ignoredVarsFile := []byte(`
+	tests := []struct {
+		name string
+		fsys fstest.MapFS
+		path string
+		want variables.Variables
+	}{
+		{
+			name: "main.yml file with other files ignored",
+			fsys: fstest.MapFS{
+				"somerole/defaults/foo.yml": &fstest.MapFile{
+					Data: []byte(`
 hello: "ignored!"
 fruit: "banana"
-`)
-
-	mainVarsFile := []byte(`
+`),
+				},
+				"somerole/defaults/main.yml": &fstest.MapFile{
+					Data: []byte(`
 hello: "world!"
 "true": true
-`)
-
-	fsys := fstest.MapFS{
-		"somerole/defaults/foo.yml": &fstest.MapFile{
-			Data: ignoredVarsFile,
+`),
+				},
+			},
+			path: "somerole/defaults",
+			want: variables.Variables{
+				"hello": "world!",
+				"true":  true,
+			},
 		},
-		"somerole/defaults/main.yml": &fstest.MapFile{
-			Data: mainVarsFile,
-		},
-	}
-
-	got, err := processVars(fsys, "somerole/defaults")
-	if err != nil {
-		t.Error(err)
-	}
-
-	expected := variables.Variables{
-		"hello": "world!",
-		"true":  true,
-	}
-
-	if diff := cmp.Diff(expected, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestProcessVarsMainFile(t *testing.T) {
-	mainFile := []byte(`
+		{
+			name: "main file without extension",
+			fsys: fstest.MapFS{
+				"somerole/variables/main": &fstest.MapFile{
+					Data: []byte(`
 hello: "world!"
 main: "is a valid variables file too"
-`)
-
-	fsys := fstest.MapFS{
-		"somerole/variables/main": &fstest.MapFile{
-			Data: mainFile,
+`),
+				},
+			},
+			path: "somerole/variables",
+			want: variables.Variables{
+				"hello": "world!",
+				"main":  "is a valid variables file too",
+			},
 		},
-	}
-
-	got, err := processVars(fsys, "somerole/variables")
-	if err != nil {
-		t.Error(err)
-	}
-
-	expected := variables.Variables{
-		"hello": "world!",
-		"main":  "is a valid variables file too",
-	}
-
-	if diff := cmp.Diff(expected, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestProcessVarsMainDirectory(t *testing.T) {
-	fooVarsFile := []byte(`
+		{
+			name: "main directory with multiple files",
+			fsys: fstest.MapFS{
+				"somerole/defaults/main/foo.yml": &fstest.MapFile{
+					Data: []byte(`
 foo: "foo"
 fruit: "banana"
-`)
-
-	barVarsFile := []byte(`
+`),
+				},
+				"somerole/defaults/main/bar.yml": &fstest.MapFile{
+					Data: []byte(`
 bar: "bar"
 "true": true
-`)
-
-	fsys := fstest.MapFS{
-		"somerole/defaults/main/foo.yml": &fstest.MapFile{
-			Data: fooVarsFile,
+`),
+				},
+			},
+			path: "somerole/defaults",
+			want: variables.Variables{
+				"foo":   "foo",
+				"fruit": "banana",
+				"bar":   "bar",
+				"true":  true,
+			},
 		},
-		"somerole/defaults/main/bar.yml": &fstest.MapFile{
-			Data: barVarsFile,
-		},
-	}
-
-	got, err := processVars(fsys, "somerole/defaults")
-	if err != nil {
-		t.Error(err)
-	}
-
-	expected := variables.Variables{
-		"foo":   "foo",
-		"fruit": "banana",
-		"bar":   "bar",
-		"true":  true,
-	}
-
-	if diff := cmp.Diff(expected, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestProcessVarsOverride(t *testing.T) {
-	varsFile := []byte(`
+		{
+			name: "nested directory with override",
+			fsys: fstest.MapFS{
+				"somerole/variables/main/foo.yml": &fstest.MapFile{
+					Data: []byte(`
 "hello": "world!"
 "answer": 42
-`)
-
-	nestedVarsFile := []byte(`
+`),
+				},
+				"somerole/variables/main/somedir/region.yml": &fstest.MapFile{
+					Data: []byte(`
 "hello": "region!"
 "false": false
-`)
-
-	fsys := fstest.MapFS{
-		"somerole/variables/main/foo.yml": &fstest.MapFile{
-			Data: varsFile,
+`),
+				},
+			},
+			path: "somerole/variables",
+			want: variables.Variables{
+				"hello":  "region!",
+				"answer": uint64(42),
+				"false":  false,
+			},
 		},
-		"somerole/variables/main/somedir/region.yml": &fstest.MapFile{
-			Data: nestedVarsFile,
-		},
 	}
 
-	got, err := processVars(fsys, "somerole/variables")
-	if err != nil {
-		t.Error(err)
-	}
-
-	expected := variables.Variables{
-		"hello":  "region!",
-		"answer": uint64(42),
-		"false":  false,
-	}
-
-	if diff := cmp.Diff(expected, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := processVars(tt.fsys, tt.path)
+			if err != nil {
+				t.Errorf("processVars() error = %v", err)
+				return
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

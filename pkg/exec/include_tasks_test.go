@@ -2,15 +2,31 @@ package exec
 
 import "testing"
 
-func TestIncludeTasksValidateMissingFile(t *testing.T) {
-	it := &IncludeTasks{}
-
-	err := it.Validate()
-	if err == nil {
-		t.Error("an include_tasks without `file` is not valid")
+func TestIncludeTasksValidate(t *testing.T) {
+	tests := []struct {
+		name         string
+		includeTasks IncludeTasks
+		wantErr      bool
+		errMsg       string
+	}{
+		{
+			name:         "missing file",
+			includeTasks: IncludeTasks{},
+			wantErr:      true,
+			errMsg:       "`file` is required",
+		},
 	}
 
-	if err.Error() != "`file` is required" {
-		t.Error(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.includeTasks.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.errMsg {
+				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
+			}
+		})
 	}
 }
