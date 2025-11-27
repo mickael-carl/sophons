@@ -53,8 +53,8 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Command{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Command{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -74,8 +74,8 @@ func TestDeepCopyContent(t *testing.T) {
 		t.Error("copied content is the same instance as original")
 	}
 
-	if !cmp.Equal(originalContent, copiedContent, cmpopts.IgnoreUnexported(Command{})) {
-		t.Errorf("copied content %#v is not equal to original %#v initially", copiedContent, originalContent)
+	if diff := cmp.Diff(originalContent, copiedContent, cmpopts.IgnoreUnexported(Command{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	copiedCommand, ok := copiedContent.(*Command)
@@ -158,8 +158,8 @@ func TestTaskApply(t *testing.T) {
 		"stdout_lines": []any{},
 	}
 
-	if !cmp.Equal(expected, got) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -251,7 +251,7 @@ func TestTaskApplyLoop(t *testing.T) {
 		"stdout_lines": []any{},
 	}
 
-	if !cmp.Equal(expected, got) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -71,8 +71,8 @@ update_cache: true`)
 		UpdateCache: &pTrue,
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(AptRepository{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -94,8 +94,8 @@ update-cache: true`)
 		UpdateCache: &pTrue,
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(AptRepository{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

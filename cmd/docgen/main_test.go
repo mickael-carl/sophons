@@ -45,8 +45,8 @@ func TestFileNodeToStructDoc(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -68,8 +68,8 @@ func TestFileNodeToStructDocMissingAnnotation(t *testing.T) {
 
 	expected := (*structDoc)(nil)
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

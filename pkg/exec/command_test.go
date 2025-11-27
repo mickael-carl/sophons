@@ -68,8 +68,8 @@ func TestCommandApplySuccess(t *testing.T) {
 			Start: start,
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -113,8 +113,8 @@ func TestCommandApplyArgv(t *testing.T) {
 			Start: time.Now(),
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -161,8 +161,8 @@ func TestCommandApplyExpandArgumentVars(t *testing.T) {
 			Start: time.Now(),
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
 		cmd = &Command{
@@ -194,8 +194,8 @@ func TestCommandApplyExpandArgumentVars(t *testing.T) {
 			Start: time.Now(),
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -246,8 +246,8 @@ func TestCommandApplyError(t *testing.T) {
 			Start: time.Now(),
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -306,7 +306,7 @@ func TestCommandApplySkipped(t *testing.T) {
 		Cmd: []string{"rm", "/foo"},
 	}
 
-	if !cmp.Equal(expected, got) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

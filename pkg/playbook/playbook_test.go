@@ -121,7 +121,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(exec.Command{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

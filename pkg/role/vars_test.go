@@ -38,8 +38,8 @@ hello: "world!"
 		"true":  true,
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -65,8 +65,8 @@ main: "is a valid variables file too"
 		"main":  "is a valid variables file too",
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -102,8 +102,8 @@ bar: "bar"
 		"true":  true,
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -138,7 +138,7 @@ func TestProcessVarsOverride(t *testing.T) {
 		"false":  false,
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

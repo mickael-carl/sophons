@@ -70,8 +70,8 @@ fruit: "banana"
 		},
 	}
 
-	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -150,8 +150,8 @@ fruit: "banana"
 		},
 	}
 
-	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -204,8 +204,8 @@ This is a very minimal role.
 		tasks:    []exec.Task{},
 	}
 
-	if !cmp.Equal(got, expected, cmp.AllowUnexported(Role{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -269,8 +269,8 @@ func TestDiscoverRole(t *testing.T) {
 		"other": {},
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Role{})) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Role{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -329,7 +329,7 @@ func TestRoleApply(t *testing.T) {
 		"answer": uint64(42),
 	}
 
-	if !cmp.Equal(expected, got) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

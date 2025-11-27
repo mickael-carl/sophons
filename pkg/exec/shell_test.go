@@ -55,8 +55,8 @@ func TestShellApplySuccess(t *testing.T) {
 			Start: start,
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -107,8 +107,8 @@ func TestShellApplyError(t *testing.T) {
 			Start: time.Now(),
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -158,8 +158,8 @@ func TestShellApplyFull(t *testing.T) {
 			Start: start,
 		}
 
-		if !cmp.Equal(expected, got) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -192,7 +192,7 @@ func TestShellApplySkipped(t *testing.T) {
 		Cmd: "rm /foo",
 	}
 
-	if !cmp.Equal(expected, got) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
