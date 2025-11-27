@@ -9,12 +9,16 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.uber.org/mock/gomock"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 func TestAptRepositoryValidateInvalidState(t *testing.T) {
 	a := &AptRepository{
-		Repo:  "foo",
-		State: "banana",
+		AptRepository: proto.AptRepository{
+			Repo:  "foo",
+			State: "banana",
+		},
 	}
 
 	err := a.Validate()
@@ -29,7 +33,9 @@ func TestAptRepositoryValidateInvalidState(t *testing.T) {
 
 func TestAptRepositoryValidateMissingRepo(t *testing.T) {
 	a := &AptRepository{
-		State: "present",
+		AptRepository: proto.AptRepository{
+			State: "present",
+		},
 	}
 
 	err := a.Validate()
@@ -44,8 +50,10 @@ func TestAptRepositoryValidateMissingRepo(t *testing.T) {
 
 func TestAptRepositoryValidate(t *testing.T) {
 	a := &AptRepository{
-		Repo:  "foo",
-		State: "present",
+		AptRepository: proto.AptRepository{
+			Repo:  "foo",
+			State: "present",
+		},
 	}
 
 	if err := a.Validate(); err != nil {
@@ -66,12 +74,14 @@ update_cache: true`)
 
 	pTrue := true
 	expected := AptRepository{
-		Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-		State:       AptRepositoryPresent,
-		UpdateCache: &pTrue,
+		AptRepository: proto.AptRepository{
+			Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+			State:       AptRepositoryPresent,
+			UpdateCache: &pTrue,
+		},
 	}
 
-	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{})); diff != "" {
+	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -89,12 +99,14 @@ update-cache: true`)
 
 	pTrue := true
 	expected := AptRepository{
-		Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-		State:       AptRepositoryPresent,
-		UpdateCache: &pTrue,
+		AptRepository: proto.AptRepository{
+			Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+			State:       AptRepositoryPresent,
+			UpdateCache: &pTrue,
+		},
 	}
 
-	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{})); diff != "" {
+	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -122,8 +134,10 @@ func TestAptRepositoryApply(t *testing.T) {
 	m := NewMockaptClient(ctrl)
 
 	a := &AptRepository{
-		Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-		State: AptRepositoryPresent,
+		AptRepository: proto.AptRepository{
+			Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
+			State: AptRepositoryPresent,
+		},
 	}
 
 	repo := &apt.Repository{
