@@ -27,38 +27,30 @@ func (e *testExitError) ExitCode() int {
 
 func TestCommandApply(t *testing.T) {
 	tests := []struct {
-		name       string
+		name        string
 		useSyncTest bool
-		testFunc   func(*testing.T)
+		testFunc    func(*testing.T)
 	}{
 		{
-			name:       "success",
+			name:        "success",
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
-				ctrl := gomock.NewController(t)
-				defer ctrl.Finish()
-
-				mockExecutor := NewMockcommandExecutor(ctrl)
-				mockCmdFactory := cmdFactory(func(name string, args ...string) commandExecutor {
-					return mockExecutor
-				})
-
 				cmd := &Command{
 					Cmd: "/bin/ls /",
 				}
 
 				start := time.Now()
 
-				var stdout io.Writer
-				mockExecutor.EXPECT().SetStdout(gomock.Any()).Do(func(w io.Writer) { stdout = w })
-				mockExecutor.EXPECT().SetStderr(gomock.Any())
-				mockExecutor.EXPECT().Run().DoAndReturn(func() error {
-					stdout.Write([]byte("bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var"))
-					time.Sleep(1 * time.Second)
-					return nil
+				ctx := newMockCommandContext(t, func(mockExecutor *MockcommandExecutor) {
+					var stdout io.Writer
+					mockExecutor.EXPECT().SetStdout(gomock.Any()).Do(func(w io.Writer) { stdout = w })
+					mockExecutor.EXPECT().SetStderr(gomock.Any())
+					mockExecutor.EXPECT().Run().DoAndReturn(func() error {
+						stdout.Write([]byte("bin boot dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var"))
+						time.Sleep(1 * time.Second)
+						return nil
+					})
 				})
-
-				ctx := context.WithValue(context.Background(), commandFactoryContextKey, mockCmdFactory)
 
 				got, err := cmd.Apply(ctx, "", false)
 				if err != nil {
@@ -82,7 +74,7 @@ func TestCommandApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "argv",
+			name:        "argv",
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -128,7 +120,7 @@ func TestCommandApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "expand argument vars",
+			name:        "expand argument vars",
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -210,7 +202,7 @@ func TestCommandApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "error",
+			name:        "error",
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -263,7 +255,7 @@ func TestCommandApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "chdir",
+			name:        "chdir",
 			useSyncTest: false,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -311,7 +303,7 @@ func TestCommandApply(t *testing.T) {
 			},
 		},
 		{
-			name:       "skipped",
+			name:        "skipped",
 			useSyncTest: false,
 			testFunc: func(t *testing.T) {
 				ctrl := gomock.NewController(t)

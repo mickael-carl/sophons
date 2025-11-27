@@ -391,11 +391,11 @@ func TestInventoryAll(t *testing.T) {
 
 func TestGroupNodeVars(t *testing.T) {
 	tests := []struct {
-		name              string
-		group             Group
-		hostName          string
-		wantHostVars      variables.Variables
-		wantGroupVars     variables.Variables
+		name          string
+		group         Group
+		hostName      string
+		wantHostVars  variables.Variables
+		wantGroupVars variables.Variables
 	}{
 		{
 			name: "simple",

@@ -16,13 +16,13 @@ import (
 func TestAptRepositoryValidate(t *testing.T) {
 	tests := []struct {
 		name    string
-		aptRepo AptRepository
+		aptRepo *AptRepository
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "invalid state",
-			aptRepo: AptRepository{
+			aptRepo: &AptRepository{
 				AptRepository: proto.AptRepository{
 					Repo:  "foo",
 					State: "banana",
@@ -33,7 +33,7 @@ func TestAptRepositoryValidate(t *testing.T) {
 		},
 		{
 			name: "missing repo",
-			aptRepo: AptRepository{
+			aptRepo: &AptRepository{
 				AptRepository: proto.AptRepository{
 					State: "present",
 				},
@@ -43,7 +43,7 @@ func TestAptRepositoryValidate(t *testing.T) {
 		},
 		{
 			name: "valid",
-			aptRepo: AptRepository{
+			aptRepo: &AptRepository{
 				AptRepository: proto.AptRepository{
 					Repo:  "foo",
 					State: "present",
@@ -73,7 +73,7 @@ func TestAptRepositoryUnmarshalYAML(t *testing.T) {
 	tests := []struct {
 		name string
 		yaml string
-		want AptRepository
+		want *AptRepository
 	}{
 		{
 			name: "unmarshal with update_cache",
@@ -81,7 +81,7 @@ func TestAptRepositoryUnmarshalYAML(t *testing.T) {
 repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
 state: "present"
 update_cache: true`,
-			want: AptRepository{
+			want: &AptRepository{
 				AptRepository: proto.AptRepository{
 					Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
 					State:       AptRepositoryPresent,
@@ -95,7 +95,7 @@ update_cache: true`,
 repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
 state: "present"
 update-cache: true`,
-			want: AptRepository{
+			want: &AptRepository{
 				AptRepository: proto.AptRepository{
 					Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
 					State:       AptRepositoryPresent,
@@ -112,7 +112,7 @@ update-cache: true`,
 				t.Errorf("Unmarshal() error = %v", err)
 				return
 			}
-			if diff := cmp.Diff(&tt.want, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
+			if diff := cmp.Diff(tt.want, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

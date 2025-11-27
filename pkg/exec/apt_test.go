@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"context"
 	"testing"
 	"testing/fstest"
 	"testing/synctest"
@@ -20,13 +19,13 @@ import (
 func TestAptValidate(t *testing.T) {
 	tests := []struct {
 		name    string
-		apt     Apt
+		apt     *Apt
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "invalid state",
-			apt: Apt{
+			apt: &Apt{
 				Apt: proto.Apt{
 					State: "banana",
 				},
@@ -36,7 +35,7 @@ func TestAptValidate(t *testing.T) {
 		},
 		{
 			name: "invalid upgrade",
-			apt: Apt{
+			apt: &Apt{
 				Apt: proto.Apt{
 					Upgrade: "banana",
 				},
@@ -46,10 +45,10 @@ func TestAptValidate(t *testing.T) {
 		},
 		{
 			name: "valid",
-			apt: func() Apt {
+			apt: func() *Apt {
 				cacheValidTime := uint64(360)
 				pTrue := true
-				return Apt{
+				return &Apt{
 					Apt: proto.Apt{
 						Name: &proto.PackageList{
 							Items: []string{"curl"},
@@ -84,7 +83,7 @@ func TestAptUnmarshalYAML(t *testing.T) {
 	tests := []struct {
 		name string
 		yaml string
-		want Apt
+		want *Apt
 	}{
 		{
 			name: "unmarshal with name",
@@ -96,7 +95,7 @@ name:
 state: "present"
 update_cache: true
 upgrade: "full"`,
-			want: Apt{
+			want: &Apt{
 				Apt: proto.Apt{
 					Clean: false,
 					Name: &proto.PackageList{
@@ -121,7 +120,7 @@ package:
 state: "present"
 update-cache: true
 upgrade: "full"`,
-			want: Apt{
+			want: &Apt{
 				Apt: proto.Apt{
 					Clean: false,
 					Name: &proto.PackageList{
@@ -145,7 +144,7 @@ upgrade: "full"`,
 				t.Errorf("Unmarshal() error = %v", err)
 				return
 			}
-			if diff := cmp.Diff(&tt.want, &got, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})); diff != "" {
+			if diff := cmp.Diff(tt.want, &got, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -174,10 +173,8 @@ func TestAptApply(t *testing.T) {
 				},
 			},
 			mockFunc: func(m *MockaptClient) {
-				m.EXPECT().ListInstalled().Return([]*apt.Package{
-					{Name: "foo"},
-				}, nil)
-				m.EXPECT().Install(&apt.Package{Name: "bar"}).Return("", nil)
+				m.EXPECT().ListInstalled().Return([]*apt.Package{{Name: "foo"}}, nil)
+				m.EXPECT().Install([]*apt.Package{{Name: "bar"}})
 			},
 			want: &AptResult{
 				CommonResult: CommonResult{
@@ -366,14 +363,8 @@ func TestAptApply(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testFunc := func(t *testing.T) {
-				ctrl := gomock.NewController(t)
-				defer ctrl.Finish()
-				m := NewMockaptClient(ctrl)
-
-				tt.mockFunc(m)
-
-				ctx := context.WithValue(context.Background(), aptClientContextKey, m)
-				ctx = context.WithValue(ctx, aptFSContextKey, fstest.MapFS{})
+				// Use helper to reduce boilerplate
+				ctx := newMockAptContext(t, tt.mockFunc)
 
 				got, err := tt.apt.Apply(ctx, "", false)
 				if err != nil {
