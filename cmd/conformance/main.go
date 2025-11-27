@@ -25,11 +25,15 @@ const (
 var (
 	concurrency         int
 	sophonsTestingImage string
+	only                string
+	list                bool
 )
 
 func main() {
 	flag.IntVar(&concurrency, "concurrency", 4, "number of concurrent tests to run")
 	flag.StringVar(&sophonsTestingImage, "testing-image", "sophons-testing:latest", "container image to use for tests")
+	flag.StringVar(&only, "only", "", "comma-separated list of playbook names to run (e.g., playbook-apt.yaml,playbook-file.yaml)")
+	flag.BoolVar(&list, "list", false, "list all available tests and exit")
 	flag.Parse()
 
 	if err := run(); err != nil {
@@ -41,11 +45,41 @@ func main() {
 // necessary: docker has an API, generating SSH keys is bound to be possible in
 // pure Go, etc.
 func run() error {
-	log.Print("running conformance tests")
-
 	playbooks, err := filepath.Glob("data/playbooks/playbook*.yaml")
 	if err != nil {
 		return fmt.Errorf("failed to find playbooks: %w", err)
+	}
+
+	// List all available tests if -list flag is set
+	if list {
+		fmt.Printf("Available tests (%d):\n", len(playbooks))
+		for _, playbook := range playbooks {
+			fmt.Printf("  %s\n", filepath.Base(playbook))
+		}
+		return nil
+	}
+
+	log.Print("running conformance tests")
+
+	// Filter playbooks if -only flag is set
+	if only != "" {
+		allowedNames := make(map[string]bool)
+		for name := range strings.SplitSeq(only, ",") {
+			allowedNames[strings.TrimSpace(name)] = true
+		}
+
+		var filteredPlaybooks []string
+		for _, playbook := range playbooks {
+			basename := filepath.Base(playbook)
+			if allowedNames[basename] {
+				filteredPlaybooks = append(filteredPlaybooks, playbook)
+			}
+		}
+		playbooks = filteredPlaybooks
+
+		if len(playbooks) == 0 {
+			return fmt.Errorf("no playbooks matched the -only filter: %s", only)
+		}
 	}
 
 	var wg sync.WaitGroup
