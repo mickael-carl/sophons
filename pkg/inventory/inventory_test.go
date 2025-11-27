@@ -72,8 +72,8 @@ usa:
 		t.Error(err)
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.EquateEmpty()) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -88,8 +88,8 @@ func TestGroupFindSimple(t *testing.T) {
 
 	got := a.Find("top", "bar")
 	expected := map[string]struct{}{"top": {}}
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -116,14 +116,14 @@ func TestGroupFindNested(t *testing.T) {
 
 	got := a.Find("top", "myBanana")
 	expected := map[string]struct{}{"fruit": {}, "top": {}}
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = a.Find("top", "myGala")
 	expected = map[string]struct{}{"apple": {}, "fruit": {}, "top": {}}
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -155,8 +155,8 @@ func TestGroupFindInMultipleSets(t *testing.T) {
 
 	got := a.Find("top", "myGala")
 	expected := map[string]struct{}{"apple": {}, "fruit": {}, "party": {}, "top": {}}
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -175,8 +175,8 @@ func TestInventoryFindSimple(t *testing.T) {
 
 	got := a.Find("bar")
 	expected := map[string]struct{}{"all": {}}
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -213,8 +213,8 @@ func TestInventoryFindInMultipleSets(t *testing.T) {
 	got := a.Find("myGala")
 	expected := map[string]struct{}{"all": {}, "myGroup": {}, "fruit": {}, "apple": {}, "party": {}}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -234,8 +234,8 @@ func TestGroupAllSimple(t *testing.T) {
 		"baz": {},
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -272,8 +272,8 @@ func TestGroupAllNested(t *testing.T) {
 		"myGala":   {},
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -314,8 +314,8 @@ func TestInventoryAll(t *testing.T) {
 		"myGala":   {},
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -341,12 +341,12 @@ func TestGroupNodeVars(t *testing.T) {
 		"ansible_port": 2222,
 	}
 
-	if !cmp.Equal(hostVars, expectedHostVars) {
-		t.Errorf("expected %#v but got %#v", expectedHostVars, hostVars)
+	if diff := cmp.Diff(expectedHostVars, hostVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if !cmp.Equal(groupVars, expectedGroupVars) {
-		t.Errorf("expected %#v but got %#v", expectedGroupVars, groupVars)
+	if diff := cmp.Diff(expectedGroupVars, groupVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -388,12 +388,12 @@ func TestGroupNodeVarsNested(t *testing.T) {
 		"answer": 42,
 	}
 
-	if !cmp.Equal(hostVars, expectedHostVars) {
-		t.Errorf("expected %#v but got %#v", expectedHostVars, hostVars)
+	if diff := cmp.Diff(expectedHostVars, hostVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if !cmp.Equal(groupVars, expectedGroupVars) {
-		t.Errorf("expected %#v but got %#v", expectedGroupVars, groupVars)
+	if diff := cmp.Diff(expectedGroupVars, groupVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -431,12 +431,12 @@ func TestGroupNodeVarsOverride(t *testing.T) {
 		"hello":  "country!",
 	}
 
-	if !cmp.Equal(hostVars, expectedHostVars) {
-		t.Errorf("expected %#v but got %#v", expectedHostVars, hostVars)
+	if diff := cmp.Diff(expectedHostVars, hostVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if !cmp.Equal(groupVars, expectedGroupVars) {
-		t.Errorf("expected %#v but got %#v", expectedGroupVars, groupVars)
+	if diff := cmp.Diff(expectedGroupVars, groupVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -478,7 +478,7 @@ func TestInventoryNodeVars(t *testing.T) {
 		"pineapple": "not on pizza",
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

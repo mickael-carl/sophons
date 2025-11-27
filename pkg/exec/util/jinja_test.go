@@ -48,8 +48,8 @@ func TestProcessJinjaTemplates(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(ts, expected) {
-		t.Errorf("got %#v but expected %#v", ts, expected)
+	if diff := cmp.Diff(expected, ts); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -82,8 +82,8 @@ func TestProcessJinjaTemplatesInterface(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(is, expectedInterface) {
-		t.Errorf("got %#v but expected %#v", is, expectedInterface)
+	if diff := cmp.Diff(expectedInterface, is); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -112,8 +112,8 @@ func TestProcessJinjaTemplatesInterfaceExpressionList(t *testing.T) {
 		Content: []string{"bar", "baz"},
 	}
 
-	if !cmp.Equal(got, expectedInterface) {
-		t.Errorf("got %#v but expected %#v", got, expectedInterface)
+	if diff := cmp.Diff(expectedInterface, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -138,8 +138,8 @@ func TestProcessJinjaTemplatesInterfaceSlice(t *testing.T) {
 		Content: []string{"foo", "bar"},
 	}
 
-	if !cmp.Equal(is, expectedInterface) {
-		t.Errorf("got %#v but expected %#v", is, expectedInterface)
+	if diff := cmp.Diff(expectedInterface, is); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

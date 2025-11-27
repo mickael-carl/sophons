@@ -101,8 +101,8 @@ upgrade: "full"`)
 		},
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -137,8 +137,8 @@ upgrade: "full"`)
 		},
 	}
 
-	if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(&expected, &got, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -182,8 +182,8 @@ func TestAptApply(t *testing.T) {
 		CacheUpdateTime: time.UnixMilli(0),
 	}
 
-	if !cmp.Equal(expected, got) {
-		t.Errorf("expected %#v but got %#v", expected, got)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -515,8 +515,8 @@ func TestAptApplyUpdateCache(t *testing.T) {
 			CacheUpdated:    true,
 		}
 
-		if !cmp.Equal(got, expected, cmpopts.IgnoreUnexported(AptResult{})) {
-			t.Errorf("expected %#v but got %#v", expected, got)
+		if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(AptResult{})); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }

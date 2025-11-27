@@ -33,7 +33,7 @@ const (
 //	@meta{
 //	  "deviations": [
 //	    "`state` only supports `present`, `latest` and `absent`",
-//	    "version strings in package names are not supported",
+//	    "version strings in package names are not supported"
 //	  ]
 //	}
 type Apt struct {

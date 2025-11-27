@@ -98,8 +98,8 @@ state: "file"`)
 		State:   FileFile,
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -131,7 +131,7 @@ state: "file"`)
 		State:   FileFile,
 	}
 
-	if !cmp.Equal(got, expected) {
-		t.Errorf("got %#v but expected %#v", got, expected)
+	if diff := cmp.Diff(expected, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

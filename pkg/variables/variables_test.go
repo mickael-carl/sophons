@@ -37,8 +37,8 @@ key2:
 		t.Fatalf("LoadFromFile failed: %v", err)
 	}
 
-	if !cmp.Equal(loadedVars, expectedVars) {
-		t.Errorf("expected %#v but got %#v", expectedVars, loadedVars)
+	if diff := cmp.Diff(expectedVars, loadedVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -99,8 +99,8 @@ func TestMerge(t *testing.T) {
 
 	baseVars.Merge(overrideVars)
 
-	if !cmp.Equal(baseVars, expectedMergedVars) {
-		t.Errorf("expected %#v but got %#v", expectedMergedVars, baseVars)
+	if diff := cmp.Diff(expectedMergedVars, baseVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -115,8 +115,8 @@ func TestMergeEmpty(t *testing.T) {
 	}
 	emptyVars.Merge(overrideVars)
 
-	if !cmp.Equal(emptyVars, overrideVars) {
-		t.Errorf("expected %#v but got %#v", overrideVars, emptyVars)
+	if diff := cmp.Diff(overrideVars, emptyVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -133,8 +133,8 @@ func TestNewContextAndFromContext(t *testing.T) {
 	if !ok {
 		t.Error("FromContext failed to retrieve variables")
 	}
-	if !cmp.Equal(retrievedVars, initialVars) {
-		t.Errorf("expected %#v but got %#v", initialVars, retrievedVars)
+	if diff := cmp.Diff(initialVars, retrievedVars); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	_, ok = FromContext(context.Background())
