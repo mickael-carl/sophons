@@ -28,9 +28,10 @@ var (
 	// but it's worth keeping in mind as binary size increases.
 	binDir         = flag.String("b", "", "dir containing executer binaries")
 	knownHostsPath = flag.String("known-hosts", os.ExpandEnv("$HOME/.ssh/known_hosts"), "path to the known hosts file")
+	insecure       = flag.Bool("insecure", false, "whether to ignore hostkeys or not")
 )
 
-func sshConfig(u, k, knownHosts string) (*ssh.ClientConfig, error) {
+func sshConfig(insecure bool, u, k, knownHosts string) (*ssh.ClientConfig, error) {
 	key, err := os.ReadFile(k)
 	if err != nil {
 		return &ssh.ClientConfig{}, fmt.Errorf("failed reading private key %q: %v", k, err)
@@ -41,9 +42,14 @@ func sshConfig(u, k, knownHosts string) (*ssh.ClientConfig, error) {
 		return &ssh.ClientConfig{}, fmt.Errorf("failed parsing private key: %v", err)
 	}
 
-	hostKeyCallback, err := knownhosts.New(knownHosts)
-	if err != nil {
-		return &ssh.ClientConfig{}, fmt.Errorf("could not create hostkey callback from %s: %v", knownHosts, err)
+	var hostKeyCallback ssh.HostKeyCallback
+	if insecure {
+		hostKeyCallback = ssh.InsecureIgnoreHostKey()
+	} else {
+		hostKeyCallback, err = knownhosts.New(knownHosts)
+		if err != nil {
+			return &ssh.ClientConfig{}, fmt.Errorf("could not create hostkey callback from %s: %v", knownHosts, err)
+		}
 	}
 
 	return &ssh.ClientConfig{
@@ -88,7 +94,7 @@ func main() {
 	}
 	hosts := inventory.All()
 
-	config, err := sshConfig(*username, *keyPath, *knownHostsPath)
+	config, err := sshConfig(*insecure, *username, *keyPath, *knownHostsPath)
 	if err != nil {
 		logger.Fatal("failed to create SSH config", zap.String("username", *username), zap.String("key_path", *keyPath), zap.Error(err))
 	}
