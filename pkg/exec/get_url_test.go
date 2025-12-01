@@ -1,35 +1,45 @@
 package exec
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
+)
 
 func TestGetURLValidate(t *testing.T) {
 	tests := []struct {
 		name    string
-		getURL  GetURL
+		getURL  *GetURL
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "missing url",
-			getURL: GetURL{
-				Dest: "/somewhere",
+			getURL: &GetURL{
+				GetURL: proto.GetURL{
+					Dest: "/somewhere",
+				},
 			},
 			wantErr: true,
 			errMsg:  "url is required",
 		},
 		{
 			name: "missing dest",
-			getURL: GetURL{
-				URL: "https://example.com",
+			getURL: &GetURL{
+				GetURL: proto.GetURL{
+					Url: "https://example.com",
+				},
 			},
 			wantErr: true,
 			errMsg:  "dest is required",
 		},
 		{
 			name: "invalid url",
-			getURL: GetURL{
-				URL:  "foo_bar:baz",
-				Dest: "/somewhere",
+			getURL: &GetURL{
+				GetURL: proto.GetURL{
+					Url:  "foo_bar:baz",
+					Dest: "/somewhere",
+				},
 			},
 			wantErr: true,
 			errMsg:  "invalid URL provided",

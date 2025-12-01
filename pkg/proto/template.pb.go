@@ -283,57 +283,11 @@ func (x *Template) GetVariableStartString() string {
 	return ""
 }
 
-// Mode represents file permissions, supporting both string and numeric formats.
-type Mode struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// @inject_tag: yaml:"value"
-	Value         string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty" yaml:"value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Mode) Reset() {
-	*x = Mode{}
-	mi := &file_proto_template_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Mode) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Mode) ProtoMessage() {}
-
-func (x *Mode) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_template_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Mode.ProtoReflect.Descriptor instead.
-func (*Mode) Descriptor() ([]byte, []int) {
-	return file_proto_template_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *Mode) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
 var File_proto_template_proto protoreflect.FileDescriptor
 
 const file_proto_template_proto_rawDesc = "" +
 	"\n" +
-	"\x14proto/template.proto\x12\x05proto\"\xe0\x06\n" +
+	"\x14proto/template.proto\x12\x05proto\x1a\x10proto/mode.proto\"\xe0\x06\n" +
 	"\bTemplate\x12\x12\n" +
 	"\x04dest\x18\x01 \x01(\tR\x04dest\x12\x14\n" +
 	"\x05group\x18\x02 \x01(\tR\x05group\x12\x1f\n" +
@@ -365,9 +319,7 @@ const file_proto_template_proto_rawDesc = "" +
 	"\x13variable_end_string\x18\x18 \x01(\tR\x11variableEndString\x122\n" +
 	"\x15variable_start_string\x18\x19 \x01(\tR\x13variableStartStringB\b\n" +
 	"\x06_forceB\x0e\n" +
-	"\f_trim_blocks\"\x1c\n" +
-	"\x04Mode\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\tR\x05valueB+Z)github.com/mickael-carl/sophons/pkg/protob\x06proto3"
+	"\f_trim_blocksB+Z)github.com/mickael-carl/sophons/pkg/protob\x06proto3"
 
 var (
 	file_proto_template_proto_rawDescOnce sync.Once
@@ -381,7 +333,7 @@ func file_proto_template_proto_rawDescGZIP() []byte {
 	return file_proto_template_proto_rawDescData
 }
 
-var file_proto_template_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_template_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_proto_template_proto_goTypes = []any{
 	(*Template)(nil), // 0: proto.Template
 	(*Mode)(nil),     // 1: proto.Mode
@@ -400,6 +352,7 @@ func file_proto_template_proto_init() {
 	if File_proto_template_proto != nil {
 		return
 	}
+	file_proto_mode_proto_init()
 	file_proto_template_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -407,7 +360,7 @@ func file_proto_template_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_template_proto_rawDesc), len(file_proto_template_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

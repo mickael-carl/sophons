@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 //	@meta {
@@ -21,36 +22,7 @@ import (
 //	  ]
 //	}
 type GetURL struct {
-	Dest  string `sophons:"implemented"`
-	URL   string `sophons:"implemented"`
-	Group string `sophons:"implemented"`
-	Mode  any    `sophons:"implemented"`
-	Owner string `sophons:"implemented"`
-
-	Attributes          string
-	Backup              bool
-	Checksum            string
-	Ciphers             []string
-	ClientCert          string `yaml:"client_cert"`
-	ClientKey           string `yaml:"client_key"`
-	Decompress          *bool
-	Force               *bool
-	ForceBasicAuth      bool `yaml:"force_basic_auth"`
-	Headers             map[string]string
-	Selevel             string
-	Serole              string
-	Setype              string
-	Seuser              string
-	Timeout             uint64
-	TmpDest             string   `yaml:"tmp_dest"`
-	UnredirectedHeaders []string `yaml:"unredirected_headers"`
-	UnsafeWrites        bool     `yaml:"unsafe_writes"`
-	URLPassword         string   `yaml:"url_password"`
-	URLUsername         string   `yaml:"url_username"`
-	UseGSSAPI           bool     `yaml:"use_gssapi"`
-	UseNetRC            *bool    `yaml:"use_netrc"`
-	UseProxy            *bool    `yaml:"use_proxy"`
-	ValidateCerts       *bool    `yaml:"validate_certs"`
+	proto.GetURL `yaml:",inline"`
 }
 
 type GetURLResult struct {
@@ -99,7 +71,7 @@ func dirDest(h http.Header, src, dest string) (string, error) {
 }
 
 func (g *GetURL) Validate() error {
-	if g.URL == "" {
+	if g.Url == "" {
 		return errors.New("url is required")
 	}
 
@@ -107,21 +79,21 @@ func (g *GetURL) Validate() error {
 		return errors.New("dest is required")
 	}
 
-	if _, err := url.Parse(g.URL); err != nil {
+	if _, err := url.Parse(g.Url); err != nil {
 		return fmt.Errorf("invalid URL provided")
 	}
 	return nil
 }
 
 func (g *GetURL) Apply(_ context.Context, parentPath string, _ bool) (Result, error) {
-	resp, err := http.Get(g.URL)
+	resp, err := http.Get(g.Url)
 	if err != nil {
-		return &GetURLResult{}, fmt.Errorf("failed to get URL %s: %w", g.URL, err)
+		return &GetURLResult{}, fmt.Errorf("failed to get URL %s: %w", g.Url, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return &GetURLResult{}, fmt.Errorf("unexpected status getting URL %s: %s", g.URL, resp.Status)
+		return &GetURLResult{}, fmt.Errorf("unexpected status getting.Url %s: %s", g.Url, resp.Status)
 	}
 
 	d, err := os.Stat(g.Dest)
@@ -131,7 +103,7 @@ func (g *GetURL) Apply(_ context.Context, parentPath string, _ bool) (Result, er
 
 	actualDest := g.Dest
 	if err == nil && d.IsDir() {
-		actualDest, err = dirDest(resp.Header, g.URL, g.Dest)
+		actualDest, err = dirDest(resp.Header, g.Url, g.Dest)
 		if err != nil {
 			return &GetURLResult{}, fmt.Errorf("failed to determine path from dest: %w", err)
 		}
@@ -166,7 +138,7 @@ func (g *GetURL) Apply(_ context.Context, parentPath string, _ bool) (Result, er
 		return &GetURLResult{}, err
 	}
 
-	if err := util.ApplyModeAndIDs(actualDest, g.Mode, uid, gid); err != nil {
+	if err := util.ApplyModeAndIDs(actualDest, g.Mode.GetValue(), uid, gid); err != nil {
 		return &GetURLResult{}, fmt.Errorf("failed to apply mode and IDs to %s: %w", actualDest, err)
 	}
 

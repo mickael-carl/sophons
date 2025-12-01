@@ -4,6 +4,8 @@ package proto;
 
 option go_package = "github.com/mickael-carl/sophons/pkg/proto";
 
+import "proto/mode.proto";
+
 // Template copies a file from the controller to the target host and substitutes variables in it.
 message Template {
   // @inject_tag: yaml:"dest" sophons:"implemented"
@@ -57,10 +59,3 @@ message Template {
   // @inject_tag: yaml:"variable_start_string"
   string variable_start_string = 25;
 }
-
-// Mode represents file permissions, supporting both string and numeric formats.
-message Mode {
-  // @inject_tag: yaml:"value"
-  string value = 1;
-}
-
