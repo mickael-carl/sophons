@@ -121,14 +121,51 @@ func (a *Apt) handleUpdate() (bool, time.Time, error) {
 		return false, time.UnixMilli(0).UTC(), fmt.Errorf("failed to check cache last refresh time: %w", err)
 	}
 
+	var beforeModTime time.Time
+	if err == nil {
+		beforeModTime = cacheInfo.ModTime()
+	}
+
 	if errors.Is(err, os.ErrNotExist) && (a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil) {
 		_, cacheErr := a.apt.CheckForUpdates()
-		return true, time.Now().UTC(), cacheErr
+		if cacheErr != nil {
+			return false, time.UnixMilli(0).UTC(), cacheErr
+		}
+
+		// Check if cache actually changed
+		afterInfo, statErr := fs.Stat(a.aptFS, "lists")
+		if statErr != nil {
+			// If the directory still doesn't exist after update (e.g., in tests with mocks),
+			// assume the cache was updated since CheckForUpdates succeeded
+			if errors.Is(statErr, os.ErrNotExist) {
+				return true, time.Now().UTC(), nil
+			}
+			return false, time.UnixMilli(0).UTC(), fmt.Errorf("failed to check cache after update: %w", statErr)
+		}
+		afterModTime := afterInfo.ModTime()
+		// We only actually updated the cache if the list changed.
+		return !afterModTime.Equal(beforeModTime), afterModTime.UTC(), nil
 	}
 
 	if a.UpdateCache != nil && *a.UpdateCache || a.CacheValidTime != nil && time.Since(cacheInfo.ModTime()).Seconds() > float64(*a.CacheValidTime) {
 		_, cacheErr := a.apt.CheckForUpdates()
-		return true, time.Now().UTC(), cacheErr
+		if cacheErr != nil {
+			return false, beforeModTime.UTC(), cacheErr
+		}
+
+		// Check if cache actually changed
+		afterInfo, statErr := fs.Stat(a.aptFS, "lists")
+		if statErr != nil {
+			// If the directory doesn't exist after update (shouldn't happen in real usage,
+			// but can happen in tests), treat it as an error since it existed before
+			if errors.Is(statErr, os.ErrNotExist) {
+				return false, beforeModTime.UTC(), fmt.Errorf("cache directory disappeared after update")
+			}
+			return false, beforeModTime.UTC(), fmt.Errorf("failed to check cache after update: %w", statErr)
+		}
+		afterModTime := afterInfo.ModTime()
+		// We only actually updated the cache if the list changed.
+		return !afterModTime.Equal(beforeModTime), afterModTime.UTC(), nil
 	}
 
 	cacheUpdateTime := time.UnixMilli(0)
