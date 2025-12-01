@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	AptRepositoryAbsent  string = Absent
+	AptRepositoryAbsent  string = "absent"
 	AptRepositoryPresent string = "present"
 )
 
