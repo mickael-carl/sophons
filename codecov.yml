@@ -1,0 +1,2 @@
+ignore:
+  - "pkg/proto/*.pb.go"

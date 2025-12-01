@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
+	"github.com/mickael-carl/sophons/pkg/proto"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -112,16 +113,18 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 				},
 				{
 					Content: &exec.Command{
-						Cmd:             "dd of=/tmp/hello",
-						Stdin:           "{{ hello }}",
-						StdinAddNewline: &pTrue,
+						Command: proto.Command{
+							Cmd:             "dd of=/tmp/hello",
+							Stdin:           "{{ hello }}",
+							StdinAddNewline: &pTrue,
+						},
 					},
 				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -7,21 +7,15 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 //	@meta {
 //	  "deviations": []
 //	}
 type Command struct {
-	Cmd                string   `sophons:"implemented"`
-	Argv               []string `sophons:"implemented"`
-	Creates            string   `sophons:"implemented"`
-	Removes            string   `sophons:"implemented"`
-	Chdir              string   `sophons:"implemented"`
-	ExpandArgumentVars bool     `yaml:"expand_argument_vars" sophons:"implemented"`
-	Stdin              string   `sophons:"implemented"`
-	StdinAddNewline    *bool    `yaml:"stdin_add_newline" sophons:"implemented"`
-	StripEmptyEnds     *bool    `yaml:"strip_empty_ends"`
+	proto.Command `yaml:",inline"`
 
 	cmdFactory cmdFactory
 }

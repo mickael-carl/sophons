@@ -47,22 +47,26 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 		},
 		{
 			Content: &Command{
-				Cmd:   "echo hello",
-				Stdin: "{{ input }}",
+				Command: proto.Command{
+					Cmd:   "echo hello",
+					Stdin: "{{ input }}",
+				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Command{}, proto.Command{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestDeepCopyContent(t *testing.T) {
 	originalContent := &Command{
-		Cmd:   "echo hello",
-		Chdir: "/tmp",
-		Argv:  []string{},
+		Command: proto.Command{
+			Cmd:   "echo hello",
+			Chdir: "/tmp",
+			Argv:  []string{},
+		},
 	}
 
 	copiedContent, err := deepCopyContent(originalContent)
@@ -74,7 +78,7 @@ func TestDeepCopyContent(t *testing.T) {
 		t.Error("copied content is the same instance as original")
 	}
 
-	if diff := cmp.Diff(originalContent, copiedContent, cmpopts.IgnoreUnexported(Command{})); diff != "" {
+	if diff := cmp.Diff(originalContent, copiedContent, cmpopts.IgnoreUnexported(Command{}, proto.Command{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
