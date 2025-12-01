@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
+	"github.com/mickael-carl/sophons/pkg/proto"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -261,7 +262,9 @@ func TestDiscoverRole(t *testing.T) {
 				{
 					Name: "The Answer",
 					Content: &exec.Shell{
-						Cmd: "echo {{ the_answer }}",
+						Shell: proto.Shell{
+							Cmd: "echo {{ the_answer }}",
+						},
 					},
 				},
 			},
@@ -291,20 +294,26 @@ func TestRoleApply(t *testing.T) {
 			{
 				Name: "testing1",
 				Content: &exec.Shell{
-					Cmd: "echo {{ hello }}",
+					Shell: proto.Shell{
+						Cmd: "echo {{ hello }}",
+					},
 				},
 			},
 			{
 				Name: "testing2",
 				Loop: "{{ foos }}",
 				Content: &exec.Shell{
-					Cmd: "echo {{ item }}",
+					Shell: proto.Shell{
+						Cmd: "echo {{ item }}",
+					},
 				},
 			},
 			{
 				Name: "testing3",
 				Content: &exec.Shell{
-					Cmd: "echo {{ answer }}",
+					Shell: proto.Shell{
+						Cmd: "echo {{ answer }}",
+					},
 				},
 			},
 		},
