@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+import "proto/mode.proto";
+
+// GetURL downloads files from HTTP, HTTPS, or FTP on the target host.
+message GetURL {
+  // @inject_tag: yaml:"dest" sophons:"implemented"
+  string dest = 1;
+  // @inject_tag: yaml:"url" sophons:"implemented"
+  string url = 2;
+  // @inject_tag: yaml:"group" sophons:"implemented"
+  string group = 3;
+  // @inject_tag: yaml:"mode" sophons:"implemented"
+  Mode mode = 4;
+  // @inject_tag: yaml:"owner" sophons:"implemented"
+  string owner = 5;
+  // @inject_tag: yaml:"attributes"
+  string attributes = 6;
+  // @inject_tag: yaml:"backup"
+  bool backup = 7;
+  // @inject_tag: yaml:"checksum"
+  string checksum = 8;
+  // @inject_tag: yaml:"ciphers"
+  repeated string ciphers = 9;
+  // @inject_tag: yaml:"client_cert"
+  string client_cert = 10;
+  // @inject_tag: yaml:"client_key"
+  string client_key = 11;
+  // @inject_tag: yaml:"decompress"
+  optional bool decompress = 12;
+  // @inject_tag: yaml:"force"
+  optional bool force = 13;
+  // @inject_tag: yaml:"force_basic_auth"
+  bool force_basic_auth = 14;
+  // @inject_tag: yaml:"headers"
+  map<string, string> headers = 15;
+  // @inject_tag: yaml:"selevel"
+  string selevel = 16;
+  // @inject_tag: yaml:"serole"
+  string serole = 17;
+  // @inject_tag: yaml:"setype"
+  string setype = 18;
+  // @inject_tag: yaml:"seuser"
+  string seuser = 19;
+  // @inject_tag: yaml:"timeout"
+  uint64 timeout = 20;
+  // @inject_tag: yaml:"tmp_dest"
+  string tmp_dest = 21;
+  // @inject_tag: yaml:"unredirected_headers"
+  repeated string unredirected_headers = 22;
+  // @inject_tag: yaml:"unsafe_writes"
+  bool unsafe_writes = 23;
+  // @inject_tag: yaml:"url_password"
+  string url_password = 24;
+  // @inject_tag: yaml:"url_username"
+  string url_username = 25;
+  // @inject_tag: yaml:"use_gssapi"
+  bool use_gssapi = 26;
+  // @inject_tag: yaml:"use_netrc"
+  optional bool use_netrc = 27;
+  // @inject_tag: yaml:"use_proxy"
+  optional bool use_proxy = 28;
+  // @inject_tag: yaml:"validate_certs"
+  optional bool validate_certs = 29;
+}
+

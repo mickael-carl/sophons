@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+// Mode represents file permissions, supporting both string and numeric formats.
+message Mode {
+  // @inject_tag: yaml:"value"
+  string value = 1;
+}
+
