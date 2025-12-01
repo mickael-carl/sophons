@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+// Shell executes a command in a shell on the target host.
+message Shell {
+  // @inject_tag: yaml:"argv" sophons:"implemented"
+  repeated string argv = 1;
+  // @inject_tag: yaml:"chdir" sophons:"implemented"
+  string chdir = 2;
+  // @inject_tag: yaml:"cmd" sophons:"implemented"
+  string cmd = 3;
+  // @inject_tag: yaml:"creates" sophons:"implemented"
+  string creates = 4;
+  // @inject_tag: yaml:"executable" sophons:"implemented"
+  string executable = 5;
+  // @inject_tag: yaml:"removes" sophons:"implemented"
+  string removes = 6;
+  // @inject_tag: yaml:"stdin" sophons:"implemented"
+  string stdin = 7;
+  // @inject_tag: yaml:"stdin_add_newline" sophons:"implemented"
+  optional bool stdin_add_newline = 8;
+}
+

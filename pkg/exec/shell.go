@@ -6,20 +6,15 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 //	@meta{
 //	  "deviations": []
 //	}
 type Shell struct {
-	Argv            []string `sophons:"implemented"`
-	Chdir           string   `sophons:"implemented"`
-	Cmd             string   `sophons:"implemented"`
-	Creates         string   `sophons:"implemented"`
-	Executable      string   `sophons:"implemented"`
-	Removes         string   `sophons:"implemented"`
-	Stdin           string   `sophons:"implemented"`
-	StdinAddNewline *bool    `yaml:"stdin_add_newline" sophons:"implemented"`
+	proto.Shell `yaml:",inline"`
 
 	cmdFactory cmdFactory
 }

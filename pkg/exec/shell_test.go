@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/mickael-carl/sophons/pkg/proto"
 	"go.uber.org/mock/gomock"
 )
 
@@ -31,7 +32,9 @@ func TestShellApply(t *testing.T) {
 				})
 
 				s := &Shell{
-					Cmd: "echo hello",
+					Shell: proto.Shell{
+						Cmd: "echo hello",
+					},
 				}
 
 				start := time.Now()
@@ -81,7 +84,9 @@ func TestShellApply(t *testing.T) {
 				})
 
 				cmd := &Shell{
-					Cmd: "ls /foo",
+					Shell: proto.Shell{
+						Cmd: "ls /foo",
+					},
 				}
 
 				var stderr io.Writer
@@ -134,9 +139,11 @@ func TestShellApply(t *testing.T) {
 				})
 
 				cmd := &Shell{
-					Argv:       []string{"echo", "hello"},
-					Chdir:      "/tmp",
-					Executable: "/usr/bin/fish",
+					Shell: proto.Shell{
+						Argv:       []string{"echo", "hello"},
+						Chdir:      "/tmp",
+						Executable: "/usr/bin/fish",
+					},
 				}
 
 				start := time.Now()
@@ -186,8 +193,10 @@ func TestShellApply(t *testing.T) {
 				})
 
 				s := &Shell{
-					Cmd:     "rm /foo",
-					Removes: "/foo",
+					Shell: proto.Shell{
+						Cmd:     "rm /foo",
+						Removes: "/foo",
+					},
 				}
 
 				ctx := context.WithValue(context.Background(), commandFactoryContextKey, mockCmdFactory)
