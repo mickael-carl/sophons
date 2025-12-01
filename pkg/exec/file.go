@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	FileAbsent    string = Absent
+	FileAbsent    string = "absent"
 	FileDirectory string = "directory"
 	FileFile      string = "file"
 	FileHard      string = "hard"

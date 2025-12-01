@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	AptAbsent   string = Absent
+	AptAbsent   string = "absent"
 	AptBuildDep string = "build-dep"
 	AptLatest   string = "latest"
 	AptPresent  string = "present"
