@@ -5,8 +5,9 @@ FROM ubuntu:24.04
 ARG SNAPSHOT_DATE=20251130T123456Z
 
 # Install ca-certificates first otherwise we can't validate the certificates
-# for snapshots.ubuntu.com.
-RUN apt update && apt install -y ca-certificates
+# for snapshots.ubuntu.com. Then remove the existing sources list, otherwise
+# we'll keep carrying package lists from those making apt tests flaky.
+RUN apt update && apt install -y ca-certificates && rm /etc/apt/sources.list.d/ubuntu.sources && rm /var/lib/apt/lists/*ubuntu.com*
 
 RUN echo "deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/${SNAPSHOT_DATE}/ noble main restricted universe multiverse" > /etc/apt/sources.list \
   && echo "deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/${SNAPSHOT_DATE}/ noble-updates main restricted universe multiverse" >> /etc/apt/sources.list \
