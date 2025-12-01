@@ -6,6 +6,7 @@ replace github.com/arduino/go-apt-client => github.com/mickael-carl/go-apt-clien
 
 require (
 	github.com/arduino/go-apt-client v0.0.0-20250612150138-0d7233b455eb
+	github.com/favadi/protoc-go-inject-tag v1.4.0
 	github.com/goccy/go-yaml v1.19.0
 	github.com/google/go-cmp v0.7.0
 	github.com/nikolalohinski/gonja/v2 v2.4.2
@@ -13,6 +14,7 @@ require (
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.45.0
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.0
 	google.golang.org/protobuf v1.36.10
 )
 
