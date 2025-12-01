@@ -1,6 +1,18 @@
-FROM ubuntu:rolling
+FROM ubuntu:24.04
 
-RUN apt update \
+# Use a specific snapshot date for deterministic package lists
+# This ensures apt update produces identical results across test runs
+ARG SNAPSHOT_DATE=20251130T123456Z
+
+# Install ca-certificates first otherwise we can't validate the certificates
+# for snapshots.ubuntu.com.
+RUN apt update && apt install -y ca-certificates
+
+RUN echo "deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/${SNAPSHOT_DATE}/ noble main restricted universe multiverse" > /etc/apt/sources.list \
+  && echo "deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/${SNAPSHOT_DATE}/ noble-updates main restricted universe multiverse" >> /etc/apt/sources.list \
+  && echo "deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/${SNAPSHOT_DATE}/ noble-security main restricted universe multiverse" >> /etc/apt/sources.list \
+  && mkdir -p /run/sshd \
+  && apt update \
   && apt install -y openssh-server python3-apt \
   && echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config \
   && rm /etc/apt/apt.conf.d/docker-clean
