@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+
 	"go.uber.org/mock/gomock"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 type testExitError struct {
@@ -36,7 +39,9 @@ func TestCommandApply(t *testing.T) {
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				cmd := &Command{
-					Cmd: "/bin/ls /",
+					Command: proto.Command{
+						Cmd: "/bin/ls /",
+					},
 				}
 
 				start := time.Now()
@@ -86,7 +91,9 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Argv: []string{"/bin/ls", "/"},
+					Command: proto.Command{
+						Argv: []string{"/bin/ls", "/"},
+					},
 				}
 
 				var stdout io.Writer
@@ -134,8 +141,10 @@ func TestCommandApply(t *testing.T) {
 				t.Setenv("ROOT", "/")
 
 				cmd := &Command{
-					Argv:               []string{"/bin/ls", "$ROOT"},
-					ExpandArgumentVars: true,
+					Command: proto.Command{
+						Argv:               []string{"/bin/ls", "$ROOT"},
+						ExpandArgumentVars: true,
+					},
 				}
 
 				var stdout io.Writer
@@ -168,8 +177,10 @@ func TestCommandApply(t *testing.T) {
 				}
 
 				cmd = &Command{
-					Cmd:                "/bin/ls $ROOT",
-					ExpandArgumentVars: true,
+					Command: proto.Command{
+						Cmd:                "/bin/ls $ROOT",
+						ExpandArgumentVars: true,
+					},
 				}
 
 				mockExecutor.EXPECT().SetStdout(gomock.Any()).Do(func(w io.Writer) { stdout = w })
@@ -214,7 +225,9 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Cmd: "ls /foo",
+					Command: proto.Command{
+						Cmd: "ls /foo",
+					},
 				}
 
 				var stderr io.Writer
@@ -267,8 +280,10 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Cmd:   "ls",
-					Chdir: "/tmp",
+					Command: proto.Command{
+						Cmd:   "ls",
+						Chdir: "/tmp",
+					},
 				}
 
 				mockExecutor.EXPECT().SetDir("/tmp")
@@ -315,8 +330,10 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Cmd:     "rm /foo",
-					Removes: "/foo",
+					Command: proto.Command{
+						Cmd:     "rm /foo",
+						Removes: "/foo",
+					},
 				}
 
 				ctx := context.WithValue(context.Background(), commandFactoryContextKey, mockCmdFactory)

@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 func TestProcessTasks(t *testing.T) {
@@ -30,12 +31,14 @@ func TestProcessTasks(t *testing.T) {
 	expected := []exec.Task{
 		{
 			Content: &exec.Command{
-				Cmd: "echo 'hello world!'",
+				Command: proto.Command{
+					Cmd: "echo 'hello world!'",
+				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -53,12 +56,14 @@ func TestProcessTasks(t *testing.T) {
 	expected = []exec.Task{
 		{
 			Content: &exec.Command{
-				Cmd: "echo 'hello world!'",
+				Command: proto.Command{
+					Cmd: "echo 'hello world!'",
+				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
