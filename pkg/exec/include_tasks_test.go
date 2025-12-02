@@ -5,13 +5,13 @@ import "testing"
 func TestIncludeTasksValidate(t *testing.T) {
 	tests := []struct {
 		name         string
-		includeTasks IncludeTasks
+		includeTasks *IncludeTasks
 		wantErr      bool
 		errMsg       string
 	}{
 		{
 			name:         "missing file",
-			includeTasks: IncludeTasks{},
+			includeTasks: &IncludeTasks{},
 			wantErr:      true,
 			errMsg:       "`file` is required",
 		},

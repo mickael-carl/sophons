@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+import "google/protobuf/struct.proto";
+
+// IncludeTasks includes a file with a list of tasks.
+message IncludeTasks {
+  // @inject_tag: yaml:"apply"
+  google.protobuf.Struct apply_keywords = 1;
+  // @inject_tag: yaml:"file" sophons:"implemented"
+  string file = 2;
+}
+

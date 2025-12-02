@@ -10,14 +10,14 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 //	@meta{
 //	  "deviations": []
 //	}
 type IncludeTasks struct {
-	ApplyKeywords map[string]any `yaml:"apply"`
-	File          string         `sophons:"implemented"`
+	proto.IncludeTasks `yaml:",inline"`
 }
 
 type IncludeTasksResult struct {
