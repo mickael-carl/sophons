@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+import "proto/mode.proto";
+
+// File manages files and their properties.
+message File {
+  // @inject_tag: yaml:"path" sophons:"implemented"
+  string path = 1;
+  // @inject_tag: yaml:"follow" sophons:"implemented"
+  optional bool follow = 2;
+  // @inject_tag: yaml:"group" sophons:"implemented"
+  string group = 3;
+  // @inject_tag: yaml:"mode" sophons:"implemented"
+  Mode mode = 4;
+  // @inject_tag: yaml:"owner" sophons:"implemented"
+  string owner = 5;
+  // @inject_tag: yaml:"recurse" sophons:"implemented"
+  bool recurse = 6;
+  // @inject_tag: yaml:"src" sophons:"implemented"
+  string src = 7;
+  // @inject_tag: yaml:"state" sophons:"implemented"
+  string state = 8;
+  // @inject_tag: yaml:"access_time"
+  string access_time = 9;
+  // @inject_tag: yaml:"access_time_format"
+  string access_time_format = 10;
+  // @inject_tag: yaml:"attributes"
+  string attributes = 11;
+  // @inject_tag: yaml:"force"
+  bool force = 12;
+  // @inject_tag: yaml:"modification_time"
+  string modification_time = 13;
+  // @inject_tag: yaml:"modification_time_format"
+  string modification_time_format = 14;
+  // @inject_tag: yaml:"selevel"
+  string selevel = 15;
+  // @inject_tag: yaml:"serole"
+  string serole = 16;
+  // @inject_tag: yaml:"setype"
+  string setype = 17;
+  // @inject_tag: yaml:"seuser"
+  string seuser = 18;
+  // @inject_tag: yaml:"unsafe_writes"
+  bool unsafe_writes = 19;
+}
+

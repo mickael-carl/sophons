@@ -13,6 +13,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 func TestFileValidate(t *testing.T) {
@@ -20,7 +21,9 @@ func TestFileValidate(t *testing.T) {
 		{
 			Name: "invalid state",
 			Input: &File{
-				State: "banana",
+				File: proto.File{
+					State: "banana",
+				},
 			},
 			WantErr: true,
 			ErrMsg:  "invalid state",
@@ -28,7 +31,9 @@ func TestFileValidate(t *testing.T) {
 		{
 			Name: "missing path",
 			Input: &File{
-				State: "file",
+				File: proto.File{
+					State: "file",
+				},
 			},
 			WantErr: true,
 			ErrMsg:  "path is required",
@@ -36,9 +41,11 @@ func TestFileValidate(t *testing.T) {
 		{
 			Name: "recurse without directory state",
 			Input: &File{
-				State:   "file",
-				Path:    "/foo",
-				Recurse: true,
+				File: proto.File{
+					State:   "file",
+					Path:    "/foo",
+					Recurse: true,
+				},
 			},
 			WantErr: true,
 			ErrMsg:  "recurse option requires state to be 'directory'",
@@ -46,8 +53,10 @@ func TestFileValidate(t *testing.T) {
 		{
 			Name: "link without src",
 			Input: &File{
-				State: "link",
-				Path:  "/foo/bar",
+				File: proto.File{
+					State: "link",
+					Path:  "/foo/bar",
+				},
 			},
 			WantErr: true,
 			ErrMsg:  "src option is required when state is 'link' or 'hard'",
@@ -55,40 +64,50 @@ func TestFileValidate(t *testing.T) {
 		{
 			Name: "valid file state",
 			Input: &File{
-				State: "file",
-				Path:  "/tmp/test.txt",
+				File: proto.File{
+					State: "file",
+					Path:  "/tmp/test.txt",
+				},
 			},
 			WantErr: false,
 		},
 		{
 			Name: "valid directory state",
 			Input: &File{
-				State: "directory",
-				Path:  "/tmp/testdir",
+				File: proto.File{
+					State: "directory",
+					Path:  "/tmp/testdir",
+				},
 			},
 			WantErr: false,
 		},
 		{
 			Name: "valid touch state",
 			Input: &File{
-				State: "touch",
-				Path:  "/tmp/touched",
+				File: proto.File{
+					State: "touch",
+					Path:  "/tmp/touched",
+				},
 			},
 			WantErr: false,
 		},
 		{
 			Name: "valid absent state",
 			Input: &File{
-				State: "absent",
-				Path:  "/tmp/removed",
+				File: proto.File{
+					State: "absent",
+					Path:  "/tmp/removed",
+				},
 			},
 			WantErr: false,
 		},
 		{
 			Name: "hard link without src",
 			Input: &File{
-				State: "hard",
-				Path:  "/foo/hardlink",
+				File: proto.File{
+					State: "hard",
+					Path:  "/foo/hardlink",
+				},
 			},
 			WantErr:     true,
 			ErrContains: "src",
@@ -96,18 +115,22 @@ func TestFileValidate(t *testing.T) {
 		{
 			Name: "valid link with src",
 			Input: &File{
-				State: "link",
-				Path:  "/foo/link",
-				Src:   "/foo/target",
+				File: proto.File{
+					State: "link",
+					Path:  "/foo/link",
+					Src:   "/foo/target",
+				},
 			},
 			WantErr: false,
 		},
 		{
 			Name: "recurse with directory state",
 			Input: &File{
-				State:   "directory",
-				Path:    "/foo",
-				Recurse: true,
+				File: proto.File{
+					State:   "directory",
+					Path:    "/foo",
+					Recurse: true,
+				},
 			},
 			WantErr: false,
 		},
@@ -122,7 +145,7 @@ func TestFileUnmarshalYAML(t *testing.T) {
 	tests := []struct {
 		name string
 		yaml string
-		want File
+		want *File
 	}{
 		{
 			name: "unmarshal with path",
@@ -135,15 +158,19 @@ owner: "baz"
 recurse: false
 src: "/hello"
 state: "file"`,
-			want: File{
-				Path:    "/foo",
-				Follow:  &pFalse,
-				Group:   "bar",
-				Mode:    "0644",
-				Owner:   "baz",
-				Recurse: false,
-				Src:     "/hello",
-				State:   FileFile,
+			want: &File{
+				File: proto.File{
+					Path:   "/foo",
+					Follow: &pFalse,
+					Group:  "bar",
+					Mode: &proto.Mode{
+						Value: "0644",
+					},
+					Owner:   "baz",
+					Recurse: false,
+					Src:     "/hello",
+					State:   FileFile,
+				},
 			},
 		},
 		{
@@ -157,15 +184,19 @@ owner: "baz"
 recurse: false
 src: "/hello"
 state: "file"`,
-			want: File{
-				Path:    "/foo",
-				Follow:  &pFalse,
-				Group:   "bar",
-				Mode:    "0644",
-				Owner:   "baz",
-				Recurse: false,
-				Src:     "/hello",
-				State:   FileFile,
+			want: &File{
+				File: proto.File{
+					Path:   "/foo",
+					Follow: &pFalse,
+					Group:  "bar",
+					Mode: &proto.Mode{
+						Value: "0644",
+					},
+					Owner:   "baz",
+					Recurse: false,
+					Src:     "/hello",
+					State:   FileFile,
+				},
 			},
 		},
 	}
@@ -177,7 +208,7 @@ state: "file"`,
 				t.Errorf("Unmarshal() error = %v", err)
 				return
 			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, &got, cmpopts.IgnoreUnexported(proto.File{}, proto.Mode{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -298,8 +329,10 @@ func TestFileApply(t *testing.T) {
 			setup: func(t *testing.T, tempDir string) (*File, context.Context) {
 				dirPath := filepath.Join(tempDir, "newdir")
 				return &File{
-					Path:  dirPath,
-					State: FileDirectory,
+					File: proto.File{
+						Path:  dirPath,
+						State: FileDirectory,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -334,8 +367,10 @@ func TestFileApply(t *testing.T) {
 			setup: func(t *testing.T, tempDir string) (*File, context.Context) {
 				dirPath := filepath.Join(tempDir, "newdir-recurse")
 				return &File{
-					Path:    dirPath,
-					Recurse: true,
+					File: proto.File{
+						Path:    dirPath,
+						Recurse: true,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -370,9 +405,13 @@ func TestFileApply(t *testing.T) {
 			setup: func(t *testing.T, tempDir string) (*File, context.Context) {
 				dirPath := filepath.Join(tempDir, "dirwithmode")
 				return &File{
-					Path:  dirPath,
-					State: FileDirectory,
-					Mode:  "0700",
+					File: proto.File{
+						Path:  dirPath,
+						State: FileDirectory,
+						Mode: &proto.Mode{
+							Value: "0700",
+						},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -413,10 +452,14 @@ func TestFileApply(t *testing.T) {
 				createTestSymlink(t, filepath.Join(dirPath, "file1.txt"), filepath.Join(dirPath, "subdir", "linkfile"))
 
 				return &File{
-					Path:    dirPath,
-					State:   FileDirectory,
-					Mode:    "0700",
-					Recurse: true,
+					File: proto.File{
+						Path:  dirPath,
+						State: FileDirectory,
+						Mode: &proto.Mode{
+							Value: "0700",
+						},
+						Recurse: true,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -454,8 +497,10 @@ func TestFileApply(t *testing.T) {
 			setup: func(t *testing.T, tempDir string) (*File, context.Context) {
 				filePath := filepath.Join(tempDir, "nonexistent.txt")
 				return &File{
-					Path:  filePath,
-					State: FileFile,
+					File: proto.File{
+						Path:  filePath,
+						State: FileFile,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -486,8 +531,10 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, filePath, "content", 0o644)
 
 				return &File{
-					Path:  filePath,
-					State: FileFile,
+					File: proto.File{
+						Path:  filePath,
+						State: FileFile,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -513,9 +560,13 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, filePath, "content", 0o644)
 
 				return &File{
-					Path:  filePath,
-					State: FileFile,
-					Mode:  "0600",
+					File: proto.File{
+						Path:  filePath,
+						State: FileFile,
+						Mode: &proto.Mode{
+							Value: "0600",
+						},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -552,9 +603,13 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, filePath, "content", 0o600)
 
 				return &File{
-					Path:  filePath,
-					State: FileFile,
-					Mode:  "g+rw,o+r",
+					File: proto.File{
+						Path:  filePath,
+						State: FileFile,
+						Mode: &proto.Mode{
+							Value: "g+rw,o+r",
+						},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -592,9 +647,11 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, targetPath, "content", 0o644)
 
 				return &File{
-					Path:  linkPath,
-					Src:   targetPath,
-					State: FileLink,
+					File: proto.File{
+						Path:  linkPath,
+						Src:   targetPath,
+						State: FileLink,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -634,9 +691,11 @@ func TestFileApply(t *testing.T) {
 				createTestSymlink(t, targetPath, linkPath)
 
 				return &File{
-					Path:  linkPath,
-					Src:   targetPath,
-					State: FileLink,
+					File: proto.File{
+						Path:  linkPath,
+						Src:   targetPath,
+						State: FileLink,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -678,9 +737,11 @@ func TestFileApply(t *testing.T) {
 				createTestSymlink(t, oldTarget, linkPath)
 
 				return &File{
-					Path:  linkPath,
-					Src:   newTarget,
-					State: FileLink,
+					File: proto.File{
+						Path:  linkPath,
+						Src:   newTarget,
+						State: FileLink,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -718,10 +779,14 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, targetPath, "content", 0o644)
 
 				return &File{
-					Path:  linkPath,
-					Src:   targetPath,
-					State: FileLink,
-					Mode:  "0600",
+					File: proto.File{
+						Path:  linkPath,
+						Src:   targetPath,
+						State: FileLink,
+						Mode: &proto.Mode{
+							Value: "0600",
+						},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -761,11 +826,15 @@ func TestFileApply(t *testing.T) {
 
 				followFalse := false
 				return &File{
-					Path:   linkPath,
-					Src:    targetPath,
-					State:  FileLink,
-					Follow: &followFalse,
-					Mode:   "0600",
+					File: proto.File{
+						Path:   linkPath,
+						Src:    targetPath,
+						State:  FileLink,
+						Follow: &followFalse,
+						Mode: &proto.Mode{
+							Value: "0600",
+						},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -799,8 +868,10 @@ func TestFileApply(t *testing.T) {
 				touchPath := filepath.Join(tempDir, "touched.txt")
 
 				return &File{
-					Path:  touchPath,
-					State: FileTouch,
+					File: proto.File{
+						Path:  touchPath,
+						State: FileTouch,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -837,8 +908,10 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, touchPath, "existing content", 0o644)
 
 				return &File{
-					Path:  touchPath,
-					State: FileTouch,
+					File: proto.File{
+						Path:  touchPath,
+						State: FileTouch,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -875,9 +948,13 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, touchPath, "existing content", 0o600)
 
 				return &File{
-					Path:  touchPath,
-					State: FileTouch,
-					Mode:  0o644,
+					File: proto.File{
+						Path:  touchPath,
+						State: FileTouch,
+						Mode: &proto.Mode{
+							Value: "0644",
+						},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -913,9 +990,13 @@ func TestFileApply(t *testing.T) {
 				touchPath := filepath.Join(tempDir, "touchmode.txt")
 
 				return &File{
-					Path:  touchPath,
-					State: FileTouch,
-					Mode:  "0600",
+					File: proto.File{
+						Path:  touchPath,
+						State: FileTouch,
+						Mode: &proto.Mode{
+							Value: "0600",
+						},
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -962,10 +1043,12 @@ func TestFileApply(t *testing.T) {
 				}
 
 				return &File{
-					Path:  touchPath,
-					State: FileTouch,
-					Owner: currentUser.Username,
-					Group: group.Name,
+					File: proto.File{
+						Path:  touchPath,
+						State: FileTouch,
+						Owner: currentUser.Username,
+						Group: group.Name,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -1002,8 +1085,10 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, filePath, "content", 0o644)
 
 				return &File{
-					Path:  filePath,
-					State: FileAbsent,
+					File: proto.File{
+						Path:  filePath,
+						State: FileAbsent,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -1032,8 +1117,10 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, filepath.Join(dirPath, "file.txt"), "content", 0o644)
 
 				return &File{
-					Path:  dirPath,
-					State: FileAbsent,
+					File: proto.File{
+						Path:  dirPath,
+						State: FileAbsent,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -1060,8 +1147,10 @@ func TestFileApply(t *testing.T) {
 				filePath := filepath.Join(tempDir, "doesnotexist.txt")
 
 				return &File{
-					Path:  filePath,
-					State: FileAbsent,
+					File: proto.File{
+						Path:  filePath,
+						State: FileAbsent,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -1089,9 +1178,11 @@ func TestFileApply(t *testing.T) {
 				createTestFile(t, srcPath, "content", 0o644)
 
 				return &File{
-					Path:  hardPath,
-					Src:   srcPath,
-					State: FileHard,
+					File: proto.File{
+						Path:  hardPath,
+						Src:   srcPath,
+						State: FileHard,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -1131,11 +1222,15 @@ func TestFileApply(t *testing.T) {
 				}
 
 				return &File{
-					Path:  dirPath,
-					State: FileDirectory,
-					Mode:  "0750",
-					Owner: currentUser.Username,
-					Group: group.Name,
+					File: proto.File{
+						Path:  dirPath,
+						State: FileDirectory,
+						Mode: &proto.Mode{
+							Value: "0750",
+						},
+						Owner: currentUser.Username,
+						Group: group.Name,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {
@@ -1182,11 +1277,15 @@ func TestFileApply(t *testing.T) {
 				}
 
 				return &File{
-					Path:  filePath,
-					State: FileFile,
-					Mode:  "0640",
-					Owner: currentUser.Username,
-					Group: group.Name,
+					File: proto.File{
+						Path:  filePath,
+						State: FileFile,
+						Mode: &proto.Mode{
+							Value: "0640",
+						},
+						Owner: currentUser.Username,
+						Group: group.Name,
+					},
 				}, context.Background()
 			},
 			verify: func(t *testing.T, result *FileResult, tempDir string) {

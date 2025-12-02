@@ -14,6 +14,7 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 const (
@@ -31,26 +32,7 @@ const (
 //	  ]
 //	}
 type File struct {
-	Path    string `sophons:"implemented"`
-	Follow  *bool  `sophons:"implemented"`
-	Group   string `sophons:"implemented"`
-	Mode    any    `sophons:"implemented"`
-	Owner   string `sophons:"implemented"`
-	Recurse bool   `sophons:"implemented"`
-	Src     string `sophons:"implemented"`
-	State   string `sophons:"implemented"`
-
-	AccessTime             string `yaml:"access_time"`
-	AccessTimeFormat       string `yaml:"access_time_format"`
-	Attributes             string
-	Force                  bool
-	ModificationTime       string `yaml:"modification_time"`
-	ModificationTimeFormat string `yaml:"modification_time_format"`
-	Selevel                string
-	Serole                 string
-	Setype                 string
-	Seuser                 string
-	UnsafeWrites           bool `yaml:"unsafe_writes"`
+	proto.File `yaml:",inline"`
 }
 
 type FileResult struct {
@@ -283,14 +265,14 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 						}
 					}
 				} else {
-					needsUpdate, err := needsModeOrOwnershipChange(path, f.Mode, uid, gid)
+					needsUpdate, err := needsModeOrOwnershipChange(path, f.Mode.GetValue(), uid, gid)
 					if err != nil {
 						return err
 					}
 
 					if needsUpdate {
 						changed = true
-						if err := util.ApplyModeAndIDs(path, f.Mode, uid, gid); err != nil {
+						if err := util.ApplyModeAndIDs(path, f.Mode.GetValue(), uid, gid); err != nil {
 							return err
 						}
 					}
@@ -302,7 +284,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 				return &result, err
 			}
 		} else {
-			needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode, uid, gid)
+			needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode.GetValue(), uid, gid)
 			if err != nil {
 				result.TaskFailed()
 				return &result, err
@@ -310,7 +292,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 
 			if needsUpdate {
 				changed = true
-				if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+				if err := util.ApplyModeAndIDs(f.Path, f.Mode.GetValue(), uid, gid); err != nil {
 					result.TaskFailed()
 					return &result, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 				}
@@ -330,7 +312,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 			return &result, nil
 		}
 
-		needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode, uid, gid)
+		needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode.GetValue(), uid, gid)
 		if err != nil {
 			result.TaskFailed()
 			return &result, err
@@ -338,7 +320,7 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 
 		if needsUpdate {
 			changed = true
-			if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+			if err := util.ApplyModeAndIDs(f.Path, f.Mode.GetValue(), uid, gid); err != nil {
 				result.TaskFailed()
 				return &result, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}
@@ -379,14 +361,14 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 		}
 
 		if follow {
-			needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode, uid, gid)
+			needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode.GetValue(), uid, gid)
 			if err != nil {
 				result.TaskFailed()
 				return &result, err
 			}
 
 			if needsUpdate {
-				if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+				if err := util.ApplyModeAndIDs(f.Path, f.Mode.GetValue(), uid, gid); err != nil {
 					result.TaskFailed()
 					return &result, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 				}
@@ -407,14 +389,14 @@ func (f *File) Apply(_ context.Context, _ string, _ bool) (Result, error) {
 		// The Ansible docs say that if the file exists, atime and mtime will
 		// be updated but not more. That proves to not be accurate:
 		// permissions, uid and gid will be updated too.
-		needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode, uid, gid)
+		needsUpdate, err := needsModeOrOwnershipChange(f.Path, f.Mode.GetValue(), uid, gid)
 		if err != nil {
 			result.TaskFailed()
 			return &result, err
 		}
 
 		if needsUpdate {
-			if err := util.ApplyModeAndIDs(f.Path, f.Mode, uid, gid); err != nil {
+			if err := util.ApplyModeAndIDs(f.Path, f.Mode.GetValue(), uid, gid); err != nil {
 				result.TaskFailed()
 				return &result, fmt.Errorf("couldn't apply mode and IDs to %s: %w", f.Path, err)
 			}

@@ -41,8 +41,10 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 			Name: "testing",
 			Loop: []any{"foo", "bar"},
 			Content: &File{
-				Path:  "{{ foo }}",
-				State: FileTouch,
+				File: proto.File{
+					Path:  "{{ foo }}",
+					State: FileTouch,
+				},
 			},
 		},
 		{
@@ -55,7 +57,7 @@ func TestTasksUnmarshalYAML(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Command{}, proto.Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Command{}, proto.Command{}, proto.File{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
