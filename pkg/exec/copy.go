@@ -9,34 +9,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
 //	@meta {
 //	  "deviations": ["`src` doesn't support absolute paths when `remote_src` is false."]
 //	}
 type Copy struct {
-	Content   string `sophons:"implemented"`
-	RemoteSrc bool   `yaml:"remote_src"`
-	Src       string `sophons:"implemented"`
-	Dest      string `sophons:"implemented"`
-
-	Attributes    string
-	Backup        bool
-	Checksum      string
-	Decrypt       *bool
-	DirectoryMode any `yaml:"directory_mode"`
-	Follow        bool
-	Force         *bool
-	Group         string
-	LocalFollow   bool `yaml:"local_follow"`
-	Mode          any
-	Owner         string
-	Selevel       string
-	Serole        string
-	Setype        string
-	Seuser        string
-	UnsafeWrites  bool   `yaml:"unsafe_writes"`
-	AValidate     string `yaml:"validate"`
+	proto.Copy `yaml:",inline"`
 }
 
 type CopyResult struct {
