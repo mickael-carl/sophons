@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+// Copy copies files from the controller to the target host.
+message Copy {
+  // @inject_tag: yaml:"content" sophons:"implemented"
+  string content = 1;
+  // @inject_tag: yaml:"remote_src"
+  bool remote_src = 2;
+  // @inject_tag: yaml:"src" sophons:"implemented"
+  string src = 3;
+  // @inject_tag: yaml:"dest" sophons:"implemented"
+  string dest = 4;
+  // @inject_tag: yaml:"attributes"
+  string attributes = 5;
+  // @inject_tag: yaml:"backup"
+  bool backup = 6;
+  // @inject_tag: yaml:"checksum"
+  string checksum = 7;
+  // @inject_tag: yaml:"decrypt"
+  optional bool decrypt = 8;
+  // @inject_tag: yaml:"directory_mode"
+  string directory_mode = 9;
+  // @inject_tag: yaml:"follow"
+  bool follow = 10;
+  // @inject_tag: yaml:"force"
+  optional bool force = 11;
+  // @inject_tag: yaml:"group"
+  string group = 12;
+  // @inject_tag: yaml:"local_follow"
+  bool local_follow = 13;
+  // @inject_tag: yaml:"mode"
+  string mode = 14;
+  // @inject_tag: yaml:"owner"
+  string owner = 15;
+  // @inject_tag: yaml:"selevel"
+  string selevel = 16;
+  // @inject_tag: yaml:"serole"
+  string serole = 17;
+  // @inject_tag: yaml:"setype"
+  string setype = 18;
+  // @inject_tag: yaml:"seuser"
+  string seuser = 19;
+  // @inject_tag: yaml:"unsafe_writes"
+  bool unsafe_writes = 20;
+  // @inject_tag: yaml:"validate"
+  string validate = 21;
+}
+
