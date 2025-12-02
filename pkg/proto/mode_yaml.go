@@ -9,11 +9,14 @@ import (
 
 // UnmarshalYAML handles Mode as either string ("0644", "u+rwx") or int (0644).
 func (m *Mode) UnmarshalYAML(b []byte) error {
-	// Try string first (most common case)
-	var str string
-	if err := yaml.Unmarshal(b, &str); err == nil {
-		m.Value = str
-		return nil
+	// Check if the value is a quoted string in the YAML
+	// If it starts with a quote, preserve it as-is
+	if len(b) > 0 && (b[0] == '"' || b[0] == '\'') {
+		var str string
+		if err := yaml.Unmarshal(b, &str); err == nil {
+			m.Value = str
+			return nil
+		}
 	}
 
 	// Try int (for unquoted octal like 0644)
@@ -27,6 +30,13 @@ func (m *Mode) UnmarshalYAML(b []byte) error {
 	var unum uint64
 	if err := yaml.Unmarshal(b, &unum); err == nil {
 		m.Value = strconv.FormatUint(unum, 8)
+		return nil
+	}
+
+	// Try string last (for symbolic modes like "u+rwx" that might not be quoted)
+	var str string
+	if err := yaml.Unmarshal(b, &str); err == nil {
+		m.Value = str
 		return nil
 	}
 
