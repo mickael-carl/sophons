@@ -64,14 +64,16 @@ fruit: "banana"
 		tasks: []exec.Task{
 			{
 				Content: &exec.File{
-					Path:  "/foo",
-					State: exec.FileTouch,
+					File: proto.File{
+						Path:  "/foo",
+						State: exec.FileTouch,
+					},
 				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.File{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -132,26 +134,32 @@ fruit: "banana"
 		tasks: []exec.Task{
 			{
 				Content: &exec.File{
-					Path:  "/hello/{{ hello }}",
-					State: exec.FileTouch,
+					File: proto.File{
+						Path:  "/hello/{{ hello }}",
+						State: exec.FileTouch,
+					},
 				},
 			},
 			{
 				Content: &exec.File{
-					Path:  "/answer/{{ answer }}",
-					State: exec.FileTouch,
+					File: proto.File{
+						Path:  "/answer/{{ answer }}",
+						State: exec.FileTouch,
+					},
 				},
 			},
 			{
 				Content: &exec.File{
-					Path:  "/fruit/{{ fruit }}",
-					State: exec.FileTouch,
+					File: proto.File{
+						Path:  "/fruit/{{ fruit }}",
+						State: exec.FileTouch,
+					},
 				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.File{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -248,8 +256,10 @@ func TestDiscoverRole(t *testing.T) {
 				{
 					Name: "Hello World!",
 					Content: &exec.File{
-						Path:  "hello",
-						State: exec.FileTouch,
+						File: proto.File{
+							Path:  "/hello",
+							State: exec.FileTouch,
+						},
 					},
 				},
 			},
@@ -272,7 +282,7 @@ func TestDiscoverRole(t *testing.T) {
 		"other": {},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Role{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.File{}, proto.Shell{}, exec.Shell{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

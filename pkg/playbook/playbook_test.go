@@ -71,14 +71,18 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 			Tasks: []exec.Task{
 				{
 					Content: &exec.File{
-						Path:  "/foo",
-						State: exec.FileDirectory,
+						File: proto.File{
+							Path:  "/foo",
+							State: exec.FileDirectory,
+						},
 					},
 				},
 				{
 					Content: &exec.File{
-						Path:  "/foo/bar",
-						State: exec.FileFile,
+						File: proto.File{
+							Path:  "/foo/bar",
+							State: exec.FileFile,
+						},
 					},
 				},
 			},
@@ -88,16 +92,22 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 			Tasks: []exec.Task{
 				{
 					Content: &exec.File{
-						Path:  "/foo/bar/baz",
-						State: exec.FileTouch,
+						File: proto.File{
+							Path:  "/foo/bar/baz",
+							State: exec.FileTouch,
+						},
 					},
 				},
 				{
 					Content: &exec.File{
-						Path:    "/foo/bar",
-						State:   exec.FileDirectory,
-						Recurse: true,
-						Mode:    uint64(384), // 0600
+						File: proto.File{
+							Path:    "/foo/bar",
+							State:   exec.FileDirectory,
+							Recurse: true,
+							Mode: &proto.Mode{
+								Value: "600",
+							},
+						},
 					},
 				},
 			},
@@ -107,8 +117,10 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 			Tasks: []exec.Task{
 				{
 					Content: &exec.File{
-						Path:  "{{ filepath }}",
-						State: exec.FileTouch,
+						File: proto.File{
+							Path:  "{{ filepath }}",
+							State: exec.FileTouch,
+						},
 					},
 				},
 				{
@@ -124,7 +136,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{}, proto.File{}, proto.Mode{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
