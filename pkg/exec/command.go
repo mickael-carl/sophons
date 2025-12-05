@@ -9,13 +9,14 @@ import (
 	"time"
 
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 //	@meta {
 //	  "deviations": []
 //	}
 type Command struct {
-	proto.Command `yaml:",inline"`
+	*proto.Command `yaml:",inline"`
 
 	cmdFactory cmdFactory
 }
@@ -30,8 +31,18 @@ type CommandResult struct {
 }
 
 func init() {
-	RegisterTaskType("command", func() TaskContent { return &Command{} })
-	RegisterTaskType("ansible.builtin.command", func() TaskContent { return &Command{} })
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.Command{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_Command{Command: msg.(*proto.Command)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_Command); ok {
+				return &Command{Command: c.Command}
+			}
+			return nil
+		},
+	}
+	registry.Register("command", reg, (*proto.Task_Command)(nil))
+	registry.Register("ansible.builtin.command", reg, (*proto.Task_Command)(nil))
 }
 
 func (c *Command) Validate() error {

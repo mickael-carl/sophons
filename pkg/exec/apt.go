@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/arduino/go-apt-client"
-	"github.com/goccy/go-yaml"
 
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 //	  ]
 //	}
 type Apt struct {
-	proto.Apt `yaml:",inline"`
+	*proto.Apt `yaml:",inline"`
 
 	apt   aptClient
 	aptFS fs.FS
@@ -51,40 +51,18 @@ type AptResult struct {
 }
 
 func init() {
-	RegisterTaskType("apt", func() TaskContent { return &Apt{} })
-	RegisterTaskType("ansible.builtin.apt", func() TaskContent { return &Apt{} })
-}
-
-func (a *Apt) UnmarshalYAML(b []byte) error {
-	type plain Apt
-	if err := yaml.Unmarshal(b, (*plain)(a)); err != nil {
-		return err
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.Apt{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_Apt{Apt: msg.(*proto.Apt)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_Apt); ok {
+				return &Apt{Apt: c.Apt}
+			}
+			return nil
+		},
 	}
-
-	type apt struct {
-		Pkg         proto.PackageList
-		Package     proto.PackageList
-		UpdateCache bool `yaml:"update-cache"`
-	}
-
-	var aux apt
-	if err := yaml.Unmarshal(b, &aux); err != nil {
-		return err
-	}
-
-	if a.Name == nil || len(a.Name.Items) == 0 {
-		if len(aux.Package.Items) != 0 {
-			a.Name = &aux.Package
-		} else if len(aux.Pkg.Items) != 0 {
-			a.Name = &aux.Pkg
-		}
-	}
-
-	if a.UpdateCache == nil {
-		a.UpdateCache = &aux.UpdateCache
-	}
-
-	return nil
+	registry.Register("apt", reg, (*proto.Task_Apt)(nil))
+	registry.Register("ansible.builtin.apt", reg, (*proto.Task_Apt)(nil))
 }
 
 func (a *Apt) Validate() error {

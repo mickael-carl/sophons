@@ -7,9 +7,8 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/goccy/go-yaml"
-
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 const (
@@ -18,7 +17,7 @@ const (
 )
 
 type AptRepository struct {
-	proto.AptRepository `yaml:",inline"`
+	*proto.AptRepository `yaml:",inline"`
 
 	apt aptClient
 }
@@ -28,30 +27,18 @@ type AptRepositoryResult struct {
 }
 
 func init() {
-	RegisterTaskType("apt_repository", func() TaskContent { return &AptRepository{} })
-	RegisterTaskType("ansible.builtin.apt_repository", func() TaskContent { return &AptRepository{} })
-}
-
-func (a *AptRepository) UnmarshalYAML(b []byte) error {
-	type plain AptRepository
-	if err := yaml.Unmarshal(b, (*plain)(a)); err != nil {
-		return err
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.AptRepository{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_AptRepository{AptRepository: msg.(*proto.AptRepository)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_AptRepository); ok {
+				return &AptRepository{AptRepository: c.AptRepository}
+			}
+			return nil
+		},
 	}
-
-	type aptRepository struct {
-		UpdateCache *bool `yaml:"update-cache"`
-	}
-
-	var aux aptRepository
-	if err := yaml.Unmarshal(b, &aux); err != nil {
-		return err
-	}
-
-	if a.UpdateCache == nil {
-		a.UpdateCache = aux.UpdateCache
-	}
-
-	return nil
+	registry.Register("apt_repository", reg, (*proto.Task_AptRepository)(nil))
+	registry.Register("ansible.builtin.apt_repository", reg, (*proto.Task_AptRepository)(nil))
 }
 
 func uriToFilename(uri string) (string, error) {

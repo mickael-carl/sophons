@@ -29,7 +29,7 @@ func TestTemplateValidate(t *testing.T) {
 		{
 			name: "absolute path",
 			template: &Template{
-				Template: proto.Template{
+				Template: &proto.Template{
 					Src:  "/etc/shadow",
 					Dest: "/hacking-passwords",
 				},
@@ -40,7 +40,7 @@ func TestTemplateValidate(t *testing.T) {
 		{
 			name: "missing src",
 			template: &Template{
-				Template: proto.Template{
+				Template: &proto.Template{
 					Dest: "/something",
 				},
 			},
@@ -50,7 +50,7 @@ func TestTemplateValidate(t *testing.T) {
 		{
 			name: "missing dest",
 			template: &Template{
-				Template: proto.Template{
+				Template: &proto.Template{
 					Src: "foo",
 				},
 			},
@@ -60,7 +60,7 @@ func TestTemplateValidate(t *testing.T) {
 		{
 			name: "valid",
 			template: &Template{
-				Template: proto.Template{
+				Template: &proto.Template{
 					Src:  "foo",
 					Dest: "bar",
 				},
@@ -138,7 +138,7 @@ func TestTemplateApply(t *testing.T) {
 				createDestFile(t, destFile, content)
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:  "test.j2",
 						Dest: destFile,
 					},
@@ -167,7 +167,7 @@ func TestTemplateApply(t *testing.T) {
 				createDestFile(t, destFile, "Old Content")
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:  "test.j2",
 						Dest: destFile,
 					},
@@ -202,7 +202,7 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:  "test.j2",
 						Dest: destFile,
 					},
@@ -239,7 +239,7 @@ func TestTemplateApply(t *testing.T) {
 				ctx := variables.NewContext(context.Background(), vars)
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:  "test.j2",
 						Dest: destFile,
 					},
@@ -272,7 +272,7 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:  "nonexistent.j2",
 						Dest: destFile,
 					},
@@ -304,7 +304,7 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:  "test.j2",
 						Dest: destFile,
 					},
@@ -335,7 +335,7 @@ func TestTemplateApply(t *testing.T) {
 				destFile := filepath.Join(tempDir, "dest.txt")
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:  "test.j2",
 						Dest: destFile,
 						Mode: &proto.Mode{Value: "0600"},
@@ -391,7 +391,7 @@ func TestTemplateApply(t *testing.T) {
 				}
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:   "test.j2",
 						Dest:  destFile,
 						Owner: currentUser.Username,
@@ -449,7 +449,7 @@ func TestTemplateApply(t *testing.T) {
 				}
 
 				return &Template{
-					Template: proto.Template{
+					Template: &proto.Template{
 						Src:   "test.j2",
 						Dest:  destFile,
 						Mode:  &proto.Mode{Value: "0640"},

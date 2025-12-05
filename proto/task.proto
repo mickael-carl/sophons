@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+import "google/protobuf/struct.proto";
+
+import "proto/apt.proto";
+import "proto/apt_repository.proto";
+import "proto/command.proto";
+import "proto/copy.proto";
+import "proto/file.proto";
+import "proto/get_url.proto";
+import "proto/import_tasks.proto";
+import "proto/include_tasks.proto";
+import "proto/shell.proto";
+import "proto/template.proto";
+
+// Task is a single task to be executed.
+message Task {
+  // @inject_tag: yaml:"name"
+  string name = 1;
+  // @inject_tag: yaml:"when"
+  string when = 2;
+  // Loop can be a string (Jinja template), array of strings, or array of objects
+  // @inject_tag: yaml:"loop"
+  google.protobuf.Value loop = 3;
+  // @inject_tag: yaml:"register"
+  string register = 4;
+
+  oneof content {
+    Apt apt = 5;
+    AptRepository apt_repository = 6;
+    Command command = 7;
+    Copy copy = 8;
+    File file = 9;
+    GetURL get_url = 10;
+    ImportTasks import_tasks = 11;
+    IncludeTasks include_tasks = 12;
+    Shell shell = 13;
+    Template template = 14;
+  }
+}

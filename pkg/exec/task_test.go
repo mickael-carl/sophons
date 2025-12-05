@@ -16,55 +16,9 @@ import (
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
-func TestTasksUnmarshalYAML(t *testing.T) {
-	b := []byte(`
-- name: "testing"
-  loop:
-    - foo
-    - bar
-  ansible.builtin.file:
-    path: "{{ foo }}"
-    state: "touch"
-- someunknownfield: ignored
-  ansible.builtin.command:
-    cmd: "echo hello"
-    stdin: "{{ input }}"
-`)
-
-	var got []Task
-	if err := tasksUnmarshalYAML(&got, b); err != nil {
-		t.Error(err)
-	}
-
-	expected := []Task{
-		{
-			Name: "testing",
-			Loop: []any{"foo", "bar"},
-			Content: &File{
-				File: proto.File{
-					Path:  "{{ foo }}",
-					State: FileTouch,
-				},
-			},
-		},
-		{
-			Content: &Command{
-				Command: proto.Command{
-					Cmd:   "echo hello",
-					Stdin: "{{ input }}",
-				},
-			},
-		},
-	}
-
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(Command{}, proto.Command{}, proto.File{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
 func TestDeepCopyContent(t *testing.T) {
 	originalContent := &Command{
-		Command: proto.Command{
+		Command: &proto.Command{
 			Cmd:   "echo hello",
 			Chdir: "/tmp",
 			Argv:  []string{},
@@ -80,7 +34,7 @@ func TestDeepCopyContent(t *testing.T) {
 		t.Error("copied content is the same instance as original")
 	}
 
-	if diff := cmp.Diff(originalContent, copiedContent, cmpopts.IgnoreUnexported(Command{}, proto.Command{})); diff != "" {
+	if diff := cmp.Diff(originalContent, copiedContent, cmpopts.IgnoreUnexported(Command{}, proto.Command{}), cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -114,7 +68,7 @@ func TestTaskApply(t *testing.T) {
 	task := Task{
 		Name: "Add docker repo",
 		Content: &AptRepository{
-			AptRepository: proto.AptRepository{
+			AptRepository: &proto.AptRepository{
 				Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
 				State: AptRepositoryPresent,
 			},
@@ -184,7 +138,7 @@ func TestTaskApplyLoop(t *testing.T) {
 			"{{ bar }}",
 		},
 		Content: &Apt{
-			Apt: proto.Apt{
+			Apt: &proto.Apt{
 				Name: &proto.PackageList{
 					Items: []string{"{{ item }}"},
 				},

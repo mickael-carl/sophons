@@ -11,7 +11,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "absolute path without remote_src",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Src:  "/etc/shadow",
 					Dest: "/hacking-passwords",
 				},
@@ -22,7 +22,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "absolute path with remote_src",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Src:       "/tmp/someconfig",
 					Dest:      "/etc/someconfig",
 					RemoteSrc: true,
@@ -33,7 +33,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "missing src and content",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Dest: "/something",
 				},
 			},
@@ -43,7 +43,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "content with directory dest",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Content: "hello world",
 					Dest:    "/some/directory/",
 				},
@@ -54,7 +54,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "both src and content set",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Src:     "somefile",
 					Content: "hello world!",
 					Dest:    "/somefile",
@@ -66,7 +66,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "empty src",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Src:  "",
 					Dest: "/somewhere",
 				},
@@ -77,7 +77,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "valid relative src",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Src:  "files/config.txt",
 					Dest: "/etc/config.txt",
 				},
@@ -87,7 +87,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "content with newlines",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Content: "line1\nline2\nline3",
 					Dest:    "/tmp/multiline.txt",
 				},
@@ -97,7 +97,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "empty content still requires src",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Content: "",
 					Dest:    "/tmp/empty.txt",
 				},
@@ -108,7 +108,7 @@ func TestCopyValidate(t *testing.T) {
 		{
 			Name: "dest with trailing slash is directory",
 			Input: &Copy{
-				Copy: proto.Copy{
+				Copy: &proto.Copy{
 					Src:  "file.txt",
 					Dest: "/tmp/dir/",
 				},

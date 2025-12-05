@@ -11,13 +11,14 @@ import (
 	"strings"
 
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 //	@meta {
 //	  "deviations": ["`src` doesn't support absolute paths when `remote_src` is false."]
 //	}
 type Copy struct {
-	proto.Copy `yaml:",inline"`
+	*proto.Copy `yaml:",inline"`
 }
 
 type CopyResult struct {
@@ -25,8 +26,18 @@ type CopyResult struct {
 }
 
 func init() {
-	RegisterTaskType("copy", func() TaskContent { return &Copy{} })
-	RegisterTaskType("ansible.builtin.copy", func() TaskContent { return &Copy{} })
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.Copy{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_Copy{Copy: msg.(*proto.Copy)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_Copy); ok {
+				return &Copy{Copy: c.Copy}
+			}
+			return nil
+		},
+	}
+	registry.Register("copy", reg, (*proto.Task_Copy)(nil))
+	registry.Register("ansible.builtin.copy", reg, (*proto.Task_Copy)(nil))
 }
 
 func copySingleFile(src, dst string) error {

@@ -6,11 +6,13 @@ import (
 	"reflect"
 
 	"github.com/goccy/go-yaml"
-	"github.com/goccy/go-yaml/ast"
 
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
+	protopackage "github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -48,49 +50,37 @@ type TaskContent interface {
 	Apply(context.Context, string, bool) (Result, error)
 }
 
-var taskRegistry = map[string]func() TaskContent{}
-
-func RegisterTaskType(name string, factory func() TaskContent) {
-	taskRegistry[name] = factory
-}
-
-func init() {
-	yaml.RegisterCustomUnmarshaler[[]Task](tasksUnmarshalYAML)
-}
-
-func tasksUnmarshalYAML(t *[]Task, b []byte) error {
-	type unmarshalTask struct {
-		Task       `yaml:",inline"`
-		RawContent map[string]ast.Node `yaml:",inline"`
+// FromProto converts a proto.Task to an exec.Task for execution.
+func FromProto(pt *protopackage.Task) (*Task, error) {
+	t := &Task{
+		Name:     pt.Name,
+		When:     pt.When,
+		Register: pt.Register,
 	}
 
-	var raw []unmarshalTask
-	if err := yaml.Unmarshal(b, &raw); err != nil {
-		return err
+	if pt.Loop != nil {
+		t.Loop = pt.Loop.AsInterface()
 	}
 
-	var tasksOut []Task
-	for _, task := range raw {
-		t := task.Task
-
-		for taskType, node := range task.RawContent {
-			factory, ok := taskRegistry[taskType]
-			if !ok {
-				continue
-			}
-
-			f := factory()
-
-			if err := yaml.NodeToValue(node, f); err != nil {
-				return err
-			}
-			t.Content = f
-		}
-		tasksOut = append(tasksOut, t)
+	if pt.Content == nil {
+		return t, nil
 	}
 
-	*t = tasksOut
-	return nil
+	reg, ok := registry.TypeRegistry[reflect.TypeOf(pt.Content)]
+	if !ok {
+		return nil, fmt.Errorf("unknown proto content type %T: not registered", pt.Content)
+	}
+	if reg.ExecAdapter == nil {
+		return nil, fmt.Errorf("no exec adapter registered for type %T", pt.Content)
+	}
+
+	execContent := reg.ExecAdapter(pt.Content)
+	t.Content, ok = execContent.(TaskContent)
+	if !ok {
+		return nil, fmt.Errorf("exec adapter returned non-TaskContent type %T", execContent)
+	}
+
+	return t, nil
 }
 
 // deepCopyContent takes any task's content and returns a copy of it alongside
@@ -98,25 +88,28 @@ func tasksUnmarshalYAML(t *[]Task, b []byte) error {
 // is set we need to evaluate Jinja templates with a new variable, `item`, for
 // every iteration on a copy of the task.
 func deepCopyContent(content TaskContent) (TaskContent, error) {
-	data, err := yaml.Marshal(content)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new instance of the same type. `content` is a pointer to a
-	// struct, so we get the type of the pointed-to struct.
 	contentType := reflect.TypeOf(content).Elem()
-	// Create a new pointer to a struct of that type.
 	newContentPtr := reflect.New(contentType)
+	newContentValue := newContentPtr.Elem()
+	oldContentValue := reflect.ValueOf(content).Elem()
 
-	// Get the interface value of the new pointer.
-	newContent := newContentPtr.Interface().(TaskContent)
+	// Find and clone any embedded proto fields
+	for i := 0; i < newContentValue.NumField(); i++ {
+		oldField := oldContentValue.Field(i)
 
-	if err := yaml.Unmarshal(data, newContent); err != nil {
-		return nil, err
+		// Skip non-pointer fields or fields that can't be interfaced
+		if oldField.Kind() != reflect.Ptr || !oldField.CanInterface() {
+			continue
+		}
+
+		// Check if this field is a proto.Message and clone it
+		if protoMsg, ok := oldField.Interface().(proto.Message); ok {
+			cloned := proto.Clone(protoMsg)
+			newContentValue.Field(i).Set(reflect.ValueOf(cloned))
+		}
 	}
 
-	return newContent, nil
+	return newContentPtr.Interface().(TaskContent), nil
 }
 
 func processAndRunTask(ctx context.Context, logger *zap.Logger, task Task, parentPath string, isRole bool) (Result, error) {

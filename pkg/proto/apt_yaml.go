@@ -33,3 +33,37 @@ func (p *PackageList) MarshalYAML() ([]byte, error) {
 	}
 	return yaml.Marshal(p.Items)
 }
+
+// UnmarshalYAML is a custom unmarshaler that handles the name field (pkg and
+// package) and update-cache aliases.
+func (a *Apt) UnmarshalYAML(b []byte) error {
+	type plain Apt
+	if err := yaml.Unmarshal(b, (*plain)(a)); err != nil {
+		return err
+	}
+
+	type apt struct {
+		Pkg         PackageList
+		Package     PackageList
+		UpdateCache bool `yaml:"update-cache"`
+	}
+
+	var aux apt
+	if err := yaml.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+
+	if a.Name == nil || len(a.Name.Items) == 0 {
+		if len(aux.Package.Items) != 0 {
+			a.Name = &aux.Package
+		} else if len(aux.Pkg.Items) != 0 {
+			a.Name = &aux.Pkg
+		}
+	}
+
+	if a.UpdateCache == nil {
+		a.UpdateCache = &aux.UpdateCache
+	}
+
+	return nil
+}
