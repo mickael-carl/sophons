@@ -7,7 +7,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/proto"
 )
 
@@ -28,17 +27,17 @@ func TestProcessTasks(t *testing.T) {
 		t.Error(err)
 	}
 
-	expected := []exec.Task{
+	expected := []*proto.Task{
 		{
-			Content: &exec.Command{
-				Command: proto.Command{
+			Content: &proto.Task_Command{
+				Command: &proto.Command{
 					Cmd: "echo 'hello world!'",
 				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(proto.Task{}, proto.Command{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -53,17 +52,17 @@ func TestProcessTasks(t *testing.T) {
 		t.Error(err)
 	}
 
-	expected = []exec.Task{
+	expected = []*proto.Task{
 		{
-			Content: &exec.Command{
-				Command: proto.Command{
+			Content: &proto.Task_Command{
+				Command: &proto.Command{
 					Cmd: "echo 'hello world!'",
 				},
 			},
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(proto.Task{}, proto.Command{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -39,7 +39,7 @@ func TestCommandApply(t *testing.T) {
 			useSyncTest: true,
 			testFunc: func(t *testing.T) {
 				cmd := &Command{
-					Command: proto.Command{
+					Command: &proto.Command{
 						Cmd: "/bin/ls /",
 					},
 				}
@@ -91,7 +91,7 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Command: proto.Command{
+					Command: &proto.Command{
 						Argv: []string{"/bin/ls", "/"},
 					},
 				}
@@ -141,7 +141,7 @@ func TestCommandApply(t *testing.T) {
 				t.Setenv("ROOT", "/")
 
 				cmd := &Command{
-					Command: proto.Command{
+					Command: &proto.Command{
 						Argv:               []string{"/bin/ls", "$ROOT"},
 						ExpandArgumentVars: true,
 					},
@@ -177,7 +177,7 @@ func TestCommandApply(t *testing.T) {
 				}
 
 				cmd = &Command{
-					Command: proto.Command{
+					Command: &proto.Command{
 						Cmd:                "/bin/ls $ROOT",
 						ExpandArgumentVars: true,
 					},
@@ -225,7 +225,7 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Command: proto.Command{
+					Command: &proto.Command{
 						Cmd: "ls /foo",
 					},
 				}
@@ -280,7 +280,7 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Command: proto.Command{
+					Command: &proto.Command{
 						Cmd:   "ls",
 						Chdir: "/tmp",
 					},
@@ -330,7 +330,7 @@ func TestCommandApply(t *testing.T) {
 				})
 
 				cmd := &Command{
-					Command: proto.Command{
+					Command: &proto.Command{
 						Cmd:     "rm /foo",
 						Removes: "/foo",
 					},

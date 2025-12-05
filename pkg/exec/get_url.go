@@ -14,6 +14,7 @@ import (
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 //	@meta {
@@ -22,7 +23,7 @@ import (
 //	  ]
 //	}
 type GetURL struct {
-	proto.GetURL `yaml:",inline"`
+	*proto.GetURL `yaml:",inline"`
 }
 
 type GetURLResult struct {
@@ -30,8 +31,18 @@ type GetURLResult struct {
 }
 
 func init() {
-	RegisterTaskType("get_url", func() TaskContent { return &GetURL{} })
-	RegisterTaskType("ansible.builtin.get_url", func() TaskContent { return &GetURL{} })
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.GetURL{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_GetUrl{GetUrl: msg.(*proto.GetURL)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_GetUrl); ok {
+				return &GetURL{GetURL: c.GetUrl}
+			}
+			return nil
+		},
+	}
+	registry.Register("get_url", reg, (*proto.Task_GetUrl)(nil))
+	registry.Register("ansible.builtin.get_url", reg, (*proto.Task_GetUrl)(nil))
 }
 
 // filenameFromHeader extracts filename from Content-Disposition if present.

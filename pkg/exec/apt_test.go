@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/arduino/go-apt-client"
-	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -26,7 +25,7 @@ func TestAptValidate(t *testing.T) {
 		{
 			name: "invalid state",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					State: "banana",
 				},
 			},
@@ -36,7 +35,7 @@ func TestAptValidate(t *testing.T) {
 		{
 			name: "invalid upgrade",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Upgrade: "banana",
 				},
 			},
@@ -49,7 +48,7 @@ func TestAptValidate(t *testing.T) {
 				cacheValidTime := uint64(360)
 				pTrue := true
 				return &Apt{
-					Apt: proto.Apt{
+					Apt: &proto.Apt{
 						Name: &proto.PackageList{
 							Items: []string{"curl"},
 						},
@@ -77,80 +76,6 @@ func TestAptValidate(t *testing.T) {
 	}
 }
 
-func TestAptUnmarshalYAML(t *testing.T) {
-	pTrue := true
-
-	tests := []struct {
-		name string
-		yaml string
-		want *Apt
-	}{
-		{
-			name: "unmarshal with name",
-			yaml: `
-clean: false
-name:
-  - "foo"
-  - "bar"
-state: "present"
-update_cache: true
-upgrade: "full"`,
-			want: &Apt{
-				Apt: proto.Apt{
-					Clean: false,
-					Name: &proto.PackageList{
-						Items: []string{
-							"foo",
-							"bar",
-						},
-					},
-					State:       AptPresent,
-					UpdateCache: &pTrue,
-					Upgrade:     AptUpgradeFull,
-				},
-			},
-		},
-		{
-			name: "unmarshal with package alias",
-			yaml: `
-clean: false
-package:
-  - "foo"
-  - "bar"
-state: "present"
-update-cache: true
-upgrade: "full"`,
-			want: &Apt{
-				Apt: proto.Apt{
-					Clean: false,
-					Name: &proto.PackageList{
-						Items: []string{
-							"foo",
-							"bar",
-						},
-					},
-					State:       AptPresent,
-					UpdateCache: &pTrue,
-					Upgrade:     AptUpgradeFull,
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var got Apt
-			if err := yaml.Unmarshal([]byte(tt.yaml), &got); err != nil {
-				t.Errorf("Unmarshal() error = %v", err)
-				return
-			}
-			if diff := cmp.Diff(tt.want, &got, cmpopts.IgnoreUnexported(Apt{}, proto.Apt{}, proto.PackageList{})); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestAptApply(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -162,7 +87,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "install packages",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Name: &proto.PackageList{
 						Items: []string{
 							"foo",
@@ -189,7 +114,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "install latest",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Name: &proto.PackageList{
 						Items: []string{
 							"foo",
@@ -214,7 +139,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "remove packages",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Name: &proto.PackageList{
 						Items: []string{
 							"foo",
@@ -240,7 +165,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "remove with no packages",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					State: AptAbsent,
 				},
 			},
@@ -258,7 +183,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "upgrade full",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Upgrade: AptUpgradeFull,
 				},
 			},
@@ -278,7 +203,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "upgrade safe",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Upgrade: AptUpgradeSafe,
 				},
 			},
@@ -298,7 +223,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "clean",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Clean: true,
 				},
 			},
@@ -318,7 +243,7 @@ func TestAptApply(t *testing.T) {
 		{
 			name: "clean with packages",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Clean: true,
 					Name: &proto.PackageList{
 						Items: []string{
@@ -347,7 +272,7 @@ func TestAptApply(t *testing.T) {
 			apt: func() *Apt {
 				pTrue := true
 				return &Apt{
-					Apt: proto.Apt{
+					Apt: &proto.Apt{
 						UpdateCache: &pTrue,
 					},
 				}
@@ -411,7 +336,7 @@ func TestHandleUpdate(t *testing.T) {
 			apt: func() *Apt {
 				cacheValidTime := uint64(1)
 				return &Apt{
-					Apt: proto.Apt{
+					Apt: &proto.Apt{
 						Name: &proto.PackageList{
 							Items: []string{"foo"},
 						},
@@ -434,7 +359,7 @@ func TestHandleUpdate(t *testing.T) {
 			apt: func() *Apt {
 				cacheValidTime := uint64(1000)
 				return &Apt{
-					Apt: proto.Apt{
+					Apt: &proto.Apt{
 						Name: &proto.PackageList{
 							Items: []string{"foo"},
 						},
@@ -455,7 +380,7 @@ func TestHandleUpdate(t *testing.T) {
 			apt: func() *Apt {
 				cacheValidTime := uint64(1)
 				return &Apt{
-					Apt: proto.Apt{
+					Apt: &proto.Apt{
 						Name: &proto.PackageList{
 							Items: []string{"foo"},
 						},
@@ -474,7 +399,7 @@ func TestHandleUpdate(t *testing.T) {
 			apt: func() *Apt {
 				updateCache := true
 				return &Apt{
-					Apt: proto.Apt{
+					Apt: &proto.Apt{
 						Name: &proto.PackageList{
 							Items: []string{"foo"},
 						},
@@ -491,7 +416,7 @@ func TestHandleUpdate(t *testing.T) {
 		{
 			name: "missing lists with nothing set",
 			apt: &Apt{
-				Apt: proto.Apt{
+				Apt: &proto.Apt{
 					Name: &proto.PackageList{
 						Items: []string{"foo"},
 					},
@@ -506,7 +431,7 @@ func TestHandleUpdate(t *testing.T) {
 			apt: func() *Apt {
 				updateCache := true
 				return &Apt{
-					Apt: proto.Apt{
+					Apt: &proto.Apt{
 						Name: &proto.PackageList{
 							Items: []string{"foo"},
 						},

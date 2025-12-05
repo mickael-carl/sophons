@@ -80,8 +80,13 @@ func playbookApply(ctx context.Context, logger *zap.Logger, playbookPath, node s
 					return fmt.Errorf("failed to apply role %s: %w", roleName, err)
 				}
 			}
-			for _, task := range play.Tasks {
-				if err := exec.ExecuteTask(playCtx, logger, task, filepath.Dir(playbookPath), false); err != nil { // use playCtx
+			for _, protoTask := range play.Tasks {
+				execTask, err := exec.FromProto(protoTask)
+				if err != nil {
+					return fmt.Errorf("failed to convert task: %w", err)
+				}
+
+				if err := exec.ExecuteTask(playCtx, logger, *execTask, filepath.Dir(playbookPath), false); err != nil { // use playCtx
 					return fmt.Errorf("failed to execute task: %w", err)
 				}
 			}

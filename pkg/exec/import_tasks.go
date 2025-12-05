@@ -11,13 +11,14 @@ import (
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 //	@meta{
 //	  "deviations": []
 //	}
 type ImportTasks struct {
-	proto.ImportTasks `yaml:",inline"`
+	*proto.ImportTasks `yaml:",inline"`
 }
 
 type ImportTasksResult struct {
@@ -25,8 +26,18 @@ type ImportTasksResult struct {
 }
 
 func init() {
-	RegisterTaskType("import_tasks", func() TaskContent { return &ImportTasks{} })
-	RegisterTaskType("ansible.builtin.import_tasks", func() TaskContent { return &ImportTasks{} })
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.ImportTasks{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_ImportTasks{ImportTasks: msg.(*proto.ImportTasks)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_ImportTasks); ok {
+				return &ImportTasks{ImportTasks: c.ImportTasks}
+			}
+			return nil
+		},
+	}
+	registry.Register("import_tasks", reg, (*proto.Task_ImportTasks)(nil))
+	registry.Register("ansible.builtin.import_tasks", reg, (*proto.Task_ImportTasks)(nil))
 }
 
 func (it *ImportTasks) Validate() error {
@@ -54,13 +65,18 @@ func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool
 		return &ImportTasksResult{}, fmt.Errorf("failed to read tasks from %s: %w", taskPath, err)
 	}
 
-	var tasks []Task
-	if err := yaml.Unmarshal(taskData, &tasks); err != nil {
+	var protoTasks []*proto.Task
+	if err := yaml.Unmarshal(taskData, &protoTasks); err != nil {
 		return &ImportTasksResult{}, fmt.Errorf("failed to parse tasks from %s: %w", taskPath, err)
 	}
 
-	for _, task := range tasks {
-		if err := util.ProcessJinjaTemplates(ctx, &task); err != nil {
+	for _, protoTask := range protoTasks {
+		task, err := FromProto(protoTask)
+		if err != nil {
+			return &ImportTasksResult{}, fmt.Errorf("failed to convert task from %s: %w", taskPath, err)
+		}
+
+		if err := util.ProcessJinjaTemplates(ctx, task); err != nil {
 			return &ImportTasksResult{}, fmt.Errorf("failed to render Jinja templating from %s: %w", taskPath, err)
 		}
 
@@ -71,7 +87,7 @@ func (it *ImportTasks) Apply(ctx context.Context, parentPath string, isRole bool
 		// TODO: handle result values. It's likely not possible to do register
 		// on this, and because it's import_tasks, we can't (well Ansible
 		// can't) loop.
-		_, err := task.Apply(ctx, parentPath, isRole)
+		_, err = task.Apply(ctx, parentPath, isRole)
 		if err != nil {
 			return &ImportTasksResult{}, fmt.Errorf("failed to apply task from %s: %w", taskPath, err)
 		}

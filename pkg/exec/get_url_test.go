@@ -16,7 +16,7 @@ func TestGetURLValidate(t *testing.T) {
 		{
 			name: "missing url",
 			getURL: &GetURL{
-				GetURL: proto.GetURL{
+				GetURL: &proto.GetURL{
 					Dest: "/somewhere",
 				},
 			},
@@ -26,7 +26,7 @@ func TestGetURLValidate(t *testing.T) {
 		{
 			name: "missing dest",
 			getURL: &GetURL{
-				GetURL: proto.GetURL{
+				GetURL: &proto.GetURL{
 					Url: "https://example.com",
 				},
 			},
@@ -36,7 +36,7 @@ func TestGetURLValidate(t *testing.T) {
 		{
 			name: "invalid url",
 			getURL: &GetURL{
-				GetURL: proto.GetURL{
+				GetURL: &proto.GetURL{
 					Url:  "foo_bar:baz",
 					Dest: "/somewhere",
 				},

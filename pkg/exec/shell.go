@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 //	@meta{
 //	  "deviations": []
 //	}
 type Shell struct {
-	proto.Shell `yaml:",inline"`
+	*proto.Shell `yaml:",inline"`
 
 	cmdFactory cmdFactory
 }
@@ -29,8 +30,18 @@ type ShellResult struct {
 }
 
 func init() {
-	RegisterTaskType("shell", func() TaskContent { return &Shell{} })
-	RegisterTaskType("ansible.builtin.shell", func() TaskContent { return &Shell{} })
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.Shell{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_Shell{Shell: msg.(*proto.Shell)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_Shell); ok {
+				return &Shell{Shell: c.Shell}
+			}
+			return nil
+		},
+	}
+	registry.Register("shell", reg, (*proto.Task_Shell)(nil))
+	registry.Register("ansible.builtin.shell", reg, (*proto.Task_Shell)(nil))
 }
 
 func (s *Shell) Validate() error {

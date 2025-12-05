@@ -16,6 +16,7 @@ import (
 
 	"github.com/mickael-carl/sophons/pkg/exec/util"
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -23,7 +24,7 @@ import (
 //	  "deviations": ["`src` doesn't support absolute paths."]
 //	}
 type Template struct {
-	proto.Template `yaml:",inline"`
+	*proto.Template `yaml:",inline"`
 }
 
 type TemplateResult struct {
@@ -45,8 +46,18 @@ type TemplateResult struct {
 }
 
 func init() {
-	RegisterTaskType("template", func() TaskContent { return &Template{} })
-	RegisterTaskType("ansible.builtin.template", func() TaskContent { return &Template{} })
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.Template{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_Template{Template: msg.(*proto.Template)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_Template); ok {
+				return &Template{Template: c.Template}
+			}
+			return nil
+		},
+	}
+	registry.Register("template", reg, (*proto.Task_Template)(nil))
+	registry.Register("ansible.builtin.template", reg, (*proto.Task_Template)(nil))
 }
 
 func (c *Template) Validate() error {

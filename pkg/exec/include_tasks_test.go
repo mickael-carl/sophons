@@ -1,6 +1,10 @@
 package exec
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mickael-carl/sophons/pkg/proto"
+)
 
 func TestIncludeTasksValidate(t *testing.T) {
 	tests := []struct {
@@ -10,10 +14,12 @@ func TestIncludeTasksValidate(t *testing.T) {
 		errMsg       string
 	}{
 		{
-			name:         "missing file",
-			includeTasks: &IncludeTasks{},
-			wantErr:      true,
-			errMsg:       "`file` is required",
+			name: "missing file",
+			includeTasks: &IncludeTasks{
+				IncludeTasks: &proto.IncludeTasks{},
+			},
+			wantErr: true,
+			errMsg:  "`file` is required",
 		},
 	}
 

@@ -11,10 +11,9 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/goccy/go-yaml"
-
 	"github.com/mickael-carl/sophons/pkg/exec/util"
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 )
 
 const (
@@ -32,7 +31,7 @@ const (
 //	  ]
 //	}
 type File struct {
-	proto.File `yaml:",inline"`
+	*proto.File `yaml:",inline"`
 }
 
 type FileResult struct {
@@ -50,35 +49,18 @@ type FileResult struct {
 }
 
 func init() {
-	RegisterTaskType("file", func() TaskContent { return &File{} })
-	RegisterTaskType("ansible.builtin.file", func() TaskContent { return &File{} })
-}
-
-func (f *File) UnmarshalYAML(b []byte) error {
-	type plain File
-	if err := yaml.Unmarshal(b, (*plain)(f)); err != nil {
-		return err
+	reg := registry.TaskRegistration{
+		ProtoFactory: func() any { return &proto.File{} },
+		ProtoWrapper: func(msg any) any { return &proto.Task_File{File: msg.(*proto.File)} },
+		ExecAdapter: func(content any) any {
+			if c, ok := content.(*proto.Task_File); ok {
+				return &File{File: c.File}
+			}
+			return nil
+		},
 	}
-
-	type file struct {
-		Dest string
-		Name string
-	}
-
-	var aux file
-	if err := yaml.Unmarshal(b, &aux); err != nil {
-		return err
-	}
-
-	if f.Path == "" {
-		if aux.Dest != "" {
-			f.Path = aux.Dest
-		} else if aux.Name != "" {
-			f.Path = aux.Name
-		}
-	}
-
-	return nil
+	registry.Register("file", reg, (*proto.Task_File)(nil))
+	registry.Register("ansible.builtin.file", reg, (*proto.Task_File)(nil))
 }
 
 func (f *File) Validate() error {

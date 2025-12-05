@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/arduino/go-apt-client"
-	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.uber.org/mock/gomock"
@@ -23,7 +22,7 @@ func TestAptRepositoryValidate(t *testing.T) {
 		{
 			name: "invalid state",
 			aptRepo: &AptRepository{
-				AptRepository: proto.AptRepository{
+				AptRepository: &proto.AptRepository{
 					Repo:  "foo",
 					State: "banana",
 				},
@@ -34,7 +33,7 @@ func TestAptRepositoryValidate(t *testing.T) {
 		{
 			name: "missing repo",
 			aptRepo: &AptRepository{
-				AptRepository: proto.AptRepository{
+				AptRepository: &proto.AptRepository{
 					State: "present",
 				},
 			},
@@ -44,7 +43,7 @@ func TestAptRepositoryValidate(t *testing.T) {
 		{
 			name: "valid",
 			aptRepo: &AptRepository{
-				AptRepository: proto.AptRepository{
+				AptRepository: &proto.AptRepository{
 					Repo:  "foo",
 					State: "present",
 				},
@@ -62,58 +61,6 @@ func TestAptRepositoryValidate(t *testing.T) {
 			}
 			if tt.wantErr && err.Error() != tt.errMsg {
 				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
-			}
-		})
-	}
-}
-
-func TestAptRepositoryUnmarshalYAML(t *testing.T) {
-	pTrue := true
-
-	tests := []struct {
-		name string
-		yaml string
-		want *AptRepository
-	}{
-		{
-			name: "unmarshal with update_cache",
-			yaml: `
-repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
-state: "present"
-update_cache: true`,
-			want: &AptRepository{
-				AptRepository: proto.AptRepository{
-					Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-					State:       AptRepositoryPresent,
-					UpdateCache: &pTrue,
-				},
-			},
-		},
-		{
-			name: "unmarshal with update-cache alias",
-			yaml: `
-repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable"
-state: "present"
-update-cache: true`,
-			want: &AptRepository{
-				AptRepository: proto.AptRepository{
-					Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
-					State:       AptRepositoryPresent,
-					UpdateCache: &pTrue,
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var got AptRepository
-			if err := yaml.Unmarshal([]byte(tt.yaml), &got); err != nil {
-				t.Errorf("Unmarshal() error = %v", err)
-				return
-			}
-			if diff := cmp.Diff(tt.want, &got, cmpopts.IgnoreUnexported(AptRepository{}, proto.AptRepository{})); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -164,7 +111,7 @@ func TestAptRepositoryApply(t *testing.T) {
 		{
 			name: "add repository",
 			aptRepo: &AptRepository{
-				AptRepository: proto.AptRepository{
+				AptRepository: &proto.AptRepository{
 					Repo:  "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
 					State: AptRepositoryPresent,
 				},
@@ -197,7 +144,7 @@ func TestAptRepositoryApply(t *testing.T) {
 			aptRepo: func() *AptRepository {
 				pFalse := false
 				return &AptRepository{
-					AptRepository: proto.AptRepository{
+					AptRepository: &proto.AptRepository{
 						Repo:        "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable",
 						State:       AptRepositoryAbsent,
 						UpdateCache: &pFalse,

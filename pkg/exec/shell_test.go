@@ -32,7 +32,7 @@ func TestShellApply(t *testing.T) {
 				})
 
 				s := &Shell{
-					Shell: proto.Shell{
+					Shell: &proto.Shell{
 						Cmd: "echo hello",
 					},
 				}
@@ -84,7 +84,7 @@ func TestShellApply(t *testing.T) {
 				})
 
 				cmd := &Shell{
-					Shell: proto.Shell{
+					Shell: &proto.Shell{
 						Cmd: "ls /foo",
 					},
 				}
@@ -139,7 +139,7 @@ func TestShellApply(t *testing.T) {
 				})
 
 				cmd := &Shell{
-					Shell: proto.Shell{
+					Shell: &proto.Shell{
 						Argv:       []string{"echo", "hello"},
 						Chdir:      "/tmp",
 						Executable: "/usr/bin/fish",
@@ -193,7 +193,7 @@ func TestShellApply(t *testing.T) {
 				})
 
 				s := &Shell{
-					Shell: proto.Shell{
+					Shell: &proto.Shell{
 						Cmd:     "rm /foo",
 						Removes: "/foo",
 					},

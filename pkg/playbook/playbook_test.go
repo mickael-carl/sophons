@@ -68,18 +68,18 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 				"var2": "bar",
 			},
 			VarsFiles: []string{"myvars.yml"},
-			Tasks: []exec.Task{
+			Tasks: []*proto.Task{
 				{
-					Content: &exec.File{
-						File: proto.File{
+					Content: &proto.Task_File{
+						File: &proto.File{
 							Path:  "/foo",
 							State: exec.FileDirectory,
 						},
 					},
 				},
 				{
-					Content: &exec.File{
-						File: proto.File{
+					Content: &proto.Task_File{
+						File: &proto.File{
 							Path:  "/foo/bar",
 							State: exec.FileFile,
 						},
@@ -89,18 +89,18 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		},
 		Play{
 			Hosts: "some-group",
-			Tasks: []exec.Task{
+			Tasks: []*proto.Task{
 				{
-					Content: &exec.File{
-						File: proto.File{
+					Content: &proto.Task_File{
+						File: &proto.File{
 							Path:  "/foo/bar/baz",
 							State: exec.FileTouch,
 						},
 					},
 				},
 				{
-					Content: &exec.File{
-						File: proto.File{
+					Content: &proto.Task_File{
+						File: &proto.File{
 							Path:    "/foo/bar",
 							State:   exec.FileDirectory,
 							Recurse: true,
@@ -114,18 +114,18 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		},
 		Play{
 			Hosts: "jinja-test",
-			Tasks: []exec.Task{
+			Tasks: []*proto.Task{
 				{
-					Content: &exec.File{
-						File: proto.File{
+					Content: &proto.Task_File{
+						File: &proto.File{
 							Path:  "{{ filepath }}",
 							State: exec.FileTouch,
 						},
 					},
 				},
 				{
-					Content: &exec.Command{
-						Command: proto.Command{
+					Content: &proto.Task_Command{
+						Command: &proto.Command{
 							Cmd:             "dd of=/tmp/hello",
 							Stdin:           "{{ hello }}",
 							StdinAddNewline: &pTrue,
@@ -136,7 +136,7 @@ func TestPlaybookUnmarshalYAML(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(exec.Command{}, proto.Command{}, proto.File{}, proto.Mode{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(proto.Task{}, proto.Command{}, proto.File{}, proto.Mode{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

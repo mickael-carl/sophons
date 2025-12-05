@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
+	"github.com/mickael-carl/sophons/pkg/proto"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -17,7 +18,7 @@ type Role struct {
 	// TODO: add files and templates.
 	defaults variables.Variables
 	vars     variables.Variables
-	tasks    []exec.Task
+	tasks    []*proto.Task
 }
 
 func DiscoverRoles(fsys fs.FS) (map[string]Role, error) {
@@ -134,8 +135,13 @@ func (r *Role) Apply(ctx context.Context, logger *zap.Logger, parentPath string)
 	roleCtxVars.Merge(r.vars)
 
 	roleCtx := variables.NewContext(ctx, roleCtxVars)
-	for _, task := range r.tasks {
-		if err := exec.ExecuteTask(roleCtx, logger, task, parentPath, true); err != nil {
+	for _, protoTask := range r.tasks {
+		execTask, err := exec.FromProto(protoTask)
+		if err != nil {
+			return fmt.Errorf("failed to convert task: %w", err)
+		}
+
+		if err := exec.ExecuteTask(roleCtx, logger, *execTask, parentPath, true); err != nil {
 			return fmt.Errorf("failed to execute task: %w", err)
 		}
 	}

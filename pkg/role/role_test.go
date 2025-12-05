@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/mickael-carl/sophons/pkg/exec"
 	"github.com/mickael-carl/sophons/pkg/proto"
@@ -61,10 +62,10 @@ fruit: "banana"
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
-		tasks: []exec.Task{
+		tasks: []*proto.Task{
 			{
-				Content: &exec.File{
-					File: proto.File{
+				Content: &proto.Task_File{
+					File: &proto.File{
 						Path:  "/foo",
 						State: exec.FileTouch,
 					},
@@ -73,7 +74,7 @@ fruit: "banana"
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.File{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.Task{}, proto.File{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -131,26 +132,26 @@ fruit: "banana"
 			"hello":  "world!",
 			"answer": uint64(42),
 		},
-		tasks: []exec.Task{
+		tasks: []*proto.Task{
 			{
-				Content: &exec.File{
-					File: proto.File{
+				Content: &proto.Task_File{
+					File: &proto.File{
 						Path:  "/hello/{{ hello }}",
 						State: exec.FileTouch,
 					},
 				},
 			},
 			{
-				Content: &exec.File{
-					File: proto.File{
+				Content: &proto.Task_File{
+					File: &proto.File{
 						Path:  "/answer/{{ answer }}",
 						State: exec.FileTouch,
 					},
 				},
 			},
 			{
-				Content: &exec.File{
-					File: proto.File{
+				Content: &proto.Task_File{
+					File: &proto.File{
 						Path:  "/fruit/{{ fruit }}",
 						State: exec.FileTouch,
 					},
@@ -159,7 +160,7 @@ fruit: "banana"
 		},
 	}
 
-	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.File{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.Task{}, proto.File{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -210,10 +211,10 @@ This is a very minimal role.
 	expected := Role{
 		defaults: nil,
 		vars:     nil,
-		tasks:    []exec.Task{},
+		tasks:    []*proto.Task{},
 	}
 
-	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.Task{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -252,11 +253,11 @@ func TestDiscoverRole(t *testing.T) {
 
 	expected := map[string]Role{
 		"hello": {
-			tasks: []exec.Task{
+			tasks: []*proto.Task{
 				{
 					Name: "Hello World!",
-					Content: &exec.File{
-						File: proto.File{
+					Content: &proto.Task_File{
+						File: &proto.File{
 							Path:  "/hello",
 							State: exec.FileTouch,
 						},
@@ -268,11 +269,11 @@ func TestDiscoverRole(t *testing.T) {
 			vars: variables.Variables{
 				"the_answer": uint64(42),
 			},
-			tasks: []exec.Task{
+			tasks: []*proto.Task{
 				{
 					Name: "The Answer",
-					Content: &exec.Shell{
-						Shell: proto.Shell{
+					Content: &proto.Task_Shell{
+						Shell: &proto.Shell{
 							Cmd: "echo {{ the_answer }}",
 						},
 					},
@@ -282,7 +283,7 @@ func TestDiscoverRole(t *testing.T) {
 		"other": {},
 	}
 
-	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.File{}, proto.Shell{}, exec.Shell{})); diff != "" {
+	if diff := cmp.Diff(expected, got, cmp.AllowUnexported(Role{}), cmpopts.IgnoreUnexported(proto.Task{}, proto.File{}, proto.Shell{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -300,28 +301,28 @@ func TestRoleApply(t *testing.T) {
 		vars: variables.Variables{
 			"answer": uint64(42),
 		},
-		tasks: []exec.Task{
+		tasks: []*proto.Task{
 			{
 				Name: "testing1",
-				Content: &exec.Shell{
-					Shell: proto.Shell{
+				Content: &proto.Task_Shell{
+					Shell: &proto.Shell{
 						Cmd: "echo {{ hello }}",
 					},
 				},
 			},
 			{
 				Name: "testing2",
-				Loop: "{{ foos }}",
-				Content: &exec.Shell{
-					Shell: proto.Shell{
+				Loop: func() *structpb.Value { v, _ := structpb.NewValue("{{ foos }}"); return v }(),
+				Content: &proto.Task_Shell{
+					Shell: &proto.Shell{
 						Cmd: "echo {{ item }}",
 					},
 				},
 			},
 			{
 				Name: "testing3",
-				Content: &exec.Shell{
-					Shell: proto.Shell{
+				Content: &proto.Task_Shell{
+					Shell: &proto.Shell{
 						Cmd: "echo {{ answer }}",
 					},
 				},
