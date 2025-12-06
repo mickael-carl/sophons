@@ -2,6 +2,7 @@ package exec
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"testing/fstest"
 
@@ -11,8 +12,10 @@ import (
 
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/mickael-carl/sophons/pkg/proto"
+	"github.com/mickael-carl/sophons/pkg/registry"
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
@@ -215,5 +218,249 @@ func TestTaskApplyLoop(t *testing.T) {
 
 	if diff := cmp.Diff(expected, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFromProto(t *testing.T) {
+	tests := []struct {
+		name    string
+		pt      *proto.Task
+		setup   func()
+		cleanup func()
+		want    *Task
+		wantErr string
+	}{
+		{
+			name: "basic task with all fields",
+			pt: &proto.Task{
+				Name:     "test task",
+				When:     "true",
+				Register: "result",
+				Content: &proto.Task_Command{
+					Command: &proto.Command{
+						Cmd: "echo hello",
+					},
+				},
+			},
+			want: &Task{
+				Name:     "test task",
+				When:     "true",
+				Register: "result",
+				Content: &Command{
+					Command: &proto.Command{
+						Cmd: "echo hello",
+					},
+				},
+			},
+		},
+		{
+			name: "task with loop",
+			pt: &proto.Task{
+				Name: "test with loop",
+				Loop: &structpb.Value{
+					Kind: &structpb.Value_ListValue{
+						ListValue: &structpb.ListValue{
+							Values: []*structpb.Value{
+								{Kind: &structpb.Value_StringValue{StringValue: "item1"}},
+								{Kind: &structpb.Value_StringValue{StringValue: "item2"}},
+							},
+						},
+					},
+				},
+				Content: &proto.Task_Command{
+					Command: &proto.Command{
+						Cmd: "echo {{ item }}",
+					},
+				},
+			},
+			want: &Task{
+				Name: "test with loop",
+				Loop: []any{"item1", "item2"},
+				Content: &Command{
+					Command: &proto.Command{
+						Cmd: "echo {{ item }}",
+					},
+				},
+			},
+		},
+		{
+			name: "task with nil content",
+			pt: &proto.Task{
+				Name: "task without content",
+				When: "inventory_hostname == 'localhost'",
+			},
+			want: &Task{
+				Name:    "task without content",
+				When:    "inventory_hostname == 'localhost'",
+				Content: nil,
+			},
+		},
+		{
+			name: "task with nil loop",
+			pt: &proto.Task{
+				Name: "task without loop",
+				Loop: nil,
+				Content: &proto.Task_Shell{
+					Shell: &proto.Shell{
+						Cmd: "ls -la",
+					},
+				},
+			},
+			want: &Task{
+				Name: "task without loop",
+				Loop: nil,
+				Content: &Shell{
+					Shell: &proto.Shell{
+						Cmd: "ls -la",
+					},
+				},
+			},
+		},
+		{
+			name: "error: unregistered content type",
+			pt: &proto.Task{
+				Name: "task with unknown type",
+				Content: &proto.Task_Command{
+					Command: &proto.Command{
+						Cmd: "echo test",
+					},
+				},
+			},
+			setup: func() {
+				// Temporarily remove the command registration
+				delete(registry.TypeRegistry, reflect.TypeFor[*proto.Task_Command]())
+			},
+			cleanup: func() {
+				// Restore the command registration
+				reg := registry.TaskRegistration{
+					ProtoFactory: func() any { return &proto.Command{} },
+					ProtoWrapper: func(msg any) any { return &proto.Task_Command{Command: msg.(*proto.Command)} },
+					ExecAdapter: func(content any) any {
+						if c, ok := content.(*proto.Task_Command); ok {
+							return &Command{Command: c.Command}
+						}
+						return nil
+					},
+				}
+				registry.Register("command", reg, (*proto.Task_Command)(nil))
+				registry.Register("ansible.builtin.command", reg, (*proto.Task_Command)(nil))
+			},
+			wantErr: "unknown proto content type *proto.Task_Command: not registered",
+		},
+		{
+			name: "error: no exec adapter",
+			pt: &proto.Task{
+				Name: "task with no adapter",
+				Content: &proto.Task_Shell{
+					Shell: &proto.Shell{
+						Cmd: "test",
+					},
+				},
+			},
+			setup: func() {
+				// Register a type without ExecAdapter
+				reg := registry.TaskRegistration{
+					ProtoFactory: func() any { return &proto.Shell{} },
+					ProtoWrapper: func(msg any) any { return &proto.Task_Shell{Shell: msg.(*proto.Shell)} },
+					ExecAdapter:  nil, // No adapter
+				}
+				registry.TypeRegistry[reflect.TypeFor[*proto.Task_Shell]()] = reg
+			},
+			cleanup: func() {
+				// Restore the shell registration
+				reg := registry.TaskRegistration{
+					ProtoFactory: func() any { return &proto.Shell{} },
+					ProtoWrapper: func(msg any) any { return &proto.Task_Shell{Shell: msg.(*proto.Shell)} },
+					ExecAdapter: func(content any) any {
+						if s, ok := content.(*proto.Task_Shell); ok {
+							return &Shell{Shell: s.Shell}
+						}
+						return nil
+					},
+				}
+				registry.Register("shell", reg, (*proto.Task_Shell)(nil))
+				registry.Register("ansible.builtin.shell", reg, (*proto.Task_Shell)(nil))
+			},
+			wantErr: "no exec adapter registered for type *proto.Task_Shell",
+		},
+		{
+			name: "error: adapter returns non-TaskContent",
+			pt: &proto.Task{
+				Name: "task with bad adapter",
+				Content: &proto.Task_Copy{
+					Copy: &proto.Copy{
+						Src:  "source.txt",
+						Dest: "dest.txt",
+					},
+				},
+			},
+			setup: func() {
+				// Register an adapter that returns a non-TaskContent type
+				reg := registry.TaskRegistration{
+					ProtoFactory: func() any { return &proto.Copy{} },
+					ProtoWrapper: func(msg any) any { return &proto.Task_Copy{Copy: msg.(*proto.Copy)} },
+					ExecAdapter: func(content any) any {
+						// Return a string instead of TaskContent
+						return "not a TaskContent"
+					},
+				}
+				registry.TypeRegistry[reflect.TypeFor[*proto.Task_Copy]()] = reg
+			},
+			cleanup: func() {
+				// Restore the copy registration
+				reg := registry.TaskRegistration{
+					ProtoFactory: func() any { return &proto.Copy{} },
+					ProtoWrapper: func(msg any) any { return &proto.Task_Copy{Copy: msg.(*proto.Copy)} },
+					ExecAdapter: func(content any) any {
+						if c, ok := content.(*proto.Task_Copy); ok {
+							return &Copy{Copy: c.Copy}
+						}
+						return nil
+					},
+				}
+				registry.Register("copy", reg, (*proto.Task_Copy)(nil))
+				registry.Register("ansible.builtin.copy", reg, (*proto.Task_Copy)(nil))
+			},
+			wantErr: "exec adapter returned non-TaskContent type string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setup != nil {
+				tt.setup()
+			}
+			if tt.cleanup != nil {
+				defer tt.cleanup()
+			}
+
+			got, err := FromProto(tt.pt)
+
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("FromProto() error = nil, wantErr %q", tt.wantErr)
+					return
+				}
+				if err.Error() != tt.wantErr {
+					t.Errorf("FromProto() error = %q, wantErr %q", err.Error(), tt.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("FromProto() unexpected error = %v", err)
+				return
+			}
+
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreUnexported(
+				Task{},
+				Command{},
+				Shell{},
+				proto.Command{},
+				proto.Shell{},
+			)); diff != "" {
+				t.Errorf("FromProto() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
