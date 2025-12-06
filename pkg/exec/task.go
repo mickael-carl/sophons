@@ -134,13 +134,14 @@ func processAndRunTask(ctx context.Context, logger *zap.Logger, task Task, paren
 	return task.Apply(ctx, parentPath, isRole)
 }
 
-// ExecuteTask executes a single task, processing any loop items and rendering
-// Jinja templates.
-func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath string, isRole bool) error {
+// ExecuteTaskWithResult executes a single task and returns both the Result and any error.
+// This is useful for gRPC execution where we need to return the full result to the caller.
+// It processes any loop items and renders Jinja templates.
+func ExecuteTaskWithResult(ctx context.Context, logger *zap.Logger, task Task, parentPath string, isRole bool) (Result, error) {
 	if task.Loop == nil {
 		result, err := processAndRunTask(ctx, logger, task, parentPath, isRole)
 		if err != nil {
-			return fmt.Errorf("failed to execute task: %w", err)
+			return nil, fmt.Errorf("failed to execute task: %w", err)
 		}
 
 		if task.Register != "" {
@@ -150,16 +151,16 @@ func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath 
 			}
 			resultMap, err := resultToMap(result)
 			if err != nil {
-				return fmt.Errorf("failed to convert result to map: %w", err)
+				return nil, fmt.Errorf("failed to convert result to map: %w", err)
 			}
 			vars[task.Register] = resultMap
 		}
-		return nil
+		return result, nil
 	}
 
 	tempLoopHolder := struct{ Loop any }{Loop: task.Loop}
 	if err := util.ProcessJinjaTemplates(ctx, &tempLoopHolder); err != nil {
-		return fmt.Errorf("failed to process Jinja templating for loop: %w", err)
+		return nil, fmt.Errorf("failed to process Jinja templating for loop: %w", err)
 	}
 	task.Loop = tempLoopHolder.Loop
 
@@ -169,7 +170,7 @@ func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath 
 		// that.
 		loopStrValues, okStr := task.Loop.([]string)
 		if !okStr {
-			return fmt.Errorf("loop variable is not a list: %T", task.Loop)
+			return nil, fmt.Errorf("loop variable is not a list: %T", task.Loop)
 		}
 		loopValues = make([]any, len(loopStrValues))
 		for i, v := range loopStrValues {
@@ -184,7 +185,7 @@ func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath 
 	for _, item := range loopValues {
 		newContent, err := deepCopyContent(task.Content)
 		if err != nil {
-			return fmt.Errorf("failed to copy task content: %w", err)
+			return nil, fmt.Errorf("failed to copy task content: %w", err)
 		}
 
 		iterTask := Task{
@@ -201,7 +202,7 @@ func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath 
 
 		result, err := processAndRunTask(loopCtx, logger, iterTask, parentPath, isRole)
 		if err != nil {
-			return fmt.Errorf("failed to execute task: %w", err)
+			return nil, fmt.Errorf("failed to execute task: %w", err)
 		}
 
 		if result.IsChanged() {
@@ -223,12 +224,20 @@ func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath 
 		}
 		resultMap, err := resultToMap(&loopResults)
 		if err != nil {
-			return fmt.Errorf("failed to convert loop result to map: %w", err)
+			return nil, fmt.Errorf("failed to convert loop result to map: %w", err)
 		}
 		vars[task.Register] = resultMap
 	}
 
-	return nil
+	return &loopResults, nil
+}
+
+// ExecuteTask executes a single task, processing any loop items and rendering
+// Jinja templates. This is a wrapper around ExecuteTaskWithResult that discards
+// the result for backwards compatibility with existing code.
+func ExecuteTask(ctx context.Context, logger *zap.Logger, task Task, parentPath string, isRole bool) error {
+	_, err := ExecuteTaskWithResult(ctx, logger, task, parentPath, isRole)
+	return err
 }
 
 type CommonResult struct {

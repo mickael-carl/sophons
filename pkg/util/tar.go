@@ -2,6 +2,7 @@ package util
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -70,14 +71,10 @@ func Tar(src string) (string, error) {
 	return f.Name(), err
 }
 
-func Untar(src, dest string) error {
-	f, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("could not open source file: %w", err)
-	}
-	defer f.Close()
-
-	gzr, err := gzip.NewReader(f)
+// untarFromReader is the common implementation for extracting tar.gz archives.
+// It takes an io.Reader and extracts its contents to the destination directory.
+func untarFromReader(r io.Reader, dest string) error {
+	gzr, err := gzip.NewReader(r)
 	if err != nil {
 		return fmt.Errorf("could not create gzip reader: %w", err)
 	}
@@ -133,4 +130,29 @@ func Untar(src, dest string) error {
 	}
 
 	return nil
+}
+
+// UntarFile extracts a tar.gz file to the destination directory.
+func UntarFile(src, dest string) error {
+	f, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("could not open source file: %w", err)
+	}
+	defer f.Close()
+
+	return untarFromReader(f, dest)
+}
+
+// UntarBytes extracts a tar.gz archive from bytes to the destination directory.
+func UntarBytes(archiveBytes []byte, dest string) error {
+	if len(archiveBytes) == 0 {
+		return nil // Nothing to extract
+	}
+
+	return untarFromReader(bytes.NewReader(archiveBytes), dest)
+}
+
+// Untar is an alias for UntarFile for backwards compatibility.
+func Untar(src, dest string) error {
+	return UntarFile(src, dest)
 }
