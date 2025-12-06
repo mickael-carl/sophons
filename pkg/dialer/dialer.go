@@ -102,6 +102,36 @@ func (d *dialer) executerBinName() (string, error) {
 	return binName, nil
 }
 
+func (d *dialer) grpcExecuterBinName() (string, error) {
+	o, err := d.getRemoteOS()
+	if err != nil {
+		return "", nil
+	}
+
+	os := strings.ToLower(strings.TrimSpace(o))
+	if os != "linux" && os != "darwin" {
+		return "", fmt.Errorf("unsupported OS: %s", os)
+	}
+
+	a, err := d.getRemoteArch()
+	if err != nil {
+		return "", nil
+	}
+
+	arch := strings.TrimSpace(a)
+	var binName string
+	switch arch {
+	case "amd64", "x86_64":
+		binName = fmt.Sprintf("grpc-executer-%s-x86_64", os)
+	case "arm64", "aarch64":
+		binName = fmt.Sprintf("grpc-executer-%s-arm64", os)
+	default:
+		return "", errors.New("unsupported architecture")
+	}
+
+	return binName, nil
+}
+
 func (d *dialer) copyFile(localPath, remotePath string, executable bool) error {
 	dstFile, err := d.sftpClient.Create(remotePath)
 	if err != nil {
@@ -136,7 +166,51 @@ func (d *dialer) copyExecuterBinary(localDir, remoteDir string) error {
 	return d.copyFile(path.Join(localDir, binName), path.Join(remoteDir, "executer"), true)
 }
 
-func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, error) {
+func (d *dialer) copyGrpcExecuterBinary(localDir, remoteDir string) error {
+	binName, err := d.grpcExecuterBinName()
+	if err != nil {
+		return err
+	}
+
+	return d.copyFile(path.Join(localDir, binName), path.Join(remoteDir, "grpc-executer"), true)
+}
+
+// startGrpcExecuter starts the gRPC executer in the background and returns its PID.
+func (d *dialer) startGrpcExecuter(dirPath string) (string, error) {
+	grpcExecuterPath := path.Join(dirPath, "grpc-executer")
+	// Start the gRPC executer in the background, redirecting output to /dev/null
+	// The command format: nohup ./grpc-executer -port 50051 > /dev/null 2>&1 & echo $!
+	// This starts the process, backgrounds it, and echoes the PID
+	cmd := fmt.Sprintf("nohup %s -port 50051 > /dev/null 2>&1 & echo $!", grpcExecuterPath)
+
+	pidStr, err := d.runCommand(cmd)
+	if err != nil {
+		return "", fmt.Errorf("failed to start gRPC executer: %w", err)
+	}
+
+	pid := strings.TrimSpace(pidStr)
+	if pid == "" {
+		return "", errors.New("failed to get PID of gRPC executer")
+	}
+
+	// Give the gRPC executer a moment to start up
+	// We use a simple sleep command on the remote host
+	_, err = d.runCommand("sleep 2")
+	if err != nil {
+		return "", fmt.Errorf("failed to wait for gRPC executer startup: %w", err)
+	}
+
+	return pid, nil
+}
+
+// killProcess kills a process by PID on the remote host.
+func (d *dialer) killProcess(pid string) error {
+	cmd := fmt.Sprintf("kill %s", pid)
+	_, err := d.runCommand(cmd)
+	return err
+}
+
+func (d *dialer) Execute(host, binDir, inventory, playbook string, useGrpc bool) (string, error) {
 	td, err := tempDirName()
 	if err != nil {
 		return "", fmt.Errorf("failed to generate temporary directory name for execution: %w", err)
@@ -150,6 +224,13 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 
 	if err := d.copyExecuterBinary(binDir, dirPath); err != nil {
 		return "", err
+	}
+
+	// If using gRPC mode, also copy the gRPC executer binary
+	if useGrpc {
+		if err := d.copyGrpcExecuterBinary(binDir, dirPath); err != nil {
+			return "", fmt.Errorf("failed to copy gRPC executer binary: %w", err)
+		}
 	}
 
 	if err := d.copyFile(inventory, path.Join(dirPath, "inventory.yaml"), false); err != nil {
@@ -166,6 +247,21 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 		return "", fmt.Errorf("failed to copy data from %s to target host: %w", archivePath, err)
 	}
 
+	// If using gRPC mode, start the gRPC executer in the background
+	var grpcPid string
+	if useGrpc {
+		grpcPid, err = d.startGrpcExecuter(dirPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to start gRPC executer: %w", err)
+		}
+		// Ensure we kill the gRPC executer when done
+		defer func() {
+			if grpcPid != "" {
+				_ = d.killProcess(grpcPid)
+			}
+		}()
+	}
+
 	session, err := d.sshClient.NewSession()
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
@@ -179,7 +275,14 @@ func (d *dialer) Execute(host, binDir, inventory, playbook string) (string, erro
 	cmdLine += fmt.Sprintf(" -i %s", path.Join(dirPath, "inventory.yaml"))
 	cmdLine += fmt.Sprintf(" -d %s", path.Join(dirPath, "data.tar.gz"))
 	cmdLine += fmt.Sprintf(" -p %s", playbookDirName)
-	cmdLine += fmt.Sprintf(" -n %s %s", host, path.Join(dirPath, playbookDirName, playbookFileName))
+	cmdLine += fmt.Sprintf(" -n %s", host)
+
+	// If using gRPC mode, add the --grpc-executer flag
+	if useGrpc {
+		cmdLine += " --grpc-executer localhost:50051"
+	}
+
+	cmdLine += fmt.Sprintf(" %s", path.Join(dirPath, playbookDirName, playbookFileName))
 
 	return d.runCommand(cmdLine)
 }

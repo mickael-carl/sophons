@@ -29,6 +29,7 @@ var (
 	binDir         = flag.String("b", "", "dir containing executer binaries")
 	knownHostsPath = flag.String("known-hosts", os.ExpandEnv("$HOME/.ssh/known_hosts"), "path to the known hosts file")
 	insecure       = flag.Bool("insecure", false, "whether to ignore hostkeys or not")
+	useGrpc        = flag.Bool("grpc", false, "use gRPC executer for distributed task execution")
 )
 
 func sshConfig(insecure bool, u, k, knownHosts string) (*ssh.ClientConfig, error) {
@@ -105,7 +106,7 @@ func main() {
 			logger.Fatal("failed to create dialer", zap.String("endpoint", fmt.Sprintf("%s:%s", host, *sshPort)), zap.Error(err))
 		}
 
-		out, err := dialer.Execute(host, *binDir, *inventoryPath, flag.Args()[0])
+		out, err := dialer.Execute(host, *binDir, *inventoryPath, flag.Args()[0], *useGrpc)
 		// Output regardless of error: stderr is in `out` as well. Also close
 		// everything before crashing if needed.
 		fmt.Println(string(out))
