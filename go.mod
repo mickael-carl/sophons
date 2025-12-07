@@ -9,7 +9,7 @@ require (
 	github.com/favadi/protoc-go-inject-tag v1.4.0
 	github.com/goccy/go-yaml v1.19.0
 	github.com/google/go-cmp v0.7.0
-	github.com/nikolalohinski/gonja/v2 v2.4.2
+	github.com/nikolalohinski/gonja/v2 v2.5.1
 	github.com/pkg/sftp v1.13.10
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.1
