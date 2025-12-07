@@ -29,7 +29,6 @@ func TestTaskExecuterServer_SimpleCommand(t *testing.T) {
 	}
 
 	resp, err := server.TaskExecute(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("TaskExecute returned error: %v", err)
 	}
@@ -77,7 +76,6 @@ func TestTaskExecuterServer_WithVariables(t *testing.T) {
 	}
 
 	resp, err := server.TaskExecute(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("TaskExecute returned error: %v", err)
 	}
@@ -115,7 +113,6 @@ func TestTaskExecuterServer_WithWhenCondition(t *testing.T) {
 	}
 
 	resp, err := server.TaskExecute(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("TaskExecute returned error: %v", err)
 	}
@@ -148,7 +145,6 @@ func TestTaskExecuterServer_InvalidTask(t *testing.T) {
 	}
 
 	resp, err := server.TaskExecute(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("TaskExecute returned error: %v", err)
 	}
@@ -181,7 +177,6 @@ func TestTaskExecuterServer_FailedCommand(t *testing.T) {
 	}
 
 	resp, err := server.TaskExecute(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("TaskExecute returned error: %v", err)
 	}

@@ -262,17 +262,12 @@ func main() {
 	var grpcClient proto.TaskExecuterClient
 	var grpcConn *grpc.ClientConn
 	if *grpcExecuter != "" {
-		dialCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-
-		conn, err := grpc.DialContext(
-			dialCtx,
+		conn, err := grpc.NewClient(
 			*grpcExecuter,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithBlock(),
 		)
 		if err != nil {
-			logger.Fatal("failed to connect to gRPC executer",
+			logger.Fatal("failed to create gRPC client",
 				zap.String("addr", *grpcExecuter),
 				zap.Error(err))
 		}
@@ -280,7 +275,7 @@ func main() {
 		defer grpcConn.Close()
 
 		grpcClient = proto.NewTaskExecuterClient(conn)
-		logger.Info("connected to gRPC executer",
+		logger.Info("created gRPC client",
 			zap.String("addr", *grpcExecuter))
 	}
 

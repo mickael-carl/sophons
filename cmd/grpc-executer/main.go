@@ -17,9 +17,7 @@ import (
 	"github.com/mickael-carl/sophons/pkg/variables"
 )
 
-var (
-	port = flag.Int("port", 50051, "gRPC server port")
-)
+var port = flag.Int("port", 50051, "gRPC server port")
 
 type taskExecuterServer struct {
 	proto.UnimplementedTaskExecuterServer
@@ -73,9 +71,13 @@ func (s *taskExecuterServer) TaskExecute(
 	execCtx := variables.NewContext(ctx, variables.Variables(vars))
 
 	// 4. Resolve parent path relative to workspace
+	// The archive contains files relative to the parent of the source directory.
+	// For example, if archiving /tmp/sophons-123/playbooks/, the archive contains
+	// entries like "playbooks/files/somefile". So we need to join the workspace
+	// with just the base directory name, not the full absolute path.
 	parentPath := workDir
 	if req.ParentPath != "" {
-		parentPath = filepath.Join(workDir, req.ParentPath)
+		parentPath = filepath.Join(workDir, filepath.Base(req.ParentPath))
 	}
 
 	s.logger.Debug("resolved parent path",
@@ -156,7 +158,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to create logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logger.Sync()
+	defer logger.Sync() //nolint:errcheck
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
