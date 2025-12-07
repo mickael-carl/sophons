@@ -124,7 +124,7 @@ func processAndRunTask(ctx context.Context, logger *zap.Logger, task Task, paren
 
 	if !whenResult {
 		logger.Debug("skipping task due to when condition", zap.String("task", task.Name))
-		return &CommonResult{}, nil
+		return &CommonResult{Skipped: true}, nil
 	}
 
 	logger.Debug("executing task", zap.Any("task", task))
