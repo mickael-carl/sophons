@@ -27,6 +27,7 @@ var (
 	sophonsTestingImage string
 	only                string
 	list                bool
+	useGrpc             bool
 )
 
 func main() {
@@ -34,6 +35,7 @@ func main() {
 	flag.StringVar(&sophonsTestingImage, "testing-image", "sophons-testing:latest", "container image to use for tests")
 	flag.StringVar(&only, "only", "", "comma-separated list of playbook names to run (e.g., playbook-apt.yaml,playbook-file.yaml)")
 	flag.BoolVar(&list, "list", false, "list all available tests and exit")
+	flag.BoolVar(&useGrpc, "grpc", false, "use gRPC executer for distributed task execution")
 	flag.Parse()
 
 	if err := run(); err != nil {
@@ -93,7 +95,7 @@ func run() error {
 			port := basePort + workerID
 			for playbook := range playbookCh {
 				log.Printf("running %s", playbook)
-				if err := runConformanceTest(port, playbook); err != nil {
+				if err := runConformanceTest(port, playbook, useGrpc); err != nil {
 					errCh <- fmt.Errorf("test failed for playbook %s: %w", playbook, err)
 				}
 			}
@@ -120,7 +122,7 @@ func run() error {
 	return nil
 }
 
-func runConformanceTest(port int, playbook string) error {
+func runConformanceTest(port int, playbook string, useGrpc bool) error {
 	dir, err := os.MkdirTemp("/tmp", "sophons-conformance")
 	if err != nil {
 		return fmt.Errorf("failed to create temp dir: %w", err)
@@ -135,12 +137,12 @@ func runConformanceTest(port int, playbook string) error {
 	portStr := strconv.Itoa(port)
 
 	sophonsTarPath := filepath.Join(dir, "sophons.tar")
-	if err := runPlaybook(dir, sshKeyPath, playbook, sophonsTarPath, "sophons", portStr); err != nil {
+	if err := runPlaybook(dir, sshKeyPath, playbook, sophonsTarPath, "sophons", portStr, useGrpc); err != nil {
 		return err
 	}
 
 	ansibleTarPath := filepath.Join(dir, "ansible.tar")
-	if err := runPlaybook(dir, sshKeyPath, playbook, ansibleTarPath, "ansible", portStr); err != nil {
+	if err := runPlaybook(dir, sshKeyPath, playbook, ansibleTarPath, "ansible", portStr, useGrpc); err != nil {
 		return err
 	}
 
@@ -156,7 +158,7 @@ func containerCleanup(sha string) {
 	}
 }
 
-func runPlaybook(dir, sshKeyPath, playbook, tarPath, mode, port string) error {
+func runPlaybook(dir, sshKeyPath, playbook, tarPath, mode, port string, useGrpc bool) error {
 	sha, err := startContainer(port)
 	if err != nil {
 		return err
@@ -177,7 +179,12 @@ func runPlaybook(dir, sshKeyPath, playbook, tarPath, mode, port string) error {
 
 	switch mode {
 	case "sophons":
-		err = runCommand(nil, "./bin/dialer", "-p", port, "-b", "bin/", "-i", "data/inventory-testing.yaml", "-k", sshKeyPath, "-u", "root", "--known-hosts", knownHostsPath, playbook)
+		args := []string{"-p", port, "-b", "bin/", "-i", "data/inventory-testing.yaml", "-k", sshKeyPath, "-u", "root", "--known-hosts", knownHostsPath}
+		if useGrpc {
+			args = append(args, "-grpc")
+		}
+		args = append(args, playbook)
+		err = runCommand(nil, "./bin/dialer", args...)
 	case "ansible":
 		controlPathDir := filepath.Join(dir, "ansible-cp")
 		if err := os.Mkdir(controlPathDir, 0o755); err != nil {

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/mickael-carl/sophons/pkg/proto";
+
+import "proto/task.proto";
+import "google/protobuf/struct.proto";
+
+message TaskExecuteRequest {
+  Task task = 1;
+
+  // Variables context (inventory vars, registered vars, etc.)
+  google.protobuf.Struct variables = 2;
+
+  // Parent path for resolving relative file paths
+  // (e.g., roles/rolename for role tasks, playbook dir for play tasks)
+  string parent_path = 3;
+
+  // Whether this task is executing in a role context
+  bool is_role = 4;
+
+  // Archive containing files needed for task execution
+  // (roles/files/, roles/templates/, etc.)
+  bytes file_archive = 5;
+}
+
+message TaskExecuteResponse {
+  bool success = 1;
+
+  // Full task result as JSON map (includes changed, failed, stdout, etc.)
+  google.protobuf.Struct result = 2;
+
+  // Error message if execution failed
+  string error = 3;
+}
+
+service TaskExecuter {
+  rpc TaskExecute(TaskExecuteRequest) returns (TaskExecuteResponse);
+}
