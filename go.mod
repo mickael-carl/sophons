@@ -7,7 +7,7 @@ replace github.com/arduino/go-apt-client => github.com/mickael-carl/go-apt-clien
 require (
 	github.com/arduino/go-apt-client v0.0.0-20250612150138-0d7233b455eb
 	github.com/favadi/protoc-go-inject-tag v1.4.0
-	github.com/goccy/go-yaml v1.19.0
+	github.com/goccy/go-yaml v1.19.1
 	github.com/google/go-cmp v0.7.0
 	github.com/nikolalohinski/gonja/v2 v2.4.2
 	github.com/pkg/sftp v1.13.10
